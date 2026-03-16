@@ -1,862 +1,1237 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  CalendarDays, 
-  Phone, 
-  Camera, 
-  FileText, 
-  DollarSign, 
-  Search, 
-  Plus, 
-  Trash2, 
-  MessageCircle, 
-  CheckCircle2,
-  Clock,
-  User,
-  CreditCard,
-  X,
-  Settings,
-  Send,
-  Save,
-  Tag
-} from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
-
-let firebaseConfig;
-if (typeof __firebase_config !== 'undefined') {
-  // استخدام إعدادات المنصة أثناء المعاينة لتجنب أخطاء الصلاحيات
-  firebaseConfig = JSON.parse(__firebase_config);
-} else {
-  // إعدادات مشروع فايربيز الخاصة بك (للعمل خارج هذه المنصة على جهازك)
-  firebaseConfig = {
-    apiKey: "AIzaSyCavfv_YAkOH_ULE5Ot6Lb1rZIJ8gUG-0M",
-    authDomain: "studio-data-fc65c.firebaseapp.com",
-    databaseURL: "https://studio-data-fc65c-default-rtdb.firebaseio.com",
-    projectId: "studio-data-fc65c",
-    storageBucket: "studio-data-fc65c.firebasestorage.app",
-    messagingSenderId: "458766068256",
-    appId: "1:458766068256:web:bedc139942a2d536822a45",
-    measurementId: "G-ZRG9E20RE1"
-  };
-}
-
-const app = initializeApp(firebaseConfig);
-const analytics = typeof window !== 'undefined' && firebaseConfig.measurementId ? getAnalytics(app) : null;
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : "studio-marakby"; 
-
-// Arabic Month Names
-const MONTHS = [
-  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-];
-
-const DEFAULT_SETTINGS = {
-  autoReceipt: true,
-  nextReceipt: 1001,
-  services: ["طباعة 10 صور 4x6", "ألبوم عريس", "تصوير سيشن", "صورة شخصية للفيزا", "برواز خشب"],
-  templates: {
-    welcome: "أهلاً بك يا {clientName} في ستوديو المراكبي 📸✨\n\nتفاصيل الإيصال:\nرقم الإيصال: {receiptNumber}\nالمطلوب: {notes}\nالإجمالي: {totalAmount} ج.م\nالمدفوع: {paidAmount} ج.م\nالباقي: {remainingAmount} ج.م\n\nنسعد بخدمتكم دائماً.",
-    deposit: "أهلاً بك يا {clientName}،\nتم استلام عربون بقيمة {paidAmount} ج.م.\nالإجمالي: {totalAmount} ج.م.\nالباقي المطلوب عند الاستلام: {remainingAmount} ج.م.\n\nشكراً لاختيارك ستوديو المراكبي.",
-    delivery: "أهلاً بك يا {clientName}،\nالطلب الخاص بك جاهز للاستلام الآن 🎉\nباقي الحساب: {remainingAmount} ج.م.\n\nفي انتظارك تنورنا في ستوديو المراكبي.",
-    reminder: "أهلاً بك يا {clientName}،\nتذكير ودي بخصوص حسابكم لدينا، المبلغ المتبقي هو {remainingAmount} ج.م.\n\nشكراً لتعاملكم معنا."
-  }
-};
-
-export default function App() {
-  // State Management
-  const [entries, setEntries] = useState([]);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [user, setUser] = useState(null);
-  
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Modals State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [whatsappModal, setWhatsappModal] = useState({ isOpen: false, entry: null });
-  const [paymentModal, setPaymentModal] = useState({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 });
-
-  // Form State
-  const [formData, setFormData] = useState({
-    receiptNumber: '', photoNumber: '', clientName: '',
-    clientPhone: '', notes: '', totalAmount: '', paidAmount: ''
-  });
-  const [paymentAmount, setPaymentAmount] = useState('');
-
-  // Settings Temp State (For editing)
-  const [tempSettings, setTempSettings] = useState(settings);
-  const [newService, setNewService] = useState('');
-  const [settingsTab, setSettingsTab] = useState('general');
-
-  // Firebase Auth Effect
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ستوديو المراكبى</title>
+    
+    <!-- خط القاهرة لدعم اللغة العربية بشكل جميل -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS للتصميم -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
         }
-      } catch (error) {
-        console.error('Auth Error:', error);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
+    </script>
 
-  // Firebase Data Fetching
-  useEffect(() => {
-    if (!user) return;
-
-    // Listen to Entries
-    const entriesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'entries');
-    const unsubEntries = onSnapshot(entriesRef, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEntries(data);
-    }, (error) => console.error(error));
-
-    // Listen to Settings
-    const settingsRef = doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main');
-    const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setSettings({ ...DEFAULT_SETTINGS, ...docSnap.data() });
-        setTempSettings({ ...DEFAULT_SETTINGS, ...docSnap.data() });
-      } else {
-        setSettings(DEFAULT_SETTINGS);
-        setTempSettings(DEFAULT_SETTINGS);
-        setDoc(settingsRef, DEFAULT_SETTINGS);
-      }
-    }, (error) => console.error(error));
-
-    return () => {
-      unsubEntries();
-      unsubSettings();
-    };
-  }, [user]);
-
-  // Derived State
-  const filteredEntries = useMemo(() => {
-    return entries.filter(entry => {
-      if (entry.month !== selectedMonth) return false;
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        return (
-          entry.clientName.toLowerCase().includes(query) ||
-          entry.clientPhone.includes(query) ||
-          entry.receiptNumber.includes(query) ||
-          entry.photoNumber.includes(query)
-        );
-      }
-      return true;
-    }).sort((a, b) => b.timestampMs - a.timestampMs);
-  }, [entries, selectedMonth, searchQuery]);
-
-  const stats = useMemo(() => {
-    return filteredEntries.reduce((acc, curr) => ({
-      total: acc.total + curr.totalAmount,
-      paid: acc.paid + curr.paidAmount,
-      remaining: acc.remaining + curr.remainingAmount
-    }), { total: 0, paid: 0, remaining: 0 });
-  }, [filteredEntries]);
-
-  // Handlers: Entries
-  const openAddModal = () => {
-    setFormData({
-      receiptNumber: settings.autoReceipt ? settings.nextReceipt.toString() : '',
-      photoNumber: '', clientName: '', clientPhone: '', notes: '', totalAmount: '', paidAmount: ''
-    });
-    setIsAddModalOpen(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddServiceToNotes = (service) => {
-    setFormData(prev => ({
-      ...prev,
-      notes: prev.notes ? `${prev.notes} + ${service}` : service
-    }));
-  };
-
-  const handleAddEntry = async (e) => {
-    e.preventDefault();
-    if (!user) return;
+    <!-- محول أكواد React (Babel) لكي يعمل الكود داخل المتصفح مباشرة -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
     
-    const total = parseFloat(formData.totalAmount) || 0;
-    const paid = parseFloat(formData.paidAmount) || 0;
-    const remaining = total - paid;
-    const now = new Date();
+    <!-- هنا سيتم عرض التطبيق -->
+    <div id="root"></div>
 
-    const newEntry = {
-      id: crypto.randomUUID(),
-      month: selectedMonth,
-      receiptNumber: formData.receiptNumber,
-      photoNumber: formData.photoNumber,
-      clientName: formData.clientName,
-      clientPhone: formData.clientPhone,
-      notes: formData.notes,
-      totalAmount: total, paidAmount: paid, remainingAmount: remaining,
-      timestamp: now.toLocaleString('ar-EG', { 
-        year: 'numeric', month: 'short', day: 'numeric', 
-        hour: '2-digit', minute: '2-digit', hour12: true 
-      }),
-      timestampMs: now.getTime()
-    };
-
-    // Save to Firebase
-    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', newEntry.id), newEntry);
-    setIsAddModalOpen(false);
-
-    // Increment Auto Receipt if enabled
-    if (settings.autoReceipt) {
-      const newNextReceipt = parseInt(formData.receiptNumber) + 1 || settings.nextReceipt + 1;
-      const newSettings = { ...settings, nextReceipt: newNextReceipt };
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main'), newSettings);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-      if (!user) return;
-      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', id));
-    }
-  };
-
-  // Handlers: Payments
-  const openPaymentModal = (entry) => {
-    setPaymentModal({ isOpen: true, entryId: entry.id, clientName: entry.clientName, maxAmount: entry.remainingAmount });
-    setPaymentAmount('');
-  };
-
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) return;
-    
-    const amountToPay = parseFloat(paymentAmount);
-    if (amountToPay > 0 && paymentModal.entryId) {
-      const entryToUpdate = entries.find(entry => entry.id === paymentModal.entryId);
-      
-      if (entryToUpdate) {
-        const newPaid = entryToUpdate.paidAmount + amountToPay;
-        const newRemaining = entryToUpdate.totalAmount - newPaid;
+    <script type="text/babel" data-type="module">
+        // استيراد React والمكتبات عبر روابط مباشرة
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+          CalendarDays, Phone, Camera, FileText, DollarSign, Search, 
+          Plus, Trash2, MessageCircle, CheckCircle2, Clock, User, 
+          CreditCard, X, Settings, Send, Save, Tag, Lock, LogOut,
+          ClipboardList, Scissors, Check, PackageCheck // أيقونات جديدة لشريط التتبع
+        } from 'https://esm.sh/lucide-react@0.344.0';
         
-        await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', entryToUpdate.id), {
-          paidAmount: newPaid,
-          remainingAmount: newRemaining
-        });
-      }
-      setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 });
-    }
-  };
+        // استيراد Firebase عبر الروابط الرسمية للمتصفح (gstatic)
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-  // Handlers: WhatsApp
-  const openWhatsAppModal = (entry) => {
-    setWhatsappModal({ isOpen: true, entry });
-  };
+        // إعدادات فايربيز الخاصة بك
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            firebaseConfig = {
+              apiKey: "AIzaSyB0G8-iLXf0UOZzJ3xuJZRMBfNPUooJpF0",
+              authDomain: "gen-lang-client-0813248919.firebaseapp.com",
+              projectId: "gen-lang-client-0813248919",
+              storageBucket: "gen-lang-client-0813248919.firebasestorage.app",
+              messagingSenderId: "609989118150",
+              appId: "1:609989118150:web:783c577d877cde63412fc7",
+              measurementId: "G-9RHXZTW54Z"
+            };
+        }
 
-  const handleSendWhatsApp = (templateKey) => {
-    const entry = whatsappModal.entry;
-    if (!entry) return;
-
-    let message = settings.templates[templateKey] || DEFAULT_SETTINGS.templates[templateKey];
-    
-    // Replace placeholders
-    message = message
-      .replace(/{clientName}/g, entry.clientName || 'عميلنا العزيز')
-      .replace(/{receiptNumber}/g, entry.receiptNumber || '---')
-      .replace(/{notes}/g, entry.notes || 'غير محدد')
-      .replace(/{totalAmount}/g, entry.totalAmount)
-      .replace(/{paidAmount}/g, entry.paidAmount)
-      .replace(/{remainingAmount}/g, entry.remainingAmount);
-
-    const encodedMessage = encodeURIComponent(message);
-    let phone = entry.clientPhone;
-    if (phone.startsWith('0')) phone = '+2' + phone;
-    else if (!phone.startsWith('+')) phone = '+20' + phone;
-
-    window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
-    setWhatsappModal({ isOpen: false, entry: null });
-  };
-
-  // Handlers: Settings
-  const saveSettings = async () => {
-    if (!user) return;
-    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main'), tempSettings);
-    setIsSettingsOpen(false);
-  };
-
-  const addServiceSetting = () => {
-    if (newService.trim()) {
-      setTempSettings(prev => ({ ...prev, services: [...prev.services, newService.trim()] }));
-      setNewService('');
-    }
-  };
-
-  const removeServiceSetting = (index) => {
-    setTempSettings(prev => ({
-      ...prev, services: prev.services.filter((_, i) => i !== index)
-    }));
-  };
-
-  return (
-    <div dir="rtl" className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-20">
-      {/* Header */}
-      <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-500 p-2 rounded-lg">
-              <Camera className="w-6 h-6 text-slate-900" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">ستوديو المراكبى</h1>
-              <p className="text-xs text-slate-300">نظام إدارة الحسابات اليومية</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white flex items-center gap-2"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="hidden sm:inline text-sm">الإعدادات</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+        const app = initializeApp(firebaseConfig);
         
-        {/* Month Selector */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-x-auto">
-          <div className="flex space-x-2 space-x-reverse min-w-max">
-            {MONTHS.map((month, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedMonth(index)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  selectedMonth === index 
-                    ? 'bg-amber-500 text-slate-900 shadow-sm' 
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {month}
-              </button>
-            ))}
-          </div>
-        </div>
+        isSupported().then(supported => {
+            if (supported && firebaseConfig.measurementId) {
+                getAnalytics(app);
+            }
+        }).catch(console.error);
 
-        {/* Stats & Actions Area */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="بحث بالاسم، رقم الهاتف، رقم الإيصال أو الصورة..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-sm"
-              />
-            </div>
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : "studio-marakby"; 
+
+        // أسماء الأشهر
+        const MONTHS = [
+            "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+            "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+        ];
+
+        // مراحل الشغل (شريط التتبع)
+        const JOB_STAGES = [
+            { id: 'received', label: 'تم الاستلام', icon: ClipboardList },
+            { id: 'processing', label: 'جاري التجهيز', icon: Scissors },
+            { id: 'ready', label: 'جاهز للاستلام', icon: CheckCircle2 },
+            { id: 'delivered', label: 'تم التسليم', icon: PackageCheck }
+        ];
+
+        // الإعدادات الافتراضية
+        const DEFAULT_SETTINGS = {
+            autoReceipt: true,
+            nextReceipt: 1001,
+            adminPassword: "1234",
+            services: ["طباعة 10 صور 4x6", "ألبوم عريس", "تصوير سيشن", "صورة شخصية للفيزا", "برواز خشب"],
+            templates: {
+                welcome: "أهلاً بك يا {clientName} في ستوديو المراكبي 📸✨\n\nتفاصيل الإيصال:\nرقم الإيصال: {receiptNumber}\nالمطلوب: {notes}\nالإجمالي: {totalAmount} ج.م\nالمدفوع: {paidAmount} ج.م\nالباقي: {remainingAmount} ج.م\n\nنسعد بخدمتكم دائماً.",
+                deposit: "أهلاً بك يا {clientName}،\nتم استلام عربون بقيمة {paidAmount} ج.م.\nالإجمالي: {totalAmount} ج.م.\nالباقي المطلوب عند الاستلام: {remainingAmount} ج.م.\n\nشكراً لاختيارك ستوديو المراكبي.",
+                delivery: "أهلاً بك يا {clientName}،\nالطلب الخاص بك جاهز للاستلام الآن 🎉\nباقي الحساب: {remainingAmount} ج.م.\n\nفي انتظارك تنورنا في ستوديو المراكبي.",
+                reminder: "أهلاً بك يا {clientName}،\nتذكير ودي بخصوص حسابكم لدينا، المبلغ المتبقي هو {remainingAmount} ج.م.\n\nشكراً لتعاملكم معنا."
+            }
+        };
+
+        // المكون الرئيسي للتطبيق
+        function App() {
+            const [entries, setEntries] = useState([]);
+            const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+            const [user, setUser] = useState(null);
             
-            <button
-              onClick={openAddModal}
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-slate-900 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 shadow-sm transition-colors whitespace-nowrap"
-            >
-              <Plus className="ml-2 -mr-1 h-5 w-5" />
-              إضافة عملية جديدة
-            </button>
-          </div>
+            const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+            const [searchQuery, setSearchQuery] = useState('');
+            
+            const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [whatsappModal, setWhatsappModal] = useState({ isOpen: false, entry: null });
+            const [paymentModal, setPaymentModal] = useState({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 });
 
-          <div className="bg-slate-800 rounded-xl shadow-sm p-4 text-white flex justify-between items-center">
-            <div>
-              <p className="text-xs text-slate-300 mb-1">إجمالي الباقي (المديونية)</p>
-              <p className="text-2xl font-bold text-amber-400">{stats.remaining.toLocaleString()} <span className="text-sm font-normal">ج.م</span></p>
-            </div>
-            <div className="text-left">
-              <p className="text-xs text-slate-300 mb-1">المُحصل</p>
-              <p className="text-lg font-semibold text-green-400">{stats.paid.toLocaleString()} <span className="text-xs font-normal">ج.م</span></p>
-            </div>
-          </div>
-        </div>
+            const [formData, setFormData] = useState({
+                receiptNumber: '', photoNumber: '', clientName: '',
+                clientPhone: '', notes: '', totalAmount: '', paidAmount: ''
+            });
+            const [paymentAmount, setPaymentAmount] = useState('');
 
-        {/* Entries List */}
-        <div className="space-y-4">
-          {filteredEntries.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-              <FileText className="mx-auto h-12 w-12 text-gray-300" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">لا يوجد سجلات</h3>
-              <p className="mt-1 text-sm text-gray-500">لم يتم العثور على أي عمليات مسجلة في هذا الشهر.</p>
-            </div>
-          ) : (
-            filteredEntries.map((entry) => (
-              <div key={entry.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                <div className="bg-slate-50 border-b border-gray-100 px-4 py-3 flex flex-wrap justify-between items-center gap-3">
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs text-gray-500">الإجمالي</span>
-                      <span className="font-bold text-slate-700">{entry.totalAmount} ج.م</span>
-                    </div>
-                    <div className="flex flex-col border-r border-gray-300 pr-4">
-                      <span className="text-xs text-gray-500">المدفوع</span>
-                      <span className="font-bold text-green-600">{entry.paidAmount} ج.م</span>
-                    </div>
-                    <div className="flex flex-col border-r border-gray-300 pr-4">
-                      <span className="text-xs text-gray-500">الباقي</span>
-                      <span className={`font-bold ${entry.remainingAmount > 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                        {entry.remainingAmount} ج.م
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {entry.remainingAmount > 0 ? (
-                    <button
-                      onClick={() => openPaymentModal(entry)}
-                      className="inline-flex items-center px-4 py-1.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 transition-colors"
-                    >
-                      <CreditCard className="ml-2 h-4 w-4" />
-                      سداد الباقي
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <CheckCircle2 className="ml-1 h-3 w-3" /> خالص
-                    </span>
-                  )}
-                </div>
+            // Login & Client Portal State
+            const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'admin', 'client'
+            const [loginMode, setLoginMode] = useState('client'); // 'client', 'admin'
+            const [loginData, setLoginData] = useState({ phone: '', receipt: '', password: '' });
+            const [loginError, setLoginError] = useState('');
+            const [clientEntry, setClientEntry] = useState(null);
 
-                <div className="p-4 flex flex-col md:flex-row gap-6">
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <User className="h-5 w-5 text-amber-500" />
-                        {entry.clientName}
-                      </h3>
-                      <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" /> {entry.timestamp}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" /> 
-                          <a href={`tel:${entry.clientPhone}`} className="hover:text-amber-600 hover:underline" dir="ltr">{entry.clientPhone}</a>
-                        </span>
-                      </div>
-                    </div>
+            const [tempSettings, setTempSettings] = useState(settings);
+            const [newService, setNewService] = useState('');
+            const [settingsTab, setSettingsTab] = useState('general');
 
-                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                      <p className="text-sm text-slate-800"><span className="font-semibold">المطلوب / ملاحظات:</span> {entry.notes || 'لا يوجد ملاحظات'}</p>
-                    </div>
-                  </div>
+            // Firebase Auth Effect
+            useEffect(() => {
+                const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error('Auth Error:', error);
+                    alert("تحذير: مشكلة في الاتصال بقاعدة البيانات.");
+                }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
 
-                  <div className="flex flex-col justify-between md:items-end gap-4 md:w-64 md:border-r md:border-gray-100 md:pr-6">
-                    <div className="space-y-2 w-full">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500 flex items-center gap-1"><FileText className="h-4 w-4"/> رقم الإيصال:</span>
-                        <span className="font-medium text-slate-700">{entry.receiptNumber || '---'}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500 flex items-center gap-1"><Camera className="h-4 w-4"/> رقم الصورة:</span>
-                        <span className="font-medium text-slate-700">{entry.photoNumber || '---'}</span>
-                      </div>
-                    </div>
+            // Firebase Data Fetching
+            useEffect(() => {
+                if (!user) return;
 
-                    <div className="flex items-center gap-2 w-full mt-4">
-                      <button
-                        onClick={() => openWhatsAppModal(entry)}
-                        className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#25D366] hover:bg-[#128C7E] transition-colors"
-                        title="إرسال رسالة واتساب"
-                      >
-                        <MessageCircle className="h-4 w-4 ml-1.5" />
-                        واتساب
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        className="inline-flex items-center p-2 border border-red-200 text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                        title="حذف السجل"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </main>
-
-      {/* Add New Entry Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setIsAddModalOpen(false)}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="flex justify-between items-center mb-5 border-b pb-3">
-                  <h3 className="text-lg leading-6 font-bold text-slate-900">إضافة عملية تصوير جديدة</h3>
-                  <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-500">
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
+                const entriesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'entries');
+                const unsubEntries = onSnapshot(entriesRef, (snapshot) => {
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setEntries(data);
                 
-                <form onSubmit={handleAddEntry} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
-                      <input required type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف *</label>
-                      <input required type="tel" dir="ltr" name="clientPhone" value={formData.clientPhone} onChange={handleInputChange} className="w-full text-right border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">رقم الإيصال</label>
-                      <input type="number" name="receiptNumber" value={formData.receiptNumber} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">رقم الصورة</label>
-                      <input type="text" name="photoNumber" value={formData.photoNumber} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
+                // تحديث بيانات العميل المفتوحة حالياً (إن وجدت) لكي يرى التغيير في لحظتها
+                if (clientEntry) {
+                    const updatedEntry = data.find(e => e.id === clientEntry.id);
+                    if (updatedEntry) setClientEntry(updatedEntry);
+                }
 
-                    <div className="md:col-span-2 space-y-2">
-                      <div className="flex justify-between items-end">
-                         <label className="block text-sm font-medium text-gray-700">المطلوب / ملاحظات</label>
-                      </div>
-                      
-                      {/* Services Quick Chips */}
-                      {settings.services.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {settings.services.map((srv, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => handleAddServiceToNotes(srv)}
-                              className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors border border-amber-200"
-                            >
-                              <Plus className="w-3 h-3 ml-1" />
-                              {srv}
-                            </button>
-                          ))}
+                }, (error) => console.error(error));
+
+                const settingsRef = doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main');
+                const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setSettings({ ...DEFAULT_SETTINGS, ...docSnap.data() });
+                    setTempSettings({ ...DEFAULT_SETTINGS, ...docSnap.data() });
+                } else {
+                    setSettings(DEFAULT_SETTINGS);
+                    setTempSettings(DEFAULT_SETTINGS);
+                    setDoc(settingsRef, DEFAULT_SETTINGS);
+                }
+                }, (error) => console.error(error));
+
+                return () => {
+                    unsubEntries();
+                    unsubSettings();
+                };
+            }, [user, clientEntry?.id]);
+
+            // Derived State
+            const filteredEntries = useMemo(() => {
+                return entries.filter(entry => {
+                if (entry.month !== selectedMonth) return false;
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    return (
+                    entry.clientName.toLowerCase().includes(query) ||
+                    entry.clientPhone.includes(query) ||
+                    entry.receiptNumber.includes(query) ||
+                    entry.photoNumber.includes(query)
+                    );
+                }
+                return true;
+                }).sort((a, b) => b.timestampMs - a.timestampMs);
+            }, [entries, selectedMonth, searchQuery]);
+
+            const stats = useMemo(() => {
+                return filteredEntries.reduce((acc, curr) => ({
+                total: acc.total + curr.totalAmount,
+                paid: acc.paid + curr.paidAmount,
+                remaining: acc.remaining + curr.remainingAmount
+                }), { total: 0, paid: 0, remaining: 0 });
+            }, [filteredEntries]);
+
+            // Handlers
+            const openAddModal = () => {
+                setFormData({
+                receiptNumber: settings.autoReceipt ? settings.nextReceipt.toString() : '',
+                photoNumber: '', clientName: '', clientPhone: '', notes: '', totalAmount: '', paidAmount: ''
+                });
+                setIsAddModalOpen(true);
+            };
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleAddServiceToNotes = (service) => {
+                setFormData(prev => ({
+                ...prev,
+                notes: prev.notes ? `${prev.notes} + ${service}` : service
+                }));
+            };
+
+            const handleAddEntry = async (e) => {
+                e.preventDefault();
+                if (!user) return alert("جاري الاتصال بقاعدة البيانات. يرجى الانتظار.");
+                
+                const total = parseFloat(formData.totalAmount) || 0;
+                const paid = parseFloat(formData.paidAmount) || 0;
+                const remaining = total - paid;
+                const now = new Date();
+
+                const generateSafeId = () => {
+                    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' 
+                        ? crypto.randomUUID() 
+                        : Date.now().toString(36) + Math.random().toString(36).substring(2);
+                };
+
+                const newEntry = {
+                    id: generateSafeId(),
+                    month: selectedMonth,
+                    receiptNumber: formData.receiptNumber,
+                    photoNumber: formData.photoNumber,
+                    clientName: formData.clientName,
+                    clientPhone: formData.clientPhone,
+                    notes: formData.notes,
+                    totalAmount: total, 
+                    paidAmount: paid, 
+                    remainingAmount: remaining,
+                    status: 'received', // الحالة الافتراضية عند إضافة طلب جديد
+                    timestamp: now.toLocaleString('ar-EG', { 
+                        year: 'numeric', month: 'short', day: 'numeric', 
+                        hour: '2-digit', minute: '2-digit', hour12: true 
+                    }),
+                    timestampMs: now.getTime()
+                };
+
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', newEntry.id), newEntry);
+                    setIsAddModalOpen(false);
+
+                    if (settings.autoReceipt) {
+                        const newNextReceipt = parseInt(formData.receiptNumber) + 1 || settings.nextReceipt + 1;
+                        const newSettings = { ...settings, nextReceipt: newNextReceipt };
+                        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main'), newSettings);
+                    }
+                } catch (error) {
+                    alert("لم يتم الحفظ! حدث خطأ: " + error.message);
+                }
+            };
+
+            const handleDelete = async (id) => {
+                if (window.confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                    if (!user) return;
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', id));
+                }
+            };
+
+            // تغيير حالة الطلب من الإدارة
+            const handleStatusChange = async (id, newStatus) => {
+                if (!user) return;
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', id), {
+                        status: newStatus
+                    });
+                } catch (error) {
+                    alert("حدث خطأ أثناء تحديث حالة الطلب: " + error.message);
+                }
+            };
+
+            const openPaymentModal = (entry) => {
+                setPaymentModal({ isOpen: true, entryId: entry.id, clientName: entry.clientName, maxAmount: entry.remainingAmount });
+                setPaymentAmount('');
+            };
+
+            const handlePaymentSubmit = async (e) => {
+                e.preventDefault();
+                if (!user) return;
+                
+                const amountToPay = parseFloat(paymentAmount);
+                if (amountToPay > 0 && paymentModal.entryId) {
+                    const entryToUpdate = entries.find(entry => entry.id === paymentModal.entryId);
+                    if (entryToUpdate) {
+                        const newPaid = entryToUpdate.paidAmount + amountToPay;
+                        const newRemaining = entryToUpdate.totalAmount - newPaid;
+                        try {
+                            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'entries', entryToUpdate.id), {
+                                paidAmount: newPaid,
+                                remainingAmount: newRemaining
+                            });
+                            setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 });
+                        } catch (error) {
+                            alert("حدث خطأ أثناء حفظ السداد: " + error.message);
+                        }
+                    }
+                }
+            };
+
+            const openWhatsAppModal = (entry) => {
+                setWhatsappModal({ isOpen: true, entry });
+            };
+
+            const handleSendWhatsApp = (templateKey) => {
+                const entry = whatsappModal.entry;
+                if (!entry) return;
+
+                let message = settings.templates[templateKey] || DEFAULT_SETTINGS.templates[templateKey];
+                
+                message = message
+                .replace(/{clientName}/g, entry.clientName || 'عميلنا العزيز')
+                .replace(/{receiptNumber}/g, entry.receiptNumber || '---')
+                .replace(/{notes}/g, entry.notes || 'غير محدد')
+                .replace(/{totalAmount}/g, entry.totalAmount)
+                .replace(/{paidAmount}/g, entry.paidAmount)
+                .replace(/{remainingAmount}/g, entry.remainingAmount);
+
+                const encodedMessage = encodeURIComponent(message);
+                let phone = entry.clientPhone;
+                if (phone.startsWith('0')) phone = '+2' + phone;
+                else if (!phone.startsWith('+')) phone = '+20' + phone;
+
+                window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+                setWhatsappModal({ isOpen: false, entry: null });
+            };
+
+            const saveSettings = async () => {
+                if (!user) return;
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'app_settings', 'main'), tempSettings);
+                    setIsSettingsOpen(false);
+                } catch (error) {
+                    alert("حدث خطأ أثناء حفظ الإعدادات: " + error.message);
+                }
+            };
+
+            const addServiceSetting = () => {
+                if (newService.trim()) {
+                setTempSettings(prev => ({ ...prev, services: [...prev.services, newService.trim()] }));
+                setNewService('');
+                }
+            };
+
+            const removeServiceSetting = (index) => {
+                setTempSettings(prev => ({
+                ...prev, services: prev.services.filter((_, i) => i !== index)
+                }));
+            };
+
+            const handleAdminLogin = (e) => {
+                e.preventDefault();
+                if (loginData.password === settings.adminPassword) {
+                    setCurrentScreen('admin');
+                    setLoginError('');
+                    setLoginData({ ...loginData, password: '' });
+                } else {
+                    setLoginError('كلمة المرور غير صحيحة.');
+                }
+            };
+
+            const handleClientLogin = (e) => {
+                e.preventDefault();
+                const entry = entries.find(e => e.clientPhone === loginData.phone && e.receiptNumber == loginData.receipt);
+                if (entry) {
+                    setClientEntry(entry);
+                    setCurrentScreen('client');
+                    setLoginError('');
+                    setLoginData({ ...loginData, phone: '', receipt: '' });
+                } else {
+                    setLoginError('لم يتم العثور على إيصال بهذه البيانات. يرجى التأكد من رقم الهاتف ورقم الإيصال.');
+                }
+            };
+
+            const handleLogout = () => {
+                setCurrentScreen('login');
+                setClientEntry(null);
+                setLoginError('');
+            };
+
+            // -------------------- RENDER LOGIN SCREEN --------------------
+            if (currentScreen === 'login') {
+                return (
+                    <div dir="rtl" className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+                        <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+                            <div className="mx-auto w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
+                                <Camera className="w-10 h-10 text-slate-900" />
+                            </div>
+                            <h2 className="text-3xl font-extrabold text-white">ستوديو المراكبى</h2>
+                            <p className="mt-2 text-sm text-slate-400">بوابة الدخول والاستعلام</p>
                         </div>
-                      )}
-                      
-                      <textarea name="notes" rows="2" value={formData.notes} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" placeholder="مثال: طباعة 10 صور..."></textarea>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">إجمالي الحساب (ج.م) *</label>
-                      <input required type="number" min="0" step="0.5" name="totalAmount" value={formData.totalAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">المدفوع مقدماً (ج.م)</label>
-                      <input type="number" min="0" step="0.5" name="paidAmount" value={formData.paidAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-4 flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-700">الباقي المتوقع:</span>
-                    <span className="text-lg font-bold text-amber-600">
-                      {Math.max(0, (parseFloat(formData.totalAmount) || 0) - (parseFloat(formData.paidAmount) || 0))} ج.م
-                    </span>
-                  </div>
+                        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                            <div className="bg-white py-8 px-4 shadow sm:rounded-2xl sm:px-10">
+                                <div className="flex border-b border-gray-200 mb-6">
+                                    <button 
+                                        onClick={() => { setLoginMode('client'); setLoginError(''); }}
+                                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${loginMode === 'client' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        بوابة العملاء
+                                    </button>
+                                    <button 
+                                        onClick={() => { setLoginMode('admin'); setLoginError(''); }}
+                                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${loginMode === 'admin' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        دخول الإدارة
+                                    </button>
+                                </div>
 
-                  <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-3">
-                    <button type="submit" className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-amber-500 text-base font-medium text-slate-900 hover:bg-amber-400 focus:outline-none sm:w-auto sm:text-sm">
-                      حفظ العملية
-                    </button>
-                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
-                      إلغاء
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                                {loginError && (
+                                    <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg text-center">
+                                        {loginError}
+                                    </div>
+                                )}
 
-      {/* WhatsApp Action Modal */}
-      {whatsappModal.isOpen && whatsappModal.entry && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setWhatsappModal({ isOpen: false, entry: null })}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
-              <div className="bg-[#25D366] px-4 py-4 flex justify-between items-center text-white">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="w-6 h-6" />
-                  <h3 className="text-lg font-bold">إرسال رسالة واتساب</h3>
-                </div>
-                <button onClick={() => setWhatsappModal({ isOpen: false, entry: null })} className="text-white hover:text-gray-200">
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              <div className="p-4 space-y-3">
-                <p className="text-sm text-gray-600 mb-4">اختر قالب الرسالة المناسب للعميل <span className="font-bold text-slate-800">{whatsappModal.entry.clientName}</span>:</p>
+                                {loginMode === 'client' ? (
+                                    <form onSubmit={handleClientLogin} className="space-y-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف المرتبط بالإيصال</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <Phone className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <input required type="tel" dir="ltr" value={loginData.phone} onChange={(e) => setLoginData({...loginData, phone: e.target.value})} className="block w-full pl-3 pr-10 py-3 text-right border border-gray-300 rounded-xl focus:ring-amber-500 focus:border-amber-500" placeholder="01..." />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الإيصال</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <FileText className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <input required type="number" value={loginData.receipt} onChange={(e) => setLoginData({...loginData, receipt: e.target.value})} className="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-amber-500 focus:border-amber-500" placeholder="رقم الإيصال الخاص بك" />
+                                            </div>
+                                        </div>
+                                        <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-slate-900 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">
+                                            استعلام عن الطلب
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <form onSubmit={handleAdminLogin} className="space-y-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور للإدارة</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <Lock className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <input required type="password" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})} className="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-amber-500 focus:border-amber-500" placeholder="••••••••" />
+                                            </div>
+                                        </div>
+                                        <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors">
+                                            تسجيل الدخول
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // -------------------- RENDER CLIENT PORTAL --------------------
+            if (currentScreen === 'client' && clientEntry) {
                 
-                <button onClick={() => handleSendWhatsApp('welcome')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
-                  <div>
-                    <span className="block font-bold text-slate-800">رسالة ترحيب + التفاصيل</span>
-                    <span className="text-xs text-gray-500">ترسل تفاصيل الإيصال كاملة</span>
-                  </div>
-                  <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
-                </button>
+                // حساب موقعنا في مصفوفة الحالات
+                const currentStatusIndex = JOB_STAGES.findIndex(s => s.id === (clientEntry.status || 'received'));
 
-                <button onClick={() => handleSendWhatsApp('deposit')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
-                  <div>
-                    <span className="block font-bold text-slate-800">تأكيد استلام عربون</span>
-                    <span className="text-xs text-gray-500">تأكيد المدفوع والمتبقي</span>
-                  </div>
-                  <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
-                </button>
+                return (
+                    <div dir="rtl" className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-20">
+                        <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-10">
+                            <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-amber-500 p-2 rounded-lg">
+                                        <Camera className="w-6 h-6 text-slate-900" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-xl font-bold tracking-tight">بوابة العملاء</h1>
+                                        <p className="text-xs text-slate-300">ستوديو المراكبى</p>
+                                    </div>
+                                </div>
+                                <button onClick={handleLogout} className="p-2 text-slate-300 hover:text-white flex items-center gap-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">
+                                    <span className="hidden sm:inline text-sm">خروج</span>
+                                    <LogOut className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </header>
 
-                <button onClick={() => handleSendWhatsApp('delivery')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
-                  <div>
-                    <span className="block font-bold text-slate-800">تذكير استلام الشغل</span>
-                    <span className="text-xs text-gray-500">إبلاغ العميل بانتهاء الطلب</span>
-                  </div>
-                  <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
-                </button>
+                        <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+                            
+                            <div className="text-center">
+                                <h2 className="text-2xl font-bold text-slate-900">مرحباً بك يا {clientEntry.clientName} 👋</h2>
+                                <p className="text-gray-500 mt-2">إليك تفاصيل طلبك وحالة الحساب الحالية.</p>
+                            </div>
 
-                {whatsappModal.entry.remainingAmount > 0 && (
-                  <button onClick={() => handleSendWhatsApp('reminder')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
-                    <div>
-                      <span className="block font-bold text-slate-800">تذكير بالمبلغ المتبقي</span>
-                      <span className="text-xs text-gray-500">المبلغ المتبقي: {whatsappModal.entry.remainingAmount} ج.م</span>
+                            {/* شريط تتبع مرحلة الشغل */}
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 overflow-hidden relative">
+                                <h3 className="font-bold text-lg text-slate-800 mb-8 text-center">مرحلة تجهيز الطلب</h3>
+                                
+                                <div className="relative flex justify-between items-center w-full max-w-2xl mx-auto">
+                                    {/* الخط الخلفي الرمادي */}
+                                    <div className="absolute top-1/2 left-4 right-4 h-1 bg-gray-200 -z-10 -translate-y-1/2 rounded-full"></div>
+                                    
+                                    {/* الخط الملون الذي يعبر عن التقدم */}
+                                    <div 
+                                        className="absolute top-1/2 right-4 h-1 bg-amber-500 -z-10 -translate-y-1/2 rounded-full transition-all duration-500 ease-in-out"
+                                        style={{ width: `${(currentStatusIndex / (JOB_STAGES.length - 1)) * 100}%`, maxWidth: 'calc(100% - 2rem)' }}
+                                    ></div>
+
+                                    {JOB_STAGES.map((stage, index) => {
+                                        const isCompleted = index <= currentStatusIndex;
+                                        const isCurrent = index === currentStatusIndex;
+                                        const StageIcon = stage.icon;
+
+                                        return (
+                                            <div key={stage.id} className="flex flex-col items-center relative z-10 w-16 sm:w-24">
+                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                                                    isCompleted 
+                                                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30' 
+                                                    : 'bg-white border-2 border-gray-200 text-gray-400'
+                                                } ${isCurrent ? 'ring-4 ring-amber-100 scale-110' : ''}`}>
+                                                    {isCompleted && index < currentStatusIndex ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : <StageIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+                                                </div>
+                                                <span className={`text-[10px] sm:text-xs mt-3 font-bold text-center transition-colors ${
+                                                    isCurrent ? 'text-amber-600' : (isCompleted ? 'text-slate-800' : 'text-gray-400')
+                                                }`}>
+                                                    {stage.label}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* التفاصيل المالية */}
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="bg-slate-50 border-b border-gray-100 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-gray-400" />
+                                        <span className="font-bold text-slate-700">إيصال رقم: {clientEntry.receiptNumber || '---'}</span>
+                                    </div>
+                                    {clientEntry.remainingAmount > 0 ? (
+                                        <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-red-100 text-red-800 border border-red-200">
+                                            متبقي للدفع: {clientEntry.remainingAmount} ج.م
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-100 text-green-800 border border-green-200">
+                                            <CheckCircle2 className="ml-1 h-5 w-5" /> خالص تماماً
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                            <span className="text-sm text-gray-500 block mb-1">تاريخ العملية</span>
+                                            <span className="font-semibold text-slate-800 flex items-center gap-2"><Clock className="w-4 h-4 text-amber-500" /> {clientEntry.timestamp}</span>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                            <span className="text-sm text-gray-500 block mb-1">رقم الصورة / المرجع</span>
+                                            <span className="font-semibold text-slate-800 flex items-center gap-2"><Camera className="w-4 h-4 text-amber-500" /> {clientEntry.photoNumber || '---'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                                        <h4 className="font-bold text-slate-800 mb-2">المطلوب / تفاصيل الخدمة:</h4>
+                                        <p className="text-slate-700 leading-relaxed">{clientEntry.notes || 'لا يوجد ملاحظات مسجلة.'}</p>
+                                    </div>
+
+                                    <div className="border-t border-dashed border-gray-200 pt-6">
+                                        <h4 className="font-bold text-slate-800 mb-4 text-lg">الخلاصة المالية</h4>
+                                        <div className="flex flex-col sm:flex-row justify-between gap-4">
+                                            <div className="flex-1 bg-white border border-gray-200 p-4 rounded-2xl text-center">
+                                                <span className="text-sm text-gray-500 block mb-1">الإجمالي</span>
+                                                <span className="text-xl font-bold text-slate-800">{clientEntry.totalAmount} ج</span>
+                                            </div>
+                                            <div className="flex-1 bg-white border border-green-200 p-4 rounded-2xl text-center shadow-sm shadow-green-100">
+                                                <span className="text-sm text-green-600 block mb-1">المدفوع</span>
+                                                <span className="text-xl font-bold text-green-700">{clientEntry.paidAmount} ج</span>
+                                            </div>
+                                            <div className={`flex-1 bg-white border p-4 rounded-2xl text-center shadow-sm ${clientEntry.remainingAmount > 0 ? 'border-red-200 shadow-red-100' : 'border-gray-200'}`}>
+                                                <span className={`text-sm block mb-1 ${clientEntry.remainingAmount > 0 ? 'text-red-600' : 'text-gray-500'}`}>الباقي</span>
+                                                <span className={`text-xl font-bold ${clientEntry.remainingAmount > 0 ? 'text-red-700' : 'text-slate-800'}`}>{clientEntry.remainingAmount} ج</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
                     </div>
-                    <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                );
+            }
 
-      {/* Settings Modal */}
-      {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setIsSettingsOpen(false)}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-gray-50 rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
-              
-              <div className="bg-white px-4 py-4 border-b border-gray-200 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-slate-700" />
-                  <h3 className="text-lg font-bold text-slate-900">الإعدادات</h3>
-                </div>
-                <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-gray-500">
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="flex flex-col md:flex-row h-[70vh] md:h-[60vh]">
-                {/* Tabs sidebar */}
-                <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-l border-gray-200 flex md:flex-col overflow-x-auto md:overflow-y-auto">
-                  <button onClick={() => setSettingsTab('general')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'general' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-                    <Settings className="w-4 h-4" /> إعدادات الإيصال
-                  </button>
-                  <button onClick={() => setSettingsTab('services')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'services' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-                    <Tag className="w-4 h-4" /> قوالب الخدمات
-                  </button>
-                  <button onClick={() => setSettingsTab('whatsapp')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'whatsapp' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-                    <MessageCircle className="w-4 h-4" /> قوالب الواتساب
-                  </button>
-                </div>
-
-                {/* Tab content */}
-                <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50">
-                  
-                  {/* General / Receipt Settings */}
-                  {settingsTab === 'general' && (
-                    <div className="space-y-6">
-                      <h4 className="font-bold text-lg text-slate-800">إعدادات الإيصالات</h4>
-                      <div className="bg-white p-4 rounded-xl border border-gray-200">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={tempSettings.autoReceipt}
-                            onChange={(e) => setTempSettings(prev => ({ ...prev, autoReceipt: e.target.checked }))}
-                            className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300"
-                          />
-                          <span className="font-medium text-slate-700">تفعيل الترقيم التلقائي للإيصالات</span>
-                        </label>
-                        <p className="text-sm text-gray-500 mt-2">عند التفعيل، سيقوم النظام بوضع رقم إيصال متسلسل تلقائياً لكل عملية جديدة.</p>
-                        
-                        {tempSettings.autoReceipt && (
-                          <div className="mt-4 pt-4 border-t border-gray-100">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">الرقم التالي ليكون بداية التسلسل:</label>
-                            <input 
-                              type="number" 
-                              value={tempSettings.nextReceipt}
-                              onChange={(e) => setTempSettings(prev => ({ ...prev, nextReceipt: parseInt(e.target.value) || 0 }))}
-                              className="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
-                            />
-                          </div>
-                        )}
-                      </div>
+            // -------------------- RENDER ADMIN SCREEN --------------------
+            return (
+                <div dir="rtl" className="min-h-screen font-sans text-gray-800 pb-20">
+                {/* Header */}
+                <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-10">
+                    <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-amber-500 p-2 rounded-lg">
+                        <Camera className="w-6 h-6 text-slate-900" />
+                        </div>
+                        <div>
+                        <h1 className="text-xl font-bold tracking-tight">ستوديو المراكبى</h1>
+                        <p className="text-xs text-slate-300">لوحة الإدارة والتحكم</p>
+                        </div>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white flex items-center gap-2"
+                        >
+                            <Settings className="w-5 h-5" />
+                            <span className="hidden sm:inline text-sm">الإعدادات</span>
+                        </button>
+                        <button 
+                            onClick={handleLogout}
+                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg transition-colors flex items-center gap-2 border border-red-500/20"
+                            title="تسجيل الخروج"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
+                    </div>
+                </header>
 
-                  {/* Services Templates */}
-                  {settingsTab === 'services' && (
-                    <div className="space-y-6">
-                      <h4 className="font-bold text-lg text-slate-800">قوالب الخدمات والمطلوب</h4>
-                      <p className="text-sm text-gray-500">أضف الخدمات الشائعة لتتمكن من إدراجها بضغطة زر عند تسجيل عملية جديدة.</p>
-                      
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          value={newService}
-                          onChange={(e) => setNewService(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && addServiceSetting()}
-                          placeholder="اسم الخدمة (مثال: طباعة مج كبير)"
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
+                <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+                    
+                    {/* Month Selector */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-x-auto">
+                    <div className="flex space-x-2 space-x-reverse min-w-max">
+                        {MONTHS.map((month, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setSelectedMonth(index)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                            selectedMonth === index 
+                                ? 'bg-amber-500 text-slate-900 shadow-sm' 
+                                : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                        >
+                            {month}
+                        </button>
+                        ))}
+                    </div>
+                    </div>
+
+                    {/* Stats & Actions Area */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="بحث بالاسم، رقم الهاتف، رقم الإيصال أو الصورة..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-sm"
                         />
-                        <button onClick={addServiceSetting} className="px-4 py-2 bg-amber-500 text-slate-900 rounded-lg font-medium hover:bg-amber-400">إضافة</button>
-                      </div>
-
-                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <ul className="divide-y divide-gray-200">
-                          {tempSettings.services.map((srv, idx) => (
-                            <li key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50">
-                              <span className="text-slate-700">{srv}</span>
-                              <button onClick={() => removeServiceSetting(idx)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </li>
-                          ))}
-                          {tempSettings.services.length === 0 && (
-                            <li className="p-4 text-center text-gray-500 text-sm">لا يوجد خدمات مضافة.</li>
-                          )}
-                        </ul>
-                      </div>
+                        </div>
+                        
+                        <button
+                        onClick={openAddModal}
+                        className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-slate-900 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 shadow-sm transition-colors whitespace-nowrap"
+                        >
+                        <Plus className="ml-2 -mr-1 h-5 w-5" />
+                        إضافة عملية جديدة
+                        </button>
                     </div>
-                  )}
 
-                  {/* WhatsApp Templates */}
-                  {settingsTab === 'whatsapp' && (
-                    <div className="space-y-6 pb-6">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-bold text-lg text-slate-800">قوالب الواتساب</h4>
-                      </div>
-                      <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-100">
-                        <span className="font-bold">أكواد يمكنك استخدامها داخل الرسائل:</span><br/>
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{clientName}`}</span> الاسم، 
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{receiptNumber}`}</span> رقم الإيصال، 
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{totalAmount}`}</span> الإجمالي، 
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{paidAmount}`}</span> المدفوع، 
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{remainingAmount}`}</span> الباقي، 
-                        <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{notes}`}</span> المطلوب
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="bg-white p-4 rounded-xl border border-gray-200">
-                          <label className="block text-sm font-bold text-slate-800 mb-2">رسالة ترحيب + التفاصيل</label>
-                          <textarea 
-                            rows="5" 
-                            value={tempSettings.templates.welcome}
-                            onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, welcome: e.target.value } }))}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                          ></textarea>
+                    <div className="bg-slate-800 rounded-xl shadow-sm p-4 text-white flex justify-between items-center">
+                        <div>
+                        <p className="text-xs text-slate-300 mb-1">إجمالي الباقي (المديونية)</p>
+                        <p className="text-2xl font-bold text-amber-400">{stats.remaining.toLocaleString()} <span className="text-sm font-normal">ج.م</span></p>
                         </div>
-
-                        <div className="bg-white p-4 rounded-xl border border-gray-200">
-                          <label className="block text-sm font-bold text-slate-800 mb-2">تأكيد استلام عربون</label>
-                          <textarea 
-                            rows="4" 
-                            value={tempSettings.templates.deposit}
-                            onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, deposit: e.target.value } }))}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                          ></textarea>
+                        <div className="text-left">
+                        <p className="text-xs text-slate-300 mb-1">المُحصل</p>
+                        <p className="text-lg font-semibold text-green-400">{stats.paid.toLocaleString()} <span className="text-xs font-normal">ج.م</span></p>
                         </div>
-
-                        <div className="bg-white p-4 rounded-xl border border-gray-200">
-                          <label className="block text-sm font-bold text-slate-800 mb-2">تذكير استلام الشغل</label>
-                          <textarea 
-                            rows="4" 
-                            value={tempSettings.templates.delivery}
-                            onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, delivery: e.target.value } }))}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                          ></textarea>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl border border-gray-200">
-                          <label className="block text-sm font-bold text-slate-800 mb-2">تذكير بالمبلغ المتبقي</label>
-                          <textarea 
-                            rows="4" 
-                            value={tempSettings.templates.reminder}
-                            onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, reminder: e.target.value } }))}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                          ></textarea>
-                        </div>
-                      </div>
                     </div>
-                  )}
+                    </div>
+
+                    {/* Entries List (Admin View) */}
+                    <div className="space-y-4">
+                    {filteredEntries.length === 0 ? (
+                        <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+                        <FileText className="mx-auto h-12 w-12 text-gray-300" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">لا يوجد سجلات</h3>
+                        <p className="mt-1 text-sm text-gray-500">لم يتم العثور على أي عمليات مسجلة في هذا الشهر.</p>
+                        </div>
+                    ) : (
+                        filteredEntries.map((entry) => (
+                        <div key={entry.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow relative">
+                            {/* شريط اختيار الحالة (أدمن) */}
+                            <div className="absolute left-4 top-4 z-10 hidden sm:block">
+                                <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1">
+                                    <span className="text-xs text-gray-500 ml-2">حالة الطلب:</span>
+                                    <select 
+                                        value={entry.status || 'received'} 
+                                        onChange={(e) => handleStatusChange(entry.id, e.target.value)}
+                                        className="text-xs font-bold text-slate-800 bg-transparent outline-none focus:ring-0 cursor-pointer"
+                                    >
+                                        {JOB_STAGES.map(stage => (
+                                            <option key={stage.id} value={stage.id}>{stage.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 border-b border-gray-100 px-4 py-3 flex flex-wrap justify-between items-center gap-3 pr-4 sm:pr-4 sm:pl-48">
+                            <div className="flex items-center gap-4">
+                                <div className="flex flex-col">
+                                <span className="text-xs text-gray-500">الإجمالي</span>
+                                <span className="font-bold text-slate-700">{entry.totalAmount} ج.م</span>
+                                </div>
+                                <div className="flex flex-col border-r border-gray-300 pr-4">
+                                <span className="text-xs text-gray-500">المدفوع</span>
+                                <span className="font-bold text-green-600">{entry.paidAmount} ج.م</span>
+                                </div>
+                                <div className="flex flex-col border-r border-gray-300 pr-4">
+                                <span className="text-xs text-gray-500">الباقي</span>
+                                <span className={`font-bold ${entry.remainingAmount > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                                    {entry.remainingAmount} ج.م
+                                </span>
+                                </div>
+                            </div>
+                            
+                            {entry.remainingAmount > 0 ? (
+                                <button
+                                onClick={() => openPaymentModal(entry)}
+                                className="inline-flex items-center px-4 py-1.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 transition-colors"
+                                >
+                                <CreditCard className="ml-2 h-4 w-4" />
+                                سداد الباقي
+                                </button>
+                            ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <CheckCircle2 className="ml-1 h-3 w-3" /> خالص
+                                </span>
+                            )}
+                            </div>
+
+                            <div className="p-4 flex flex-col md:flex-row gap-6">
+                            <div className="flex-1 space-y-3">
+                                <div>
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <User className="h-5 w-5 text-amber-500" />
+                                    {entry.clientName}
+                                </h3>
+                                <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" /> {entry.timestamp}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                    <Phone className="h-4 w-4" /> 
+                                    <a href={`tel:${entry.clientPhone}`} className="hover:text-amber-600 hover:underline" dir="ltr">{entry.clientPhone}</a>
+                                    </span>
+                                </div>
+                                </div>
+
+                                <div className="bg-amber-50 rounded-lg p-3 border border-amber-100 relative">
+                                <p className="text-sm text-slate-800"><span className="font-semibold">المطلوب / ملاحظات:</span> {entry.notes || 'لا يوجد ملاحظات'}</p>
+                                </div>
+                                
+                                {/* قائمة تغيير الحالة تظهر في الموبايل بالأسفل بدلاً من الأعلى */}
+                                <div className="sm:hidden mt-2 bg-gray-50 rounded-lg p-2 border border-gray-100 flex items-center justify-between">
+                                    <span className="text-sm text-gray-600 font-medium">تحديث حالة الطلب:</span>
+                                    <select 
+                                        value={entry.status || 'received'} 
+                                        onChange={(e) => handleStatusChange(entry.id, e.target.value)}
+                                        className="text-sm font-bold text-slate-800 bg-white border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-amber-500 p-1"
+                                    >
+                                        {JOB_STAGES.map(stage => (
+                                            <option key={stage.id} value={stage.id}>{stage.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                            </div>
+
+                            <div className="flex flex-col justify-between md:items-end gap-4 md:w-64 md:border-r md:border-gray-100 md:pr-6">
+                                <div className="space-y-2 w-full">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-500 flex items-center gap-1"><FileText className="h-4 w-4"/> رقم الإيصال:</span>
+                                    <span className="font-medium text-slate-700">{entry.receiptNumber || '---'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-500 flex items-center gap-1"><Camera className="h-4 w-4"/> رقم الصورة:</span>
+                                    <span className="font-medium text-slate-700">{entry.photoNumber || '---'}</span>
+                                </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 w-full mt-4">
+                                <button
+                                    onClick={() => openWhatsAppModal(entry)}
+                                    className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#25D366] hover:bg-[#128C7E] transition-colors"
+                                    title="إرسال رسالة واتساب"
+                                >
+                                    <MessageCircle className="h-4 w-4 ml-1.5" />
+                                    واتساب
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(entry.id)}
+                                    className="inline-flex items-center p-2 border border-red-200 text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                                    title="حذف السجل"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        ))
+                    )}
+                    </div>
+                </main>
+
+                {/* Add New Entry Modal */}
+                {isAddModalOpen && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setIsAddModalOpen(false)}></div>
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                        <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+                        <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div className="flex justify-between items-center mb-5 border-b pb-3">
+                            <h3 className="text-lg leading-6 font-bold text-slate-900">إضافة عملية تصوير جديدة</h3>
+                            <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+                                <X className="h-6 w-6" />
+                            </button>
+                            </div>
+                            
+                            <form onSubmit={handleAddEntry} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
+                                <input required type="text" name="clientName" value={formData.clientName} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف *</label>
+                                <input required type="tel" dir="ltr" name="clientPhone" value={formData.clientPhone} onChange={handleInputChange} className="w-full text-right border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الإيصال</label>
+                                <input type="number" name="receiptNumber" value={formData.receiptNumber} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الصورة</label>
+                                <input type="text" name="photoNumber" value={formData.photoNumber} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+
+                                <div className="md:col-span-2 space-y-2">
+                                <div className="flex justify-between items-end">
+                                    <label className="block text-sm font-medium text-gray-700">المطلوب / ملاحظات</label>
+                                </div>
+                                
+                                {/* Services Quick Chips */}
+                                {settings.services.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                    {settings.services.map((srv, idx) => (
+                                        <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => handleAddServiceToNotes(srv)}
+                                        className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors border border-amber-200"
+                                        >
+                                        <Plus className="w-3 h-3 ml-1" />
+                                        {srv}
+                                        </button>
+                                    ))}
+                                    </div>
+                                )}
+                                
+                                <textarea name="notes" rows="2" value={formData.notes} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" placeholder="مثال: طباعة 10 صور..."></textarea>
+                                </div>
+
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">إجمالي الحساب (ج.م) *</label>
+                                <input required type="number" min="0" step="0.5" name="totalAmount" value={formData.totalAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+                                <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">المدفوع مقدماً (ج.م)</label>
+                                <input type="number" min="0" step="0.5" name="paidAmount" value={formData.paidAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500" />
+                                </div>
+                            </div>
+                            
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-4 flex justify-between items-center">
+                                <span className="text-sm font-medium text-slate-700">الباقي المتوقع:</span>
+                                <span className="text-lg font-bold text-amber-600">
+                                {Math.max(0, (parseFloat(formData.totalAmount) || 0) - (parseFloat(formData.paidAmount) || 0))} ج.م
+                                </span>
+                            </div>
+
+                            <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-3">
+                                <button type="submit" className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-amber-500 text-base font-medium text-slate-900 hover:bg-amber-400 focus:outline-none sm:w-auto sm:text-sm">
+                                حفظ العملية
+                                </button>
+                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                                إلغاء
+                                </button>
+                            </div>
+                            </form>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {/* WhatsApp Action Modal */}
+                {whatsappModal.isOpen && whatsappModal.entry && (
+                    <div className="fixed inset-0 z-[60] overflow-y-auto">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setWhatsappModal({ isOpen: false, entry: null })}></div>
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                        <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                        <div className="bg-[#25D366] px-4 py-4 flex justify-between items-center text-white">
+                            <div className="flex items-center gap-2">
+                            <MessageCircle className="w-6 h-6" />
+                            <h3 className="text-lg font-bold">إرسال رسالة واتساب</h3>
+                            </div>
+                            <button onClick={() => setWhatsappModal({ isOpen: false, entry: null })} className="text-white hover:text-gray-200">
+                            <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            <p className="text-sm text-gray-600 mb-4">اختر قالب الرسالة المناسب للعميل <span className="font-bold text-slate-800">{whatsappModal.entry.clientName}</span>:</p>
+                            
+                            <button onClick={() => handleSendWhatsApp('welcome')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
+                            <div>
+                                <span className="block font-bold text-slate-800">رسالة ترحيب + التفاصيل</span>
+                                <span className="text-xs text-gray-500">ترسل تفاصيل الإيصال كاملة</span>
+                            </div>
+                            <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
+                            </button>
+
+                            <button onClick={() => handleSendWhatsApp('deposit')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
+                            <div>
+                                <span className="block font-bold text-slate-800">تأكيد استلام عربون</span>
+                                <span className="text-xs text-gray-500">تأكيد المدفوع والمتبقي</span>
+                            </div>
+                            <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
+                            </button>
+
+                            <button onClick={() => handleSendWhatsApp('delivery')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
+                            <div>
+                                <span className="block font-bold text-slate-800">تذكير استلام الشغل</span>
+                                <span className="text-xs text-gray-500">إبلاغ العميل بانتهاء الطلب</span>
+                            </div>
+                            <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
+                            </button>
+
+                            {whatsappModal.entry.remainingAmount > 0 && (
+                            <button onClick={() => handleSendWhatsApp('reminder')} className="w-full text-right p-3 border border-gray-200 rounded-lg hover:border-[#25D366] hover:bg-green-50 transition-colors flex justify-between items-center group">
+                                <div>
+                                <span className="block font-bold text-slate-800">تذكير بالمبلغ المتبقي</span>
+                                <span className="text-xs text-gray-500">المبلغ المتبقي: {whatsappModal.entry.remainingAmount} ج.م</span>
+                                </div>
+                                <Send className="w-4 h-4 text-gray-400 group-hover:text-[#25D366]" />
+                            </button>
+                            )}
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {/* Settings Modal */}
+                {isSettingsOpen && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setIsSettingsOpen(false)}></div>
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                        <div className="inline-block align-bottom bg-gray-50 rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
+                        
+                        <div className="bg-white px-4 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                            <Settings className="w-6 h-6 text-slate-700" />
+                            <h3 className="text-lg font-bold text-slate-900">الإعدادات</h3>
+                            </div>
+                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-gray-500">
+                            <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row h-[70vh] md:h-[60vh]">
+                            {/* Tabs sidebar */}
+                            <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-l border-gray-200 flex md:flex-col overflow-x-auto md:overflow-y-auto">
+                            <button onClick={() => setSettingsTab('general')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'general' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                <Settings className="w-4 h-4" /> إعدادات الإيصال
+                            </button>
+                            <button onClick={() => setSettingsTab('services')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'services' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                <Tag className="w-4 h-4" /> قوالب الخدمات
+                            </button>
+                            <button onClick={() => setSettingsTab('whatsapp')} className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-r-2 ${settingsTab === 'whatsapp' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                <MessageCircle className="w-4 h-4" /> قوالب الواتساب
+                            </button>
+                            </div>
+
+                            {/* Tab content */}
+                            <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50">
+                            
+                            {/* General / Receipt Settings */}
+                            {settingsTab === 'general' && (
+                                <div className="space-y-6">
+                                <h4 className="font-bold text-lg text-slate-800">إعدادات الإيصالات والحماية</h4>
+                                
+                                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="block text-sm font-bold text-slate-800 mb-2">كلمة مرور الإدارة (لحماية التطبيق)</label>
+                                    <input 
+                                        type="text" 
+                                        value={tempSettings.adminPassword || ''}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, adminPassword: e.target.value }))}
+                                        className="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
+                                        placeholder="مثال: 1234"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">استخدم هذه الكلمة للدخول إلى شاشة الإدارة.</p>
+                                </div>
+
+                                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={tempSettings.autoReceipt}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, autoReceipt: e.target.checked }))}
+                                        className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300"
+                                    />
+                                    <span className="font-medium text-slate-700">تفعيل الترقيم التلقائي للإيصالات</span>
+                                    </label>
+                                    <p className="text-sm text-gray-500 mt-2">عند التفعيل، سيقوم النظام بوضع رقم إيصال متسلسل تلقائياً لكل عملية جديدة.</p>
+                                    
+                                    {tempSettings.autoReceipt && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">الرقم التالي ليكون بداية التسلسل:</label>
+                                        <input 
+                                        type="number" 
+                                        value={tempSettings.nextReceipt}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, nextReceipt: parseInt(e.target.value) || 0 }))}
+                                        className="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
+                                        />
+                                    </div>
+                                    )}
+                                </div>
+                                </div>
+                            )}
+
+                            {/* Services Templates */}
+                            {settingsTab === 'services' && (
+                                <div className="space-y-6">
+                                <h4 className="font-bold text-lg text-slate-800">قوالب الخدمات والمطلوب</h4>
+                                <p className="text-sm text-gray-500">أضف الخدمات الشائعة لتتمكن من إدراجها بضغطة زر عند تسجيل عملية جديدة.</p>
+                                
+                                <div className="flex gap-2">
+                                    <input 
+                                    type="text" 
+                                    value={newService}
+                                    onChange={(e) => setNewService(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && addServiceSetting()}
+                                    placeholder="اسم الخدمة (مثال: طباعة مج كبير)"
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
+                                    />
+                                    <button onClick={addServiceSetting} className="px-4 py-2 bg-amber-500 text-slate-900 rounded-lg font-medium hover:bg-amber-400">إضافة</button>
+                                </div>
+
+                                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                                    <ul className="divide-y divide-gray-200">
+                                    {tempSettings.services.map((srv, idx) => (
+                                        <li key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50">
+                                        <span className="text-slate-700">{srv}</span>
+                                        <button onClick={() => removeServiceSetting(idx)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        </li>
+                                    ))}
+                                    {tempSettings.services.length === 0 && (
+                                        <li className="p-4 text-center text-gray-500 text-sm">لا يوجد خدمات مضافة.</li>
+                                    )}
+                                    </ul>
+                                </div>
+                                </div>
+                            )}
+
+                            {/* WhatsApp Templates */}
+                            {settingsTab === 'whatsapp' && (
+                                <div className="space-y-6 pb-6">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="font-bold text-lg text-slate-800">قوالب الواتساب</h4>
+                                </div>
+                                <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-100">
+                                    <span className="font-bold">أكواد يمكنك استخدامها داخل الرسائل:</span><br/>
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{clientName}`}</span> الاسم، 
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{receiptNumber}`}</span> رقم الإيصال، 
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{totalAmount}`}</span> الإجمالي، 
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{paidAmount}`}</span> المدفوع، 
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{remainingAmount}`}</span> الباقي، 
+                                    <span dir="ltr" className="inline-block bg-white px-1 border border-blue-200 rounded mx-1">{`{notes}`}</span> المطلوب
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="block text-sm font-bold text-slate-800 mb-2">رسالة ترحيب + التفاصيل</label>
+                                    <textarea 
+                                        rows="5" 
+                                        value={tempSettings.templates.welcome}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, welcome: e.target.value } }))}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                    ></textarea>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="block text-sm font-bold text-slate-800 mb-2">تأكيد استلام عربون</label>
+                                    <textarea 
+                                        rows="4" 
+                                        value={tempSettings.templates.deposit}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, deposit: e.target.value } }))}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                    ></textarea>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="block text-sm font-bold text-slate-800 mb-2">تذكير استلام الشغل</label>
+                                    <textarea 
+                                        rows="4" 
+                                        value={tempSettings.templates.delivery}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, delivery: e.target.value } }))}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                    ></textarea>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <label className="block text-sm font-bold text-slate-800 mb-2">تذكير بالمبلغ المتبقي</label>
+                                    <textarea 
+                                        rows="4" 
+                                        value={tempSettings.templates.reminder}
+                                        onChange={(e) => setTempSettings(prev => ({ ...prev, templates: { ...prev.templates, reminder: e.target.value } }))}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                    ></textarea>
+                                    </div>
+                                </div>
+                                </div>
+                            )}
+
+                            </div>
+                        </div>
+
+                        {/* Settings Footer Action */}
+                        <div className="bg-white px-4 py-4 border-t border-gray-200 flex sm:flex-row-reverse gap-3">
+                            <button onClick={saveSettings} className="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-2 bg-amber-500 text-base font-medium text-slate-900 hover:bg-amber-400 sm:w-auto sm:text-sm gap-2">
+                            <Save className="w-4 h-4" /> حفظ الإعدادات
+                            </button>
+                            <button onClick={() => setIsSettingsOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
+                            إلغاء
+                            </button>
+                        </div>
+
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {/* Payment Modal */}
+                {paymentModal.isOpen && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 })}></div>
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                        <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                        <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div className="sm:flex sm:items-start">
+                            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10 ml-4">
+                                <DollarSign className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div className="mt-3 text-center sm:mt-0 sm:text-right w-full">
+                                <h3 className="text-lg leading-6 font-bold text-gray-900">سداد مبلغ لـ {paymentModal.clientName}</h3>
+                                <div className="mt-4">
+                                <p className="text-sm text-gray-500 mb-4">
+                                    إجمالي المبلغ المتبقي: <span className="font-bold text-red-500">{paymentModal.maxAmount} ج.م</span>
+                                </p>
+                                <form onSubmit={handlePaymentSubmit}>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ المراد سداده الآن (ج.م)</label>
+                                    <input type="number" min="0.5" step="0.5" max={paymentModal.maxAmount} required autoFocus value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 text-lg font-semibold focus:ring-green-500 focus:border-green-500 text-center" placeholder="0.00" />
+                                    <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-3">
+                                    <button type="submit" className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 sm:w-auto sm:text-sm">تأكيد السداد</button>
+                                    <button type="button" onClick={() => setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 })} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">إلغاء</button>
+                                    </div>
+                                </form>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                )}
 
                 </div>
-              </div>
+            );
+        }
 
-              {/* Settings Footer Action */}
-              <div className="bg-white px-4 py-4 border-t border-gray-200 flex sm:flex-row-reverse gap-3">
-                <button onClick={saveSettings} className="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-2 bg-amber-500 text-base font-medium text-slate-900 hover:bg-amber-400 sm:w-auto sm:text-sm gap-2">
-                  <Save className="w-4 h-4" /> حفظ الإعدادات
-                </button>
-                <button onClick={() => setIsSettingsOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
-                  إلغاء
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {paymentModal.isOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={() => setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 })}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-2xl text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10 ml-4">
-                    <DollarSign className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:text-right w-full">
-                    <h3 className="text-lg leading-6 font-bold text-gray-900">سداد مبلغ لـ {paymentModal.clientName}</h3>
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-4">
-                        إجمالي المبلغ المتبقي: <span className="font-bold text-red-500">{paymentModal.maxAmount} ج.م</span>
-                      </p>
-                      <form onSubmit={handlePaymentSubmit}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ المراد سداده الآن (ج.م)</label>
-                        <input type="number" min="0.5" step="0.5" max={paymentModal.maxAmount} required autoFocus value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-3 text-lg font-semibold focus:ring-green-500 focus:border-green-500 text-center" placeholder="0.00" />
-                        <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-3">
-                          <button type="submit" className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 sm:w-auto sm:text-sm">تأكيد السداد</button>
-                          <button type="button" onClick={() => setPaymentModal({ isOpen: false, entryId: null, clientName: '', maxAmount: 0 })} className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">إلغاء</button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
+        // تشغيل التطبيق في المتصفح
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
