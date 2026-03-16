@@ -138,6 +138,27 @@
                 }), { total: 0, paid: 0, remaining: 0 });
             }, [filteredEntries]);
 
+            // دالة فتح نافذة الإضافة وتهيئة البيانات
+            const openAddModal = () => {
+                setFormData({
+                    receiptNumber: settings.autoReceipt ? settings.nextReceipt.toString() : '',
+                    photoNumber: '',
+                    clientName: '',
+                    clientPhone: '',
+                    notes: '',
+                    totalAmount: '',
+                    paidAmount: ''
+                });
+                setIsAddModalOpen(true);
+            };
+
+            // دالة تسجيل الخروج والعودة لشاشة الدخول
+            const handleLogout = () => {
+                setCurrentScreen('login');
+                setClientEntry(null);
+                setLoginError('');
+            };
+
             const handleAddEntry = async (e) => {
                 e.preventDefault();
                 const total = parseFloat(formData.totalAmount) || 0;
@@ -214,7 +235,7 @@
                     <div className="min-h-screen bg-gray-50 pb-10">
                         <header className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg">
                             <div className="flex items-center gap-2"><Camera className="text-amber-500" /><span className="font-bold">مرحباً {clientEntry.clientName}</span></div>
-                            <button onClick={() => setCurrentScreen('login')} className="bg-slate-800 p-2 rounded-lg"><LogOut size={18} /></button>
+                            <button onClick={handleLogout} className="bg-slate-800 p-2 rounded-lg"><LogOut size={18} /></button>
                         </header>
                         <main className="max-w-xl mx-auto mt-8 px-4 space-y-6">
                             <div className="bg-white p-6 rounded-3xl shadow-sm">
@@ -256,7 +277,7 @@
                         <div className="flex items-center gap-2"><div className="bg-amber-500 p-1.5 rounded-lg"><Camera className="text-slate-900" size={20} /></div><h1 className="font-bold">الإدارة</h1></div>
                         <div className="flex gap-2">
                             <button onClick={() => setIsSettingsOpen(true)} className="p-2 bg-slate-800 rounded-lg"><Settings size={20}/></button>
-                            <button onClick={() => setCurrentScreen('login')} className="p-2 bg-red-500/20 text-red-400 rounded-lg"><LogOut size={20}/></button>
+                            <button onClick={handleLogout} className="p-2 bg-red-500/20 text-red-400 rounded-lg"><LogOut size={20}/></button>
                         </div>
                     </header>
 
@@ -313,7 +334,10 @@
                     {isAddModalOpen && (
                         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
                             <div className="bg-white w-full max-w-lg rounded-3xl p-6 space-y-4">
-                                <h3 className="font-bold border-b pb-2">إضافة عملية جديدة</h3>
+                                <div className="flex justify-between items-center border-b pb-2">
+                                    <h3 className="font-bold text-lg">إضافة عملية جديدة</h3>
+                                    <button onClick={() => setIsAddModalOpen(false)}><X size={24}/></button>
+                                </div>
                                 <form onSubmit={handleAddEntry} className="grid grid-cols-2 gap-3">
                                     <input className="p-3 border rounded-xl col-span-2" placeholder="اسم العميل" value={formData.clientName} onChange={v => setFormData({...formData, clientName: v.target.value})} required />
                                     <input className="p-3 border rounded-xl" placeholder="رقم الهاتف" type="tel" value={formData.clientPhone} onChange={v => setFormData({...formData, clientPhone: v.target.value})} required />
@@ -326,8 +350,7 @@
                                     </div>
                                     <input className="p-3 border rounded-xl" placeholder="الإجمالي" type="number" value={formData.totalAmount} onChange={v => setFormData({...formData, totalAmount: v.target.value})} required />
                                     <input className="p-3 border rounded-xl" placeholder="المدفوع" type="number" value={formData.paidAmount} onChange={v => setFormData({...formData, paidAmount: v.target.value})} />
-                                    <button type="submit" className="col-span-2 bg-amber-500 py-3 rounded-xl font-bold">حفظ الطلب</button>
-                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="col-span-2 text-gray-400 text-sm">إلغاء</button>
+                                    <button type="submit" className="col-span-2 bg-amber-500 py-3 rounded-xl font-bold shadow-lg shadow-amber-200">حفظ الطلب</button>
                                 </form>
                             </div>
                         </div>
