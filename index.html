@@ -51,7 +51,6 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         const { useState, useEffect, useMemo } = React;
 
@@ -73,34 +72,26 @@
 
         const DEFAULT_WA_TEMPLATES = {
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م",
-          invoice: "فاتورة من {studio} 🧾\nالعميل: {name}\nرقم الإيصال: {receipt}\nالمطلوب: {services}\nإجمالي الحساب: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\nشكراً لثقتكم بنا!",
+          invoice: "🧾 فاتورة إلكترونية - {studio}\n----------------------------------\n👤 العميل: {name}\n🧾 رقم الإيصال: {receipt}\n📅 التاريخ: {date}\n----------------------------------\n🛠️ الخدمات:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م\n🔴 الباقي: {remaining} ج.م\n----------------------------------\nشكراً لثقتكم بنا في {studio} 📸✨",
           reminder: "مرحباً أ. {name} 🌟. نود تذكيركم بأن هناك مبلغ متبقي لحسابكم في {studio} بقيمة {remaining} ج.م. \nرقم الإيصال: {receipt}.",
-          ready: "أهلاً أ. {name} 🎉. الطلب الخاص بك (الخدمة خلصت) جاهز للاستلام في {studio}! \nباقي الحساب: {remaining} ج.م. نورتنا وشرفتنا!",
+          ready: "أهلاً أ. {name} 🎉. الطلب الخاص بك جاهز للاستلام في {studio}! \nباقي الحساب: {remaining} ج.م. نورتنا وشرفتنا!",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!"
         };
 
-        let parsedConfig;
-        try {
-          parsedConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        } catch (e) {
-          parsedConfig = null;
-        }
-
-        const firebaseConfig = parsedConfig || {
-        apiKey: "AIzaSyCI0L2fO4_bdltYF7Hddjcxa6seSDbrMwc",
-        authDomain: "studio-noot.firebaseapp.com",
-       projectId: "studio-noot ",
-       storageBucket: "studio-noot.firebasestorage.app",
-       messagingSenderId: "376391287753",
-       appId: "1:376391287753:web:58219ac850bde7e2a79e18"
+        const firebaseConfig = {
+  apiKey: "AIzaSyCI0L2fO4_bdltYF7Hddjcxa6seSDbrMwc",
+  authDomain: "studio-noot.firebaseapp.com",
+  projectId: "studio-noot",
+  storageBucket: "studio-noot.firebasestorage.app",
+  messagingSenderId: "376391287753",
+  appId: "1:376391287753:web:58219ac850bde7e2a79e18"
 };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         function App() {
-          // --- State Management ---
           const [activeTab, setActiveTab] = useState('dashboard');
           const [user, setUser] = useState(null);
           const [authReady, setAuthReady] = useState(false);
@@ -117,28 +108,16 @@
             studioLogo: ""
           });
 
-          // Firebase Auth Init
           useEffect(() => {
             const initAuth = async () => {
               try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                  try {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                  } catch (tokenError) {
-                    console.warn("Token mismatch, falling back to anonymous auth...", tokenError);
-                    await signInAnonymously(auth);
-                  }
-                } else {
-                  await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
               } catch (error) {
-                console.error("Auth Error:", error);
-                setAuthError("تنبيه: يوجد مشكلة في الاتصال بقاعدة البيانات (يرجى التأكد من تفعيل Anonymous Auth). قد لا يتم حفظ التعديلات.");
+                setAuthError("تنبيه: يوجد مشكلة في الاتصال بقاعدة البيانات.");
                 setAuthReady(true);
               }
             };
             initAuth();
-
             const unsubscribe = onAuthStateChanged(auth, (u) => {
               setUser(u);
               setAuthReady(true);
@@ -146,55 +125,44 @@
             return () => unsubscribe();
           }, []);
 
-          // Firebase Data Subscriptions
           useEffect(() => {
             if (!user) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-            const basePath = `artifacts/${appId}/users/${user.uid}`;
+            const appId = 'studio-marakby';
+            const basePath = `artifacts/${appId}/public/data`;
 
-            // Fetch initial settings
             const fetchSettings = async () => {
               const docSnap = await getDoc(doc(db, basePath, 'settings', 'main'));
-              if (docSnap.exists()) {
-                let data = docSnap.data();
-                if (data.services && data.services.length > 0 && typeof data.services[0] === 'string') {
-                    data.services = data.services.map(s => ({ name: s, price: 0 }));
-                }
-                setSettings(data);
-              }
+              if (docSnap.exists()) setSettings(docSnap.data());
             };
             fetchSettings();
 
-            // Listen to transactions
             const unsubTxns = onSnapshot(collection(db, basePath, 'transactions'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
               data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
               setTransactions(data);
-            }, (err) => console.error(err));
+            });
 
-            // Listen to expenses
             const unsubExps = onSnapshot(collection(db, basePath, 'expenses'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
               data.sort((a, b) => new Date(b.date) - new Date(a.date));
               setExpenses(data);
-            }, (err) => console.error(err));
+            });
 
             return () => { unsubTxns(); unsubExps(); };
           }, [user]);
 
-          // Debounced Settings Save
           useEffect(() => {
             if (!user) return;
             const timer = setTimeout(() => {
-              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-              setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/settings`, 'main'), settings);
+              const appId = 'studio-marakby';
+              setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), settings);
             }, 1500);
             return () => clearTimeout(timer);
           }, [settings, user]);
 
-          // --- Helper Functions ---
           const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
           const formatDate = (dateStr) => new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+          const formatDateOnly = (dateStr) => new Date(dateStr).toLocaleDateString('ar-EG');
           
           const generateWA_Message = (templateKey, txn) => {
             let msg = settings.waTemplates[templateKey] || "";
@@ -205,21 +173,17 @@
             msg = msg.replace(/{remaining}/g, txn.remaining || 0);
             msg = msg.replace(/{services}/g, txn.requirements || 'خدمات تصوير');
             msg = msg.replace(/{studio}/g, settings.studioName || 'الاستوديو');
+            msg = msg.replace(/{date}/g, formatDateOnly(txn.dateTime));
             return msg;
           };
 
           const openWhatsApp = (phone, msg) => {
             let formattedPhone = phone.trim();
-            if (formattedPhone.startsWith('0')) {
-              formattedPhone = '2' + formattedPhone;
-            } else if (!formattedPhone.startsWith('2')) {
-               formattedPhone = '20' + formattedPhone;
-            }
+            if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
+            else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
             const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
           };
-
-          // --- Main Components ---
 
           const Navigation = () => {
             const navItems = [
@@ -228,61 +192,23 @@
               { id: 'reports', icon: <i className="ph ph-calendar-blank text-xl"></i>, label: 'التقارير' },
               { id: 'settings', icon: <i className="ph ph-gear text-xl"></i>, label: 'الإعدادات' },
             ];
-
             return (
               <nav className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 text-white sticky top-0 z-50 shadow-2xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between items-center h-20">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden">
-                        {settings.studioLogo ? (
-                          <img src={settings.studioLogo} alt="Logo" className="w-full h-full object-cover" />
-                        ) : (
-                          <i className="ph ph-camera text-slate-900 text-3xl"></i>
-                        )}
+                        {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}
                       </div>
                       <div className="flex flex-col">
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>
-                          {settings.studioName || 'ستوديو المراكبى'}
-                        </h1>
-                        <span className="text-[10px] sm:text-xs text-slate-400 font-medium tracking-wider">
-                          نظام الإدارة الذكي لستوديوهات التصوير
-                        </span>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1>
+                        <span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span>
                       </div>
                     </div>
-
                     <div className="hidden lg:flex items-center space-x-1 space-x-reverse bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700/50">
                       {navItems.map(btn => (
-                        <button
-                          key={btn.id}
-                          onClick={() => setActiveTab(btn.id)}
-                          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-                            activeTab === btn.id 
-                              ? 'bg-yellow-500 text-slate-900 shadow-md transform scale-100' 
-                              : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                          }`}
-                        >
-                          {btn.icon}
-                          {btn.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="lg:hidden pb-4 pt-1 overflow-x-auto hide-scrollbar">
-                    <div className="flex items-center gap-2 min-w-max px-1">
-                      {navItems.map(btn => (
-                        <button
-                          key={btn.id}
-                          onClick={() => setActiveTab(btn.id)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                            activeTab === btn.id 
-                              ? 'bg-yellow-500 text-slate-900 shadow-md' 
-                              : 'bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:text-white'
-                          }`}
-                        >
-                          {btn.icon}
-                          {btn.label}
+                        <button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'}`}>
+                          {btn.icon}{btn.label}
                         </button>
                       ))}
                     </div>
@@ -294,10 +220,7 @@
 
           const DashboardTab = () => {
             const [showAddModal, setShowAddModal] = useState(false);
-            const [formData, setFormData] = useState({
-              clientName: '', phone: '', photoNo: '', requirements: '', total: '', paid: ''
-            });
-
+            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: '', requirements: '', total: '', paid: '' });
             const [query, setQuery] = useState('');
             const [payModal, setPayModal] = useState(null);
 
@@ -313,7 +236,6 @@
               e.preventDefault();
               const total = parseFloat(formData.total) || 0;
               const paid = parseFloat(formData.paid) || 0;
-              
               const newTxn = {
                 id: Date.now().toString(),
                 receiptNo: settings.nextReceiptNo || 1000,
@@ -328,108 +250,47 @@
                 month: new Date().getMonth() + 1,
                 year: new Date().getFullYear()
               };
-
-              if (user) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, newTxn.id), newTxn);
-              }
-
+              await setDoc(doc(db, `artifacts/studio-marakby/public/data/transactions`, newTxn.id), newTxn);
               setSettings({...settings, nextReceiptNo: (settings.nextReceiptNo || 1000) + 1});
-              setFormData({clientName: '', phone: '', photoNo: '', requirements: '', total: '', paid: ''});
+              setFormData({ clientName: '', phone: '', photoNo: '', requirements: '', total: '', paid: '' });
               setShowAddModal(false);
             };
 
             const handleDelete = async (id) => {
               if(window.confirm('هل أنت متأكد من حذف هذا الإيصال؟')) {
-                if (user) {
-                  const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                  await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, id));
-                }
+                await deleteDoc(doc(db, `artifacts/studio-marakby/public/data/transactions`, id));
               }
             };
 
-            const filteredTxns = query ? transactions.filter(t => 
-              t.clientName.includes(query) || 
-              t.phone.includes(query) || 
-              t.receiptNo.toString().includes(query) || 
-              (t.photoNo && t.photoNo.includes(query))
-            ) : [];
-
-            const handlePaySubmit = async (e) => {
-              e.preventDefault();
-              const amountToPay = parseFloat(e.target.amount.value);
-              
-              const updatedTxn = { 
-                ...payModal, 
-                paid: payModal.paid + amountToPay, 
-                remaining: payModal.total - (payModal.paid + amountToPay) 
-              };
-
-              if (user) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, updatedTxn.id), updatedTxn);
-              }
-
-              setPayModal(null);
-            };
-
-            const todayStr = new Date().toDateString();
-            const todaysTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === todayStr);
+            const filteredTxns = query ? transactions.filter(t => t.clientName.includes(query) || t.phone.includes(query) || t.receiptNo.toString().includes(query)) : [];
+            const todaysTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
 
             return (
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <button 
-                    onClick={() => setShowAddModal(true)} 
-                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
-                  >
+                  <button onClick={() => setShowAddModal(true)} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
                     <i className="ph ph-plus-circle text-2xl"></i> إضافة عملية جديدة
                   </button>
-
                   <div className="relative w-full md:w-1/2">
                     <i className="ph ph-magnifying-glass absolute right-4 top-4 text-slate-400 text-xl"></i>
-                    <input 
-                      type="text" 
-                      placeholder="ابحث بالاسم، رقم الهاتف، رقم الإيصال..." 
-                      className="w-full p-3 pr-10 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none text-lg"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
+                    <input type="text" placeholder="ابحث بالاسم، رقم الهاتف، رقم الإيصال..." className="w-full p-3 pr-10 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none text-lg" value={query} onChange={(e) => setQuery(e.target.value)} />
                   </div>
                 </div>
 
                 {query && (
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <h3 className="text-lg font-bold text-slate-700">نتائج البحث ({filteredTxns.length})</h3>
-                    {filteredTxns.length === 0 ? (
-                      <p className="text-slate-500">لا توجد نتائج مطابقة.</p>
-                    ) : (
-                      filteredTxns.map(txn => (
-                        <TransactionCard 
-                          key={txn.id} 
-                          txn={txn} 
-                          onDelete={handleDelete}
-                          onPayRemaining={setPayModal}
-                        />
-                      ))
-                    )}
+                    <h3 className="text-lg font-bold text-slate-700 border-b pb-2">نتائج البحث ({filteredTxns.length})</h3>
+                    {filteredTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onPayRemaining={setPayModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn))} />)}
                   </div>
                 )}
 
                 {!query && (
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 border-b pb-4">
                       <i className="ph ph-files text-blue-500 text-2xl"></i> عمليات اليوم ({todaysTxns.length})
                     </h2>
                     <div className="space-y-4">
-                      {todaysTxns.length === 0 ? (
-                        <div className="text-center p-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 flex flex-col items-center gap-2">
-                          <i className="ph ph-files text-5xl text-slate-300"></i>
-                          <p>لا توجد عمليات مسجلة اليوم حتى الآن.</p>
-                        </div>
-                      ) : todaysTxns.map(txn => (
-                        <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onPayRemaining={setPayModal} />
-                      ))}
+                      {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onPayRemaining={setPayModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn))} />)}
                     </div>
                   </div>
                 )}
@@ -437,95 +298,59 @@
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                      <button onClick={() => setShowAddModal(false)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                        <i className="ph ph-x text-2xl"></i>
-                      </button>
-                      
-                      <h2 className="text-2xl font-black mb-6 flex items-center gap-2 text-slate-800 border-b pb-4">
-                        <i className="ph ph-plus-circle text-blue-500 text-3xl"></i> إضافة عملية جديدة
-                      </h2>
-                      
+                      <button onClick={() => setShowAddModal(false)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500"><i className="ph ph-x text-2xl"></i></button>
+                      <h2 className="text-2xl font-black mb-6 text-slate-800 border-b pb-4">إضافة عملية جديدة</h2>
                       <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="bg-blue-50 p-4 rounded-xl flex justify-between items-center text-sm font-bold text-blue-800 border border-blue-100">
-                          <span>رقم الإيصال التلقائي:</span>
-                          <span className="text-xl">#{settings.nextReceiptNo || 1000}</span>
+                          <span>رقم الإيصال التلقائي:</span><span className="text-xl">#{settings.nextReceiptNo}</span>
                         </div>
-                        
-                        <input type="text" placeholder="اسم العميل" required className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                          value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
-                        
+                        <input type="text" placeholder="اسم العميل" required className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
                         <div className="flex gap-4">
-                          <input type="tel" placeholder="رقم الهاتف" required className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                            value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                          <input type="text" placeholder="رقم الصورة" className="w-1/2 p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                            value={formData.photoNo} onChange={e => setFormData({...formData, photoNo: e.target.value})} />
+                          <input type="tel" placeholder="رقم الهاتف" required className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                          <input type="text" placeholder="رقم الصورة" className="w-1/2 p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none" value={formData.photoNo} onChange={e => setFormData({...formData, photoNo: e.target.value})} />
                         </div>
-
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <label className="text-sm font-bold text-slate-700 mb-3 block">قوالب الخدمات السريعة (اضغط للإضافة):</label>
+                        <div className="bg-slate-50 p-4 rounded-xl">
+                          <label className="text-sm font-bold text-slate-700 mb-3 block">الخدمات السريعة:</label>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            {settings.services.map((srv, idx) => {
-                              const srvObj = typeof srv === 'string' ? {name: srv, price: 0} : srv;
-                              return (
-                              <span key={idx} onClick={() => handleAddService(srvObj)}
-                                className="bg-white text-blue-700 text-sm px-3 py-1.5 rounded-full cursor-pointer hover:bg-blue-600 hover:text-white border border-blue-200 transition-colors shadow-sm flex items-center gap-1">
-                                {srvObj.name}
-                                {srvObj.price > 0 && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md opacity-90">{srvObj.price} ج.م</span>}
+                            {settings.services.map((srv, idx) => (
+                              <span key={idx} onClick={() => handleAddService(srv)} className="bg-white text-blue-700 text-sm px-3 py-1.5 rounded-full cursor-pointer hover:bg-blue-600 hover:text-white border border-blue-200 transition-all shadow-sm">
+                                {srv.name} <span className="text-xs opacity-70">({srv.price} ج.م)</span>
                               </span>
-                            )})}
+                            ))}
                           </div>
-                          <textarea placeholder="ملاحظات أو المطلوب بالتفصيل..." required rows="3" className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                            value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
+                          <textarea placeholder="المطلوب بالتفصيل..." required rows="3" className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <label className="text-sm font-bold text-slate-600 block mb-2">إجمالي المبلغ</label>
-                            <input type="number" required min="0" className="w-full p-3 border border-slate-300 rounded-lg outline-none text-xl font-black text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                              value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
-                          </div>
-                          <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                            <label className="text-sm font-bold text-green-800 block mb-2">المدفوع الان</label>
-                            <input type="number" required min="0" className="w-full p-3 border border-green-300 rounded-lg outline-none text-xl font-black text-green-700 focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                              value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} />
-                          </div>
+                          <input type="number" placeholder="الإجمالي" required className="p-4 border-2 border-slate-200 rounded-xl outline-none" value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
+                          <input type="number" placeholder="المدفوع" required className="p-4 border-2 border-slate-200 rounded-xl outline-none" value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} />
                         </div>
-                        
-                        <div className={`p-4 rounded-xl text-center font-black text-xl transition-colors ${
-                          (formData.total - formData.paid) > 0 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'
-                        }`}>
+                        <div className={`p-4 rounded-xl text-center font-black text-xl ${(formData.total - formData.paid) > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                           الباقي: {formatCurrency((formData.total || 0) - (formData.paid || 0))}
                         </div>
-
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg shadow-lg shadow-blue-500/30">
-                          <i className="ph ph-floppy-disk text-2xl"></i> حفظ الإيصال
-                        </button>
+                        <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg"><i className="ph ph-floppy-disk text-2xl ml-2"></i>حفظ الإيصال</button>
                       </form>
                     </div>
                   </div>
                 )}
-
+                
                 {payModal && (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-md relative">
-                      <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                        <i className="ph ph-x text-2xl"></i>
-                      </button>
-                      <h3 className="text-2xl font-black mb-4 text-slate-800 border-b pb-4">سداد دفعة / باقي الحساب</h3>
-                      <div className="mb-6 bg-slate-50 p-4 rounded-xl text-base space-y-3 border border-slate-200">
-                        <p>العميل: <b className="text-lg">{payModal.clientName}</b></p>
-                        <p>الإجمالي: <b>{payModal.total} ج.م</b></p>
-                        <p className="text-red-600 font-bold bg-red-50 p-2 rounded-lg inline-block">الباقي المستحق: {payModal.remaining} ج.م</p>
+                      <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500"><i className="ph ph-x text-2xl"></i></button>
+                      <h3 className="text-2xl font-black mb-4 border-b pb-4">سداد باقي الحساب</h3>
+                      <div className="mb-6 bg-slate-50 p-4 rounded-xl space-y-2">
+                        <p>العميل: <b>{payModal.clientName}</b></p>
+                        <p className="text-red-600 font-bold">الباقي: {payModal.remaining} ج.م</p>
                       </div>
-                      <form onSubmit={handlePaySubmit} className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">المبلغ المراد سداده الآن:</label>
-                          <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining}
-                            className="w-full p-4 border-2 border-slate-200 rounded-xl text-2xl font-black text-center outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"/>
-                        </div>
-                        <button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl text-lg shadow-lg shadow-green-500/30">
-                          تأكيد التحصيل
-                        </button>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const amount = parseFloat(e.target.amount.value);
+                        const updated = { ...payModal, paid: payModal.paid + amount, remaining: payModal.total - (payModal.paid + amount) };
+                        await setDoc(doc(db, `artifacts/studio-marakby/public/data/transactions`, updated.id), updated);
+                        setPayModal(null);
+                      }} className="space-y-4">
+                        <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-4 border-2 border-slate-200 rounded-xl text-2xl font-black text-center outline-none focus:border-green-500"/>
+                        <button type="submit" className="w-full bg-green-500 text-white font-black py-4 rounded-xl">تأكيد التحصيل</button>
                       </form>
                     </div>
                   </div>
@@ -534,222 +359,80 @@
             );
           };
 
-          const TransactionCard = ({ txn, onDelete, onPayRemaining }) => {
+          const TransactionCard = ({ txn, onDelete, onPayRemaining, sendInvoice }) => {
             const [showWaMenu, setShowWaMenu] = useState(false);
-            const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-
             return (
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 justify-between hover:shadow-md transition-shadow relative">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 justify-between hover:shadow-md transition-all">
                 <div className="flex-1 space-y-2">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <i className="ph ph-user-circle text-slate-400 text-2xl"></i> {txn.clientName}
-                    </h3>
-                    <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md font-mono border border-slate-200">
-                      إيصال #{txn.receiptNo}
-                    </span>
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><i className="ph ph-user-circle text-slate-400 text-2xl"></i> {txn.clientName}</h3>
+                    <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded border border-slate-200 font-mono">#{txn.receiptNo}</span>
                   </div>
-                  
-                  <div className="text-sm text-slate-500 grid grid-cols-2 gap-2">
+                  <div className="text-sm text-slate-500 flex flex-wrap gap-x-4">
                     <span>📞 {txn.phone}</span>
                     <span>⏱️ {formatDate(txn.dateTime)}</span>
-                    {txn.photoNo && <span>🖼️ صورة رقم: {txn.photoNo}</span>}
                   </div>
-                  
-                  <div className="bg-slate-50 p-2 rounded text-sm text-slate-700 border border-slate-100">
-                    <strong>المطلوب:</strong> {txn.requirements}
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-500 mb-2">تسليم العمل للعميل:</h4>
-                    {txn.photoUrl ? (
-                        <div className="flex flex-wrap items-center gap-3 bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-                            <img src={txn.photoUrl} alt="صورة العميل" className="w-12 h-12 object-cover rounded-md border border-slate-200" />
-                            <div className="flex-1 min-w-[150px]">
-                                <button onClick={() => {
-                                    const msg = `أهلاً أ. ${txn.clientName} 🎉\nالصور الخاصة بك جاهزة! يمكنك تحميلها بجودة عالية من الرابط التالي:\n${txn.photoUrl}\n\nنتمنى أن تنال إعجابكم، وشرفتنا في ${settings.studioName || 'الاستوديو'} 📸`;
-                                    openWhatsApp(txn.phone, msg);
-                                }} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-sm">
-                                    <i className="ph ph-whatsapp-logo text-base"></i> إرسال رابط الصورة للعميل
-                                </button>
-                            </div>
-                            <button onClick={async () => {
-                                 if(window.confirm('هل أنت متأكد من حذف هذه الصورة من السحابة؟')) {
-                                     try {
-                                         if (txn.photoStoragePath) {
-                                             const fileRef = ref(storage, txn.photoStoragePath);
-                                             await deleteObject(fileRef);
-                                         }
-                                         const updatedTxn = { ...txn };
-                                         delete updatedTxn.photoUrl;
-                                         delete updatedTxn.photoStoragePath;
-                                         const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                                         await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, txn.id), updatedTxn);
-                                     } catch (e) { console.error(e); }
-                                 }
-                            }} className="text-red-500 hover:bg-red-100 p-2 rounded-lg transition-colors" title="حذف الصورة">
-                                <i className="ph ph-trash text-lg"></i>
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                id={`upload-${txn.id}`}
-                                className="hidden"
-                                onChange={async (e) => {
-                                    const file = e.target.files[0];
-                                    if(!file || !user) return;
-                                    setIsUploadingPhoto(true);
-                                    try {
-                                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                                        const path = `artifacts/${appId}/users/${user.uid}/photos/${txn.id}_${file.name}`;
-                                        const storageRef = ref(storage, path);
-                                        await uploadBytes(storageRef, file);
-                                        const url = await getDownloadURL(storageRef);
-                                        
-                                        const updatedTxn = { ...txn, photoUrl: url, photoStoragePath: path };
-                                        await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, txn.id), updatedTxn);
-                                    } catch(err) {
-                                        console.error(err);
-                                        alert('عذراً، حدث خطأ أثناء رفع الصورة. يرجى التأكد من اتصالك بالإنترنت.');
-                                    } finally {
-                                        setIsUploadingPhoto(false);
-                                    }
-                                }} 
-                            />
-                            <label htmlFor={`upload-${txn.id}`} className={`cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center w-full sm:w-auto gap-2 transition-colors border border-slate-200 ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
-                                {isUploadingPhoto ? <i className="ph ph-spinner animate-spin text-lg"></i> : <i className="ph ph-upload-simple text-lg text-blue-600"></i>}
-                                {isUploadingPhoto ? 'جاري الرفع للسحابة...' : 'رفع صورة (بعد الانتهاء من العمل)'}
-                            </label>
-                        </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-4 pt-2 border-t mt-2">
-                    <span className="text-sm">الإجمالي: <b className="text-slate-800">{txn.total}</b></span>
-                    <span className="text-sm">المدفوع: <b className="text-green-600">{txn.paid}</b></span>
-                    <span className="text-sm">الباقي: <b className={txn.remaining > 0 ? "text-red-500" : "text-green-500"}>{txn.remaining}</b></span>
+                  <div className="bg-slate-50 p-2 rounded text-sm text-slate-700 border border-slate-100"><strong>المطلوب:</strong> {txn.requirements}</div>
+                  <div className="flex gap-4 pt-2 border-t mt-2 text-sm">
+                    <span>الإجمالي: <b>{txn.total}</b></span>
+                    <span className="text-green-600">المدفوع: <b>{txn.paid}</b></span>
+                    <span className={txn.remaining > 0 ? "text-red-500" : "text-green-500"}>الباقي: <b>{txn.remaining}</b></span>
                   </div>
                 </div>
-
-                <div className="flex sm:flex-col gap-2 justify-end sm:justify-start min-w-[140px]">
+                <div className="flex sm:flex-col gap-2 min-w-[140px]">
+                  <button onClick={sendInvoice} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
+                    <i className="ph ph-receipt text-xl"></i> إرسال الفاتورة
+                  </button>
                   <div className="relative w-full">
-                    <button onClick={() => setShowWaMenu(!showWaMenu)} 
-                      className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-colors">
+                    <button onClick={() => setShowWaMenu(!showWaMenu)} className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all">
                       <i className="ph ph-whatsapp-logo text-xl"></i> واتساب
                     </button>
                     {showWaMenu && (
                       <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-10 p-1 flex flex-col">
                         <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('welcome', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">👋 رسالة ترحيب</button>
-                        <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('invoice', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">🧾 تفاصيل الفاتورة</button>
-                        <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('ready', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">🎉 الشغل خلص (استلام)</button>
+                        <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('ready', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">🎉 الشغل خلص</button>
                         <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('reminder', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">⚠️ تذكير بالباقي</button>
-                        <button onClick={() => {openWhatsApp(txn.phone, generateWA_Message('deposit', txn)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm hover:bg-slate-50 rounded">💸 تأكيد العربون</button>
                       </div>
                     )}
                   </div>
-
-                  {txn.remaining > 0 && onPayRemaining && (
-                    <button onClick={() => onPayRemaining(txn)} 
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors">
-                      <i className="ph ph-credit-card text-xl"></i> سداد الباقي
-                    </button>
-                  )}
-
-                  <button onClick={() => onDelete(txn.id)} 
-                    className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors sm:mt-auto">
-                    <i className="ph ph-trash text-xl"></i> حذف
-                  </button>
+                  {txn.remaining > 0 && <button onClick={() => onPayRemaining(txn)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm"><i className="ph ph-credit-card text-xl"></i> سداد الباقي</button>}
+                  <button onClick={() => onDelete(txn.id)} className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all sm:mt-auto"><i className="ph ph-trash text-xl"></i> حذف</button>
                 </div>
               </div>
             );
           };
 
           const ExpensesTab = () => {
-            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0] || '', notes: '' });
-
+            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '' });
             const handleAddExpense = async (e) => {
               e.preventDefault();
-              const newExp = {
-                id: Date.now().toString(),
-                date: new Date().toISOString(),
-                amount: parseFloat(expData.amount),
-                category: expData.category,
-                notes: expData.notes,
-                month: new Date().getMonth() + 1,
-                year: new Date().getFullYear()
-              };
-              
-              if (user) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/expenses`, newExp.id), newExp);
-              }
-              
+              const newExp = { id: Date.now().toString(), date: new Date().toISOString(), amount: parseFloat(expData.amount), category: expData.category, notes: expData.notes, month: new Date().getMonth() + 1, year: new Date().getFullYear() };
+              await setDoc(doc(db, `artifacts/studio-marakby/public/data/expenses`, newExp.id), newExp);
               setExpData({ amount: '', category: settings.expenseCategories[0], notes: '' });
             };
-
-            const handleDeleteExpense = async (id) => {
-              if (user) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/expenses`, id));
-              }
-            };
-
             const todaysExpenses = expenses.filter(e => new Date(e.date).toDateString() === new Date().toDateString());
-            const todayTotal = todaysExpenses.reduce((sum, e) => sum + e.amount, 0);
-
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
-                    <i className="ph ph-money text-red-500 text-2xl"></i> تسجيل مصروفات خامات وطباعة
-                  </h2>
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 border-b pb-4"><i className="ph ph-money text-red-500"></i> تسجيل مصروفات</h2>
                   <form onSubmit={handleAddExpense} className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-slate-600 mb-1">المبلغ (ج.م)</label>
-                      <input type="number" required min="1" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-lg font-bold text-red-600"/>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-slate-600 mb-1">بند المصروف</label>
-                      <select value={expData.category} onChange={e => setExpData({...expData, category: e.target.value})}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none">
-                        {settings.expenseCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-slate-600 mb-1">ملاحظات / تفاصيل</label>
-                      <input type="text" value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="مثال: ورق طباعة كوداك..."/>
-                    </div>
-                    <button type="submit" className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg">
-                      إضافة المصروف
-                    </button>
+                    <input type="number" required placeholder="المبلغ" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})} className="w-full p-3 border rounded-lg outline-none text-red-600 font-bold" />
+                    <select value={expData.category} onChange={e => setExpData({...expData, category: e.target.value})} className="w-full p-3 border rounded-lg outline-none">
+                      {settings.expenseCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}
+                    </select>
+                    <input type="text" placeholder="ملاحظات" value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-3 border rounded-lg outline-none" />
+                    <button type="submit" className="w-full bg-red-500 text-white font-bold py-3 rounded-lg shadow-md hover:bg-red-600 transition-all">إضافة المصروف</button>
                   </form>
                 </div>
-
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-800">
-                    <span>مصروفات اليوم</span>
-                    <span className="text-red-500 bg-red-50 px-3 py-1 rounded-lg text-sm border border-red-100">الإجمالي: {formatCurrency(todayTotal)}</span>
-                  </h2>
+                  <h2 className="text-xl font-bold mb-4 flex justify-between text-slate-800 border-b pb-4"><span>مصروفات اليوم</span><span className="text-red-500 text-sm">{formatCurrency(todaysExpenses.reduce((s,e)=>s+e.amount,0))}</span></h2>
                   <div className="space-y-3">
-                    {todaysExpenses.length === 0 ? <p className="text-slate-500">لم يتم تسجيل مصروفات اليوم.</p> :
-                      todaysExpenses.map(exp => (
-                        <div key={exp.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                          <div>
-                            <p className="font-bold text-slate-800">{exp.category} <span className="text-red-500 mx-2">{exp.amount} ج.م</span></p>
-                            {exp.notes && <p className="text-xs text-slate-500">{exp.notes}</p>}
-                            <p className="text-xs text-slate-400 mt-1">{formatDate(exp.date)}</p>
-                          </div>
-                          <button onClick={() => handleDeleteExpense(exp.id)} className="text-slate-400 hover:text-red-500 p-2">
-                            <i className="ph ph-trash text-xl"></i>
-                          </button>
-                        </div>
-                      ))
-                    }
+                    {todaysExpenses.map(exp => (
+                      <div key={exp.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div><p className="font-bold">{exp.category} <span className="text-red-500 mr-2">{exp.amount} ج.م</span></p><p className="text-xs text-slate-500">{exp.notes}</p></div>
+                        <button onClick={async () => await deleteDoc(doc(db, `artifacts/studio-marakby/public/data/expenses`, exp.id))} className="text-slate-400 hover:text-red-500"><i className="ph ph-trash text-lg"></i></button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -761,115 +444,63 @@
             const currentYear = new Date().getFullYear();
             const [filter, setFilter] = useState({ month: currentMonth, year: currentYear });
             const [payModal, setPayModal] = useState(null);
-
             const filteredTxns = transactions.filter(t => t.month == filter.month && t.year == filter.year);
             const filteredExp = expenses.filter(e => e.month == filter.month && e.year == filter.year);
-
             const stats = useMemo(() => {
-              const totalExpected = filteredTxns.reduce((sum, t) => sum + t.total, 0);
               const totalCollected = filteredTxns.reduce((sum, t) => sum + t.paid, 0);
-              const totalDebts = filteredTxns.reduce((sum, t) => sum + t.remaining, 0);
               const totalExpenses = filteredExp.reduce((sum, e) => sum + e.amount, 0);
-              const netProfit = totalCollected - totalExpenses; 
-              return { totalExpected, totalCollected, totalDebts, totalExpenses, netProfit };
+              const totalDebts = filteredTxns.reduce((sum, t) => sum + t.remaining, 0);
+              return { totalCollected, totalExpenses, totalDebts, net: totalCollected - totalExpenses };
             }, [filteredTxns, filteredExp]);
-
-            const handlePaySubmit = async (e) => {
-              e.preventDefault();
-              const amountToPay = parseFloat(e.target.amount.value);
-              
-              const updatedTxn = { 
-                ...payModal, 
-                paid: payModal.paid + amountToPay, 
-                remaining: payModal.total - (payModal.paid + amountToPay) 
-              };
-
-              if (user) {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/transactions`, updatedTxn.id), updatedTxn);
-              }
-
-              setPayModal(null);
-            };
-
-            const sendPaymentReminder = (txn) => {
-              const msg = `مرحباً أ. ${txn.clientName} 🌟\nنود تذكيركم بأن هناك مبلغ متبقي لحسابكم في ${settings.studioName || 'الاستوديو'} بقيمة ${txn.remaining} ج.م.\n(رقم الإيصال: ${txn.receiptNo})\n\nيمكنكم سداد المبلغ نقداً في الاستوديو أو عبر التحويل الإلكتروني (إنستاباي أو فودافون كاش) على الرقم:\n01126810107\n\nشكراً لتعاملكم معنا!`;
-              openWhatsApp(txn.phone, msg);
-            };
 
             return (
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
-                    <i className="ph ph-calendar-blank text-blue-500 text-2xl"></i> تقارير شهرية
-                  </h2>
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800"><i className="ph ph-calendar-blank text-blue-500 text-2xl"></i> تقارير شهرية</h2>
                   <div className="flex gap-2">
-                    <select value={filter.month} onChange={e => setFilter({...filter, month: e.target.value})} className="p-2 border rounded-lg bg-slate-50">
-                      {Array.from({length: 12}, (_, i) => i + 1).map(m => <option key={m} value={m}>شهر {m}</option>)}
-                    </select>
-                    <select value={filter.year} onChange={e => setFilter({...filter, year: e.target.value})} className="p-2 border rounded-lg bg-slate-50">
-                      {[currentYear-1, currentYear, currentYear+1].map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                    <select value={filter.month} onChange={e => setFilter({...filter, month: e.target.value})} className="p-2 border rounded-lg bg-slate-50">{Array.from({length: 12}, (_, i) => i + 1).map(m => <option key={m} value={m}>شهر {m}</option>)}</select>
+                    <select value={filter.year} onChange={e => setFilter({...filter, year: e.target.value})} className="p-2 border rounded-lg bg-slate-50">{[currentYear-1, currentYear, currentYear+1].map(y => <option key={y} value={y}>{y}</option>)}</select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard title="إجمالي الشغل (متوقع)" value={stats.totalExpected} color="blue" />
-                  <StatCard title="التحصيل الفعلي (نقدية)" value={stats.totalCollected} color="green" />
-                  <StatCard title="إجمالي المصروفات" value={stats.totalExpenses} color="red" />
-                  <StatCard title="صافي الربح الفعلي" value={stats.netProfit} color={stats.netProfit >= 0 ? "emerald" : "rose"} highlight />
+                  <StatCard title="التحصيل النقدي" value={stats.totalCollected} color="green" />
+                  <StatCard title="المصروفات" value={stats.totalExpenses} color="red" />
+                  <StatCard title="صافي الربح" value={stats.net} color={stats.net >= 0 ? "emerald" : "rose"} highlight />
+                  <StatCard title="باقي الحسابات (ديون)" value={stats.totalDebts} color="blue" />
                 </div>
-
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-6">
-                  <h3 className="text-lg font-bold text-red-600 mb-4 border-b pb-2">ديون مستحقة (باقي الحسابات هذا الشهر)</h3>
-                  <div className="text-2xl font-bold mb-4">{formatCurrency(stats.totalDebts)}</div>
+                  <h3 className="text-lg font-bold text-red-600 mb-4 border-b pb-2">تفاصيل الديون المستحقة</h3>
                   <div className="space-y-3">
                     {filteredTxns.filter(t => t.remaining > 0).map(txn => (
                       <div key={txn.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-red-50 rounded-xl border border-red-100 gap-4">
-                        <div>
-                          <span className="font-bold text-slate-800 text-lg">{txn.clientName}</span>
-                          <div className="text-sm text-slate-500 mt-1">
-                            📞 {txn.phone} | إيصال #{txn.receiptNo}
-                          </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                          <span className="text-red-600 font-black text-xl ml-4">{txn.remaining} ج.م</span>
-                          
-                          <button onClick={() => sendPaymentReminder(txn)} className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
-                            <i className="ph ph-whatsapp-logo text-xl"></i> تذكير بالدفع
-                          </button>
-                          
-                          <button onClick={() => setPayModal(txn)} className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
-                            <i className="ph ph-credit-card text-xl"></i> سداد الباقي
-                          </button>
+                        <div><span className="font-bold text-slate-800">{txn.clientName}</span><div className="text-xs text-slate-500">📞 {txn.phone} | إيصال #{txn.receiptNo}</div></div>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                          <span className="text-red-600 font-black ml-4">{txn.remaining} ج.م</span>
+                          <button onClick={() => openWhatsApp(txn.phone, `مرحباً أ. ${txn.clientName} 🌟\nتذكير بمبلغ متبقي لحسابكم في ${settings.studioName} بقيمة ${txn.remaining} ج.م.\nيمكن التحويل فودافون كاش أو إنستاباي على رقم: 01126810107`)} className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-bold"><i className="ph ph-whatsapp-logo text-lg"></i></button>
+                          <button onClick={() => setPayModal(txn)} className="bg-yellow-500 text-slate-900 px-3 py-2 rounded-lg text-xs font-bold">سداد</button>
                         </div>
                       </div>
                     ))}
-                    {filteredTxns.filter(t => t.remaining > 0).length === 0 && <p className="text-slate-500 text-sm">لا توجد ديون مستحقة لهذا الشهر.</p>}
                   </div>
                 </div>
-
                 {payModal && (
-                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-md relative">
-                      <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                        <i className="ph ph-x text-2xl"></i>
-                      </button>
-                      <h3 className="text-2xl font-black mb-4 text-slate-800 border-b pb-4">سداد دفعة / باقي الحساب</h3>
-                      <div className="mb-6 bg-slate-50 p-4 rounded-xl text-base space-y-3 border border-slate-200">
+                      <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-red-500"><i className="ph ph-x text-2xl"></i></button>
+                      <h3 className="text-2xl font-black mb-4 border-b pb-4 text-center">سداد باقي الحساب</h3>
+                      <div className="mb-6 bg-slate-50 p-4 rounded-xl text-center">
                         <p>العميل: <b className="text-lg">{payModal.clientName}</b></p>
-                        <p>الإجمالي: <b>{payModal.total} ج.م</b></p>
-                        <p className="text-red-600 font-bold bg-red-50 p-2 rounded-lg inline-block">الباقي المستحق: {payModal.remaining} ج.م</p>
+                        <p className="text-red-600 font-bold">الباقي المستحق: {payModal.remaining} ج.م</p>
                       </div>
-                      <form onSubmit={handlePaySubmit} className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">المبلغ المراد سداده الآن:</label>
-                          <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining}
-                            className="w-full p-4 border-2 border-slate-200 rounded-xl text-2xl font-black text-center outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"/>
-                        </div>
-                        <button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl text-lg shadow-lg shadow-green-500/30">
-                          تأكيد التحصيل
-                        </button>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const amount = parseFloat(e.target.amount.value);
+                        const updated = { ...payModal, paid: payModal.paid + amount, remaining: payModal.total - (payModal.paid + amount) };
+                        await setDoc(doc(db, `artifacts/studio-marakby/public/data/transactions`, updated.id), updated);
+                        setPayModal(null);
+                      }} className="space-y-4">
+                        <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-4 border-2 border-slate-200 rounded-xl text-2xl font-black text-center outline-none focus:border-green-500 shadow-inner"/>
+                        <button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl shadow-lg transition-all text-lg">تأكيد تحصيل المبلغ</button>
                       </form>
                     </div>
                   </div>
@@ -879,123 +510,66 @@
           };
 
           const StatCard = ({title, value, color, highlight}) => {
-            const colorClasses = {
-              blue: "bg-blue-50 text-blue-700 border-blue-200",
-              green: "bg-green-50 text-green-700 border-green-200",
-              red: "bg-red-50 text-red-700 border-red-200",
-              emerald: "bg-emerald-500 text-white border-emerald-600 shadow-emerald-200",
-              rose: "bg-rose-500 text-white border-rose-600 shadow-rose-200"
-            };
+            const colors = { green: "bg-green-50 text-green-700 border-green-200", red: "bg-red-50 text-red-700 border-red-200", blue: "bg-blue-50 text-blue-700 border-blue-200", emerald: "bg-emerald-500 text-white border-emerald-600", rose: "bg-rose-500 text-white border-rose-600" };
             return (
-              <div className={`p-5 rounded-2xl border ${colorClasses[color]} ${highlight ? 'shadow-lg scale-105 transform' : ''}`}>
-                <h4 className="text-sm opacity-80 mb-1">{title}</h4>
-                <div className="text-2xl sm:text-3xl font-black">{formatCurrency(value)}</div>
+              <div className={`p-5 rounded-2xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''}`}>
+                <h4 className="text-xs opacity-80 mb-1">{title}</h4>
+                <div className="text-xl sm:text-2xl font-black">{formatCurrency(value)}</div>
               </div>
             );
           };
 
           const SettingsTab = () => {
-            const handleAddList = (key, val) => {
-              if(!val) return;
-              setSettings({...settings, [key]: [...settings[key], val]});
-            };
-            const handleRemoveList = (key, idx) => {
-              const newList = [...settings[key]];
-              newList.splice(idx, 1);
-              setSettings({...settings, [key]: newList});
-            };
-            const updateTemplate = (key, text) => {
-              setSettings({...settings, waTemplates: {...settings.waTemplates, [key]: text}});
-            };
-
-            const handleLogoUpload = (e) => {
-              const file = e.target.files[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setSettings({...settings, studioLogo: reader.result});
-                };
-                reader.readAsDataURL(file);
-              }
-            };
-
+            const handleAddList = (key, val) => { if(!val) return; setSettings({...settings, [key]: [...settings[key], val]}); };
+            const handleRemoveList = (key, idx) => { const newList = [...settings[key]]; newList.splice(idx, 1); setSettings({...settings, [key]: newList}); };
             return (
               <div className="space-y-8">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 border-b pb-4">
-                    <i className="ph ph-image text-purple-500 text-2xl"></i> هوية الاستوديو
-                  </h2>
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b pb-4"><i className="ph ph-image text-purple-500"></i> هوية الاستوديو</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block font-bold text-sm text-slate-600 mb-2">اسم الاستوديو (يظهر في الأعلى وفي الرسائل):</label>
-                      <input type="text" value={settings.studioName || ''} onChange={e => setSettings({...settings, studioName: e.target.value})}
-                        placeholder="مثال: ستوديو المراكبى" className="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none"/>
+                      <label className="block font-bold text-sm text-slate-600 mb-2">اسم الاستوديو:</label>
+                      <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-purple-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block font-bold text-sm text-slate-600 mb-2">شعار الاستوديو (لوجو):</label>
-                      <div className="flex items-center gap-4">
-                        <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-4 rounded-lg border border-slate-300 transition-colors">
-                          <span className="flex items-center gap-2"><i className="ph ph-image text-xl"></i> اختيار صورة...</span>
-                          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-                        </label>
-                        {settings.studioLogo && (
-                          <div className="flex items-center gap-2">
-                            <img src={settings.studioLogo} alt="Preview" className="h-10 w-10 object-cover rounded shadow" />
-                            <button onClick={() => setSettings({...settings, studioLogo: ""})} className="text-red-500 hover:bg-red-50 p-1 rounded"><i className="ph ph-trash text-xl"></i></button>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 mt-2">يفضل استخدام صورة مربعة بحجم صغير.</p>
+                      <label className="block font-bold text-sm text-slate-600 mb-2">الشعار (Logo):</label>
+                      <input type="file" accept="image/*" onChange={e => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setSettings({...settings, studioLogo: reader.result});
+                          reader.readAsDataURL(file);
+                        }
+                      }} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 border-b pb-4">
-                    <i className="ph ph-faders text-blue-500 text-2xl"></i> إعدادات عامة
-                  </h2>
-                  <div className="max-w-xs">
-                    <label className="block font-bold text-sm text-slate-600 mb-2">رقم الإيصال القادم يبدأ من:</label>
-                    <input type="number" value={settings.nextReceiptNo || 1000} onChange={e => setSettings({...settings, nextReceiptNo: parseInt(e.target.value) || 1000})}
-                      className="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none font-mono"/>
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ServicesSettingsList 
-                    title="قوالب الخدمات (المطلوب والسعر)" 
-                    items={settings.services || DEFAULT_SERVICES} 
-                    onAdd={(v) => handleAddList('services', v)} 
-                    onRemove={(i) => handleRemoveList('services', i)} 
-                  />
-                  <SettingsList 
-                    title="أقسام المصروفات" 
-                    items={settings.expenseCategories || DEFAULT_EXPENSE_CATEGORIES} 
-                    onAdd={(v) => handleAddList('expenseCategories', v)} 
-                    onRemove={(i) => handleRemoveList('expenseCategories', i)} 
-                  />
+                   <ServicesSettingsList title="قوالب الخدمات والأسعار" items={settings.services} onAdd={v => handleAddList('services', v)} onRemove={i => handleRemoveList('services', i)} />
+                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                      <h3 className="font-bold mb-4 border-b pb-2">أقسام المصروفات</h3>
+                      <div className="flex gap-2 mb-4">
+                        <input type="text" id="newCat" className="flex-1 p-2 border-2 rounded-lg outline-none" placeholder="بند مصروف جديد..." />
+                        <button onClick={() => { const v = document.getElementById('newCat').value; handleAddList('expenseCategories', v); document.getElementById('newCat').value=''; }} className="bg-blue-600 text-white px-4 rounded-lg"><i className="ph ph-plus text-xl"></i></button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {settings.expenseCategories.map((c, i) => (
+                          <span key={i} className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2">
+                            {c} <button onClick={() => handleRemoveList('expenseCategories', i)} className="text-red-400 hover:text-red-600"><i className="ph ph-x text-sm"></i></button>
+                          </span>
+                        ))}
+                      </div>
+                   </div>
                 </div>
-
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 border-b pb-4">
-                    <i className="ph ph-whatsapp-logo text-green-500 text-2xl"></i> قوالب رسائل الواتساب
-                  </h2>
-                  <p className="text-sm text-slate-500 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed">
-                    يمكنك استخدام هذه المتغيرات داخل الرسالة وسيقوم البرنامج باستبدالها تلقائياً: 
-                    <br/><code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{name}'}</code> اسم العميل
-                    <code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{receipt}'}</code> الإيصال
-                    <code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{services}'}</code> المطلوب
-                    <code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{total}'}</code> الإجمالي
-                    <code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{paid}'}</code> المدفوع
-                    <code className="text-blue-600 font-bold mx-1 bg-white px-1 rounded">{'{remaining}'}</code> الباقي
-                    <code className="text-purple-600 font-bold mx-1 bg-white px-1 rounded">{'{studio}'}</code> اسم الاستوديو
-                  </p>
+                  <h2 className="text-xl font-bold mb-4 border-b pb-4"><i className="ph ph-whatsapp-logo text-green-500"></i> قوالب رسائل الواتساب</h2>
                   <div className="space-y-4">
-                    <WaTemplateInput label="رسالة الترحيب" val={settings.waTemplates?.welcome} onChange={(v) => updateTemplate('welcome', v)} />
-                    <WaTemplateInput label="تفاصيل الفاتورة" val={settings.waTemplates?.invoice} onChange={(v) => updateTemplate('invoice', v)} />
-                    <WaTemplateInput label="رسالة الشغل خلص (الاستلام)" val={settings.waTemplates?.ready} onChange={(v) => updateTemplate('ready', v)} />
-                    <WaTemplateInput label="رسالة تذكير بالمبلغ المتبقي" val={settings.waTemplates?.reminder} onChange={(v) => updateTemplate('reminder', v)} />
-                    <WaTemplateInput label="رسالة استلام عربون" val={settings.waTemplates?.deposit} onChange={(v) => updateTemplate('deposit', v)} />
+                    {Object.keys(settings.waTemplates).map(key => (
+                      <div key={key}>
+                        <label className="block text-sm font-bold mb-1 text-slate-600">{key === 'invoice' ? 'شكل الفاتورة الإلكترونية' : key}</label>
+                        <textarea rows="3" value={settings.waTemplates[key]} onChange={e => setSettings({...settings, waTemplates: {...settings.waTemplates, [key]: e.target.value}})} className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-green-500 outline-none text-sm font-mono" />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1007,39 +581,16 @@
             const [newPrice, setNewPrice] = useState('');
             return (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="font-bold text-slate-800 mb-4">{title}</h3>
+                <h3 className="font-bold text-slate-800 mb-4 border-b pb-2">{title}</h3>
                 <div className="flex gap-2 mb-4">
-                  <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className="flex-1 p-2 border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none" placeholder="اسم الخدمة..."/>
-                  <input type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="w-24 p-2 border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none" placeholder="السعر..."/>
-                  <button onClick={()=>{if(newName) { onAdd({name: newName, price: parseFloat(newPrice)||0}); setNewName(''); setNewPrice(''); }}} className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg transition-colors"><i className="ph ph-plus text-xl"></i></button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {items.map((item, idx) => {
-                    const srv = typeof item === 'string' ? {name: item, price: 0} : item;
-                    return (
-                    <span key={idx} className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 border border-slate-200">
-                      {srv.name} {srv.price > 0 && <span className="text-xs text-blue-600">({srv.price} ج.م)</span>}
-                      <button onClick={()=>onRemove(idx)} className="text-red-400 hover:text-red-600 bg-white rounded-full px-1.5"><i className="ph ph-x text-sm"></i></button>
-                    </span>
-                  )})}
-                </div>
-              </div>
-            );
-          };
-
-          const SettingsList = ({title, items, onAdd, onRemove}) => {
-            const [newVal, setNewVal] = useState('');
-            return (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="font-bold text-slate-800 mb-4">{title}</h3>
-                <div className="flex gap-2 mb-4">
-                  <input type="text" value={newVal} onChange={e=>setNewVal(e.target.value)} className="flex-1 p-2 border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none" placeholder="إضافة جديد..."/>
-                  <button onClick={()=>{onAdd(newVal); setNewVal('');}} className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg transition-colors"><i className="ph ph-plus text-xl"></i></button>
+                  <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className="flex-1 p-2 border-2 border-slate-200 rounded-lg outline-none" placeholder="الخدمة..."/>
+                  <input type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="w-20 p-2 border-2 border-slate-200 rounded-lg outline-none" placeholder="السعر"/>
+                  <button onClick={()=>{if(newName){onAdd({name:newName, price:parseFloat(newPrice)||0});setNewName('');setNewPrice('');}}} className="bg-blue-600 text-white px-4 rounded-lg transition-colors"><i className="ph ph-plus text-xl"></i></button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {items.map((item, idx) => (
                     <span key={idx} className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 border border-slate-200">
-                      {item}
+                      {item.name} <span className="text-xs text-blue-600">({item.price} ج.م)</span>
                       <button onClick={()=>onRemove(idx)} className="text-red-400 hover:text-red-600 bg-white rounded-full px-1.5"><i className="ph ph-x text-sm"></i></button>
                     </span>
                   ))}
@@ -1048,32 +599,13 @@
             );
           };
 
-          const WaTemplateInput = ({label, val, onChange}) => (
-            <div>
-              <label className="block font-bold text-sm text-slate-700 mb-2">{label}</label>
-              <textarea rows="3" value={val} onChange={(e) => onChange(e.target.value)}
-                className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 outline-none text-sm text-slate-600 font-mono transition-all custom-scrollbar" />
-            </div>
-          );
-
-          if (!authReady) {
-            return (
-              <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-900 pb-20">
-                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-lg font-bold">جاري تحميل البيانات والتوصيل بالسحابة...</p>
-              </div>
-            );
-          }
+          if (!authReady) return <div className="min-h-screen flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold">جاري المزامنة مع السحابة...</p></div>;
 
           return (
-            <div className="min-h-screen pb-20">
-              {authError && (
-                <div className="bg-red-500 text-white text-center py-2 px-4 font-bold text-sm shadow-md">
-                  {authError}
-                </div>
-              )}
+            <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+              {authError && <div className="bg-red-500 text-white text-center py-1 font-bold text-xs">{authError}</div>}
               <Navigation />
-              <main className="max-w-7xl mx-auto p-4 md:p-6 mt-4">
+              <main className="max-w-7xl mx-auto p-4 md:p-6">
                 {activeTab === 'dashboard' && <DashboardTab />}
                 {activeTab === 'expenses' && <ExpensesTab />}
                 {activeTab === 'reports' && <ReportsTab />}
