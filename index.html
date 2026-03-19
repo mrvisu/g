@@ -419,7 +419,7 @@
             );
         };
 
-        const StatCard = ({title, value, color, highlight}) => {
+        const StatCard = ({title, value, color, highlight, onClick}) => {
             const colors = { 
                 green: "bg-green-950/30 text-green-400 border-green-900/50", 
                 red: "bg-red-950/30 text-red-400 border-red-900/50", 
@@ -429,7 +429,7 @@
                 rose: "bg-rose-600 text-white border-rose-500" 
             };
             return (
-              <div className={`p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''}`}>
+              <div onClick={onClick} className={`p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
                 <h4 className="text-[11px] sm:text-xs opacity-80 mb-1">{title}</h4>
                 <div className="text-base sm:text-lg font-black">{formatCurrency(value)}</div>
               </div>
@@ -1149,6 +1149,7 @@
 
             const filteredTxns = query ? transactions.filter(t => t.clientName.includes(query) || t.phone.includes(query) || t.receiptNo.toString().includes(query)) : [];
             const todaysTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            const todaysTotalCollected = todaysTxns.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
 
             return (
               <div className="space-y-6">
@@ -1178,9 +1179,14 @@
                       <div className="flex items-center gap-2">
                           <i className="ph ph-files text-blue-400 text-2xl"></i> عمليات اليوم
                       </div>
-                      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
-                          <i className="ph-fill ph-chart-bar text-lg"></i> {todaysTxns.length} عملية
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2 justify-end">
+                          <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                              <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(todaysTotalCollected)}
+                          </span>
+                          <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                              <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {todaysTxns.length} عملية
+                          </span>
+                      </div>
                     </h2>
                     <div className="space-y-4">
                       {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
@@ -1743,6 +1749,8 @@
             const currentMonth = new Date().getMonth() + 1;
             const currentYear = new Date().getFullYear();
             const [filter, setFilter] = useState({ month: currentMonth, year: currentYear });
+            const [archiveQuery, setArchiveQuery] = useState('');
+            const [electronicDetails, setElectronicDetails] = useState(null);
             
             const filteredTxns = transactions.filter(t => t.month == filter.month && t.year == filter.year);
             const filteredWeds = weddings.filter(t => t.month == filter.month && t.year == filter.year);
@@ -1765,6 +1773,20 @@
             const expensesTotal = useMemo(() => filteredExp.reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
             const totalCollectedAll = studioStats.collected + wedStats.collected;
             const netProfit = totalCollectedAll - expensesTotal;
+
+            // حسابات الأرشيف (الطلبات المسلمة)
+            const completedTxns = filteredTxns.filter(t => t.status === 3);
+            const completedWeds = filteredWeds.filter(t => t.status === 6);
+            const allCompleted = useMemo(() => {
+                return [...completedTxns, ...completedWeds].sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+            }, [completedTxns, completedWeds]);
+            
+            const closedRevenue = allCompleted.reduce((sum, t) => sum + (parseFloat(t.total) || 0), 0);
+            
+            const searchedArchive = allCompleted.filter(t => {
+                const name = t.type === 'wedding' ? `${t.groomName || ''} ${t.brideName || ''}` : t.clientName;
+                return (name || '').includes(archiveQuery) || (t.phone || '').includes(archiveQuery) || (t.receiptNo?.toString() || '').includes(archiveQuery);
+            });
 
             return (
               <div className="space-y-4">
@@ -1789,7 +1811,7 @@
                       <StatCard title="إجمالي الشغل" value={studioStats.expected} color="blue" />
                       <StatCard title="التحصيل الفعلي" value={studioStats.collected} color="green" />
                       <StatCard title="محصل نقدي" value={studioStats.cash} color="green" />
-                      <StatCard title="محصل إلكتروني" value={studioStats.electronic} color="indigo" />
+                      <StatCard title="محصل إلكتروني 👆" value={studioStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (استوديو)', data: filteredTxns.filter(t => (t.electronicPaid || 0) > 0) })} />
                     </div>
                     
                     <div className="mt-auto">
@@ -1821,7 +1843,7 @@
                       <StatCard title="إجمالي الحجوزات" value={wedStats.expected} color="blue" />
                       <StatCard title="العربون المحصل" value={wedStats.collected} color="green" />
                       <StatCard title="محصل نقدي" value={wedStats.cash} color="green" />
-                      <StatCard title="محصل إلكتروني" value={wedStats.electronic} color="indigo" />
+                      <StatCard title="محصل إلكتروني 👆" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: filteredWeds.filter(t => (t.electronicPaid || 0) > 0) })} />
                     </div>
                     
                     <div className="mt-auto">
@@ -1847,6 +1869,127 @@
                     </div>
                   </div>
                 </div>
+
+                {/* قسم أرشيف الإنجازات والعملاء المستلمين */}
+                <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col mt-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 mb-4 gap-4">
+                        <div>
+                            <h3 className="text-lg sm:text-xl font-bold text-yellow-400 flex items-center gap-2">
+                                <i className="ph-fill ph-archive-box text-2xl"></i> أرشيف العملاء (إعادة الاستهداف والتقييم)
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-1">قائمة بالعملاء الذين استلموا أعمالهم، لطلب التقييم أو إرسال عروض ترويجية.</p>
+                        </div>
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-xl text-yellow-400 flex flex-col items-center">
+                            <span className="text-[10px] uppercase font-bold tracking-wider">أرباح الصفقات المغلقة</span>
+                            <span className="text-lg font-black">{formatCurrency(closedRevenue)}</span>
+                        </div>
+                    </div>
+
+                    <div className="relative w-full mb-4">
+                        <i className="ph ph-magnifying-glass absolute right-4 top-3.5 text-slate-500 text-lg"></i>
+                        <input 
+                            type="text" 
+                            placeholder="ابحث في الأرشيف بالاسم، رقم الهاتف، أو رقم الإيصال..." 
+                            className="w-full p-3 pr-11 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm transition-colors" 
+                            value={archiveQuery} 
+                            onChange={(e) => setArchiveQuery(e.target.value)} 
+                        />
+                    </div>
+
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                        {searchedArchive.length === 0 ? (
+                            <p className="text-center text-slate-500 py-10 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا يوجد عملاء استلموا أعمالهم في هذا الشهر.</p>
+                        ) : (
+                            searchedArchive.map(txn => {
+                                const isWed = txn.type === 'wedding';
+                                const name = isWed ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+                                return (
+                                    <div key={txn.id} className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-4 bg-slate-950 rounded-xl border border-slate-800 gap-4 hover:border-yellow-500/30 transition-all">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <i className={`text-lg ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
+                                                <span className="font-bold text-slate-200 text-base">{name || 'بدون اسم'}</span>
+                                                <span className="bg-slate-800 text-slate-400 text-[10px] px-2 py-0.5 rounded font-mono">#{txn.receiptNo}</span>
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-mono mt-1">📞 {txn.phone} | 📅 {formatDateOnly(txn.dateTime)} | 💰 {txn.total} ج.م</div>
+                                        </div>
+                                        
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto shrink-0">
+                                            {/* Rating Section */}
+                                            {txn.clientRating > 0 ? (
+                                                <div className="bg-yellow-950/30 border border-yellow-900/50 px-3 py-2 rounded-lg flex items-center gap-1 min-w-[120px] justify-center" title={txn.clientFeedback || 'بدون تعليق'}>
+                                                    <span className="text-yellow-500 font-black text-sm">{txn.clientRating}</span>
+                                                    <i className="ph-fill ph-star text-yellow-500 text-sm"></i>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        const typeParam = isWed ? 'w' : 't';
+                                                        const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${typeParam}`;
+                                                        const msg = `أهلاً بك أ. ${name || ''} 🌟\nبما إنك استلمت شغلك من ${settings.studioName}، يهمنا جداً نعرف رأيك وتقييمك للتجربة عبر هذا الرابط:\n${trackUrl}`;
+                                                        openWhatsApp(txn.phone, msg);
+                                                    }}
+                                                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                                >
+                                                    <i className="ph ph-star text-base"></i> طلب تقييم
+                                                </button>
+                                            )}
+
+                                            {/* Re-targeting Section */}
+                                            <button 
+                                                onClick={() => {
+                                                    const msg = `أهلاً أ. ${name || ''}، نتمنى تكون الصور عجبتكم! 🌟\nبمناسبة مرور فترة على تصويركم في ${settings.studioName}، بنقدملك خصم 15% لو حابب تطبع الصور على تابلوه خشب أو تعمل ألبوم ميني لحفظ ذكرياتك. للطلب استفسر مننا هنا! 🎁`;
+                                                    openWhatsApp(txn.phone, msg);
+                                                }}
+                                                className="bg-gradient-to-l from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                                            >
+                                                <i className="ph-fill ph-whatsapp-logo text-base"></i> عرض إعادة استهداف
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {electronicDetails && (
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setElectronicDetails(null)}>
+                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setElectronicDetails(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
+                            
+                            <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-indigo-400 flex items-center gap-2 shrink-0">
+                                <i className="ph-fill ph-wallet text-2xl"></i> {electronicDetails.title}
+                            </h3>
+                            
+                            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+                                {electronicDetails.data.length === 0 ? (
+                                    <p className="text-slate-500 text-center py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد عمليات دفع إلكتروني في هذه الفترة.</p>
+                                ) : (
+                                    electronicDetails.data.map(txn => {
+                                        const isWed = txn.type === 'wedding';
+                                        const name = isWed ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+                                        return (
+                                            <div key={txn.id} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/20 flex justify-between items-center hover:border-indigo-500/50 transition-colors">
+                                                <div>
+                                                    <div className="font-bold text-slate-200 flex items-center gap-2">
+                                                        <i className={`text-lg ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
+                                                        {name || 'بدون اسم'}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 font-mono mt-1">📞 {txn.phone} | #{txn.receiptNo}</div>
+                                                    <div className="text-[10px] text-slate-400 mt-1">📅 {formatDateOnly(txn.dateTime)}</div>
+                                                </div>
+                                                <div className="text-left bg-indigo-950/40 border border-indigo-900/50 px-3 py-1.5 rounded-lg">
+                                                    <span className="text-indigo-400 font-black">{txn.electronicPaid} ج.م</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
               </div>
             );
         };
