@@ -235,28 +235,43 @@
         const addToCalendar = (txn) => {
             if (!txn.weddingDate) return false;
 
-            const details = [];
-            if (txn.groomName || txn.brideName) details.push(`العروسين: ${txn.groomName || ''} و ${txn.brideName || ''}`.trim());
-            if (txn.phone) details.push(`الهاتف: ${txn.phone}`);
-            if (txn.location) details.push(`اللوكيشن/القاعة: ${txn.location}`);
-            if (txn.makeupArtist) details.push(`الميك أب: ${txn.makeupArtist}`);
-            if (txn.leaveTime) details.push(`وقت الخروج: ${txn.leaveTime}`);
-            if (txn.sessionType) details.push(`نوع السيشن: ${txn.sessionType}`);
-            if (txn.casualShootDate) details.push(`الكاجوال: ${txn.casualShootDate}`);
-            if (txn.groomAddress) details.push(`العنوان: ${txn.groomAddress}`);
+            let description = `✨ تفاصيل حجز الزفاف ✨\n`;
+            description += `──────────────────\n`;
+            if (txn.groomName || txn.brideName) description += `🤵👰 العروسين: ${txn.groomName || ''} و ${txn.brideName || ''}\n`.trim();
+            if (txn.phone) description += `📱 الهاتف: ${txn.phone}\n`;
+            if (txn.location) description += `📍 اللوكيشن/القاعة: ${txn.location}\n`;
+            if (txn.groomAddress) description += `🏠 عنوان العريس: ${txn.groomAddress}\n`;
             
+            description += `\n⏰ المواعيد والترتيبات\n`;
+            description += `──────────────────\n`;
+            if (txn.makeupArtist) description += `💄 الميك أب: ${txn.makeupArtist}\n`;
+            if (txn.leaveTime) description += `🚗 وقت الخروج: ${txn.leaveTime}\n`;
+            if (txn.sessionType) description += `📸 نوع السيشن: ${txn.sessionType}\n`;
+            if (txn.casualShootDate) description += `👕 تصوير الكاجوال: ${txn.casualShootDate}\n`;
+
             let pkgs = '';
             if (txn.packages && txn.packages.length > 0) pkgs = txn.packages.map(p => p.name).join(' + ');
             else if (txn.package) pkgs = txn.package.name;
-            if (pkgs) details.push(`الباقات: ${pkgs}`);
             
-            if (txn.addons && txn.addons.length > 0) details.push(`إضافات: ${txn.addons.map(a => a.name).join(' + ')}`);
-            
-            details.push(`الإجمالي: ${txn.total} ج.م`);
-            details.push(`المدفوع: ${txn.paid} ج.م`);
-            details.push(`الباقي: ${txn.remaining} ج.م`);
+            let addonsText = '';
+            if (txn.addons && txn.addons.length > 0) addonsText = txn.addons.map(a => a.name).join(' + ');
 
-            const description = details.join('\n');
+            if (pkgs || addonsText) {
+                description += `\n💼 الباقات والإضافات\n`;
+                description += `──────────────────\n`;
+                if (pkgs) description += `📦 الباقات: ${pkgs}\n`;
+                if (addonsText) description += `➕ إضافات: ${addonsText}\n`;
+            }
+            
+            description += `\n💰 الحسابات\n`;
+            description += `──────────────────\n`;
+            description += `💵 الإجمالي: ${txn.total} ج.م\n`;
+            description += `✅ المدفوع: ${txn.paid} ج.م\n`;
+            description += `🔴 الباقي: ${txn.remaining} ج.م\n`;
+            
+            const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=w`;
+            description += `\n🔗 رابط تتبع العميل:\n${trackUrl}`;
+
             const title = `حجز زفاف: ${txn.groomName || ''} و ${txn.brideName || ''}`.trim() || 'حجز زفاف جديد';
 
             let startStr = '';
@@ -555,7 +570,13 @@
                   electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0),
                   remaining: payModal.total - (payModal.paid + amount) 
               };
+              
+              // حفظ الصورة المؤكدة
+              if (updated.pendingReceipt && payModal.paymentType === 'electronic') {
+                  updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt];
+              }
               if (updated.pendingReceipt) delete updated.pendingReceipt;
+              
               delete updated.paymentType;
               const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -582,6 +603,16 @@
                   </form>
                 </div>
               </div>
+            );
+        };
+
+        const ReceiptModal = ({ imageUrl, onClose }) => {
+            if (!imageUrl) return null;
+            return (
+                <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={onClose}>
+                    <button onClick={onClose} className="absolute top-4 left-4 text-slate-300 hover:text-red-400 bg-slate-800 p-2 rounded-full transition-colors"><i className="ph ph-x text-xl"></i></button>
+                    <img src={imageUrl} alt="Receipt Fullscreen" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()} />
+                </div>
             );
         };
 
@@ -649,11 +680,24 @@
                     </div>
 
                     {txnDetailsModal.pendingReceipt && (
-                        <div className="bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/30">
+                        <div className="bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/30 mt-4">
                            <p className="text-indigo-300 text-sm font-bold mb-3 flex items-center gap-2">
-                               <i className="ph ph-image text-lg"></i> صورة التحويل الإلكتروني المرفقة
+                               <i className="ph ph-image text-lg"></i> صورة التحويل الإلكتروني المرفقة للمراجعة
                            </p>
                            <img src={txnDetailsModal.pendingReceipt} alt="Receipt" className="w-full rounded-lg border border-indigo-500/50 cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setReceiptImageModal(txnDetailsModal.pendingReceipt)} />
+                        </div>
+                    )}
+
+                    {txnDetailsModal.confirmedReceipts && txnDetailsModal.confirmedReceipts.length > 0 && (
+                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
+                           <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph ph-check-circle text-green-500 text-lg"></i> صور التحويلات المؤكدة
+                           </p>
+                           <div className="flex flex-wrap gap-3">
+                               {txnDetailsModal.confirmedReceipts.map((imgUrl, idx) => (
+                                   <img key={idx} src={imgUrl} alt="Confirmed Receipt" className="w-24 h-24 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" onClick={() => setReceiptImageModal(imgUrl)} />
+                               ))}
+                           </div>
                         </div>
                     )}
                     
@@ -686,7 +730,7 @@
             };
 
             return (
-              <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-6 justify-between hover:border-slate-700 transition-all cursor-pointer group" onClick={() => onViewDetails && onViewDetails(txn)}>
+              <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-6 justify-between hover:border-slate-700 transition-all cursor-pointer group" onClick={() => onViewDetails && onViewDetails(txn)} title="اضغط لعرض التفاصيل">
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-3">
                       <div className="flex justify-between items-start">
@@ -732,7 +776,7 @@
                                   src={txn.pendingReceipt} 
                                   alt="إيصال تحويل مرفق" 
                                   className="w-14 h-14 object-cover rounded-lg cursor-pointer border border-indigo-500/50 hover:scale-105 transition-transform shadow-md"
-                                  onClick={() => onViewReceipt(txn.pendingReceipt)}
+                                  onClick={(e) => { e.stopPropagation(); onViewReceipt(txn.pendingReceipt); }}
                                   title="اضغط للتكبير"
                               />
                               <div>
@@ -1009,6 +1053,7 @@
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} />
+                <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
               </div>
             );
         };
@@ -1339,6 +1384,7 @@
 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} />
+                <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
               </div>
             );
         };
@@ -1904,10 +1950,22 @@
 
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center">
-                      <div className="flex flex-col items-center gap-3 mb-8 mt-6">
-                          {settings.studioLogo ? <img src={settings.studioLogo} className="w-24 h-24 rounded-2xl object-cover shadow-lg shadow-blue-900/20 border border-slate-800" /> : <i className="ph ph-camera text-6xl text-blue-500"></i>}
-                          <h1 className="text-2xl font-black">{settings.studioName}</h1>
-                          <p className="text-slate-400 text-sm">{isWedding ? 'تتبع حجز الزفاف الخاص بك 💍' : 'تتبع حالة الطلب الخاص بك'}</p>
+                      <div className="flex flex-col items-center gap-4 mb-8 mt-8">
+                          <div className="relative">
+                              <div className={`absolute inset-0 blur-2xl opacity-30 rounded-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
+                              {settings.studioLogo ? (
+                                  <img src={settings.studioLogo} className={`relative z-10 w-24 h-24 rounded-full object-cover shadow-2xl border-2 ${isWedding ? 'border-pink-900/50' : 'border-blue-900/50'}`} alt="Studio Logo" />
+                              ) : (
+                                  <div className={`relative z-10 w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border shadow-2xl ${isWedding ? 'border-pink-900/50 shadow-pink-900/20' : 'border-blue-900/50 shadow-blue-900/20'}`}>
+                                      <i className={`ph-fill ph-camera text-5xl ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
+                                  </div>
+                              )}
+                          </div>
+                          <div className={`bg-slate-900/80 backdrop-blur-md px-6 py-2.5 rounded-full border shadow-sm mt-2 ${isWedding ? 'border-pink-500/20' : 'border-blue-500/20'}`}>
+                              <h1 className={`text-base md:text-lg font-bold tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>
+                                  {isWedding ? 'تتبع حجز الزفاف الخاص بك 💍' : 'تتبع حالة الطلب الخاص بك 📸'}
+                              </h1>
+                          </div>
                       </div>
 
                       {isWedding && (
