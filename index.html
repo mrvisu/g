@@ -1988,18 +1988,19 @@
                                                         <div className="text-xs text-slate-500 font-mono mt-1">📞 {txn.phone} | #{txn.receiptNo}</div>
                                                         <div className="text-[10px] text-slate-400 mt-1">📅 {formatDateOnly(txn.dateTime)}</div>
                                                     </div>
-                                                    <div className="text-left bg-indigo-950/40 border border-indigo-900/50 px-3 py-1.5 rounded-lg">
-                                                        <span className="text-indigo-400 font-black">{txn.electronicPaid} ج.م</span>
+                                                    <div className="flex items-center gap-3">
+                                                        {txn.confirmedReceipts && txn.confirmedReceipts.length > 0 && (
+                                                            <div className="flex gap-1.5">
+                                                                {txn.confirmedReceipts.map((imgUrl, idx) => (
+                                                                    <img key={idx} src={imgUrl} alt="إيصال مؤكد" className="w-10 h-10 object-cover rounded-lg border border-indigo-500/30 cursor-pointer hover:opacity-80 transition-all shadow-sm" onClick={(e) => { e.stopPropagation(); setReceiptImageModal(imgUrl); }} title="اضغط لتكبير صورة الإيصال" />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-left bg-indigo-950/40 border border-indigo-900/50 px-3 py-1.5 rounded-lg shrink-0">
+                                                            <span className="text-indigo-400 font-black">{txn.electronicPaid} ج.م</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                
-                                                {txn.confirmedReceipts && txn.confirmedReceipts.length > 0 && (
-                                                    <div className="flex gap-2 mt-2 pt-2 border-t border-slate-800/50">
-                                                        {txn.confirmedReceipts.map((imgUrl, idx) => (
-                                                            <img key={idx} src={imgUrl} alt="إيصال مؤكد" className="w-12 h-12 object-cover rounded-lg border border-indigo-500/30 cursor-pointer hover:opacity-80 transition-all" onClick={(e) => { e.stopPropagation(); setReceiptImageModal(imgUrl); }} title="اضغط لتكبير صورة الإيصال" />
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </div>
                                         );
                                     })
