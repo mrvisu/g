@@ -128,6 +128,8 @@
 
         const DEFAULT_WA_TEMPLATES = {
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م",
+          welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م",
+          vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nننتظرك دائماً لتسجيل أجمل ذكرياتك.",
           invoice: "أهلاً بك أ. {name} 👋\nنورتنا وشرفتنا في {studio} 📸✨\n\n🧾 فاتورة إلكترونية\n----------------------------------\n🧾 رقم الإيصال: {receipt}\n📅 التاريخ: {date}\n⏰ الوقت: {time}\n----------------------------------\n🛠️ المطلوب بالتفصيل:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م\n🔴 الباقي: {remaining} ج.م\n----------------------------------\n📍 لمتابعة حالة طلبك خطوة بخطوة، تفضل بزيارة الرابط التالي:\n{track_url}\n\nشكراً لثقتكم بنا!",
           reminder: "مرحباً أ. {name} 🌟. نود تذكيركم بأن هناك مبلغ متبقي لحسابكم في {studio} بقيمة {remaining} ج.م. \nرقم الإيصال: {receipt}.",
           ready: "أهلاً أ. {name} 🎉. الطلب الخاص بك جاهز للاستلام في {studio}! \nباقي الحساب: {remaining} ج.م. نورتنا وشرفتنا!",
@@ -667,12 +669,14 @@
             );
         };
 
-        const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal }) => {
+        const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal, allRecords }) => {
             if (!txnDetailsModal) return null;
             
             const isWedding = txnDetailsModal.type === 'wedding';
             const displayName = isWedding ? `${txnDetailsModal.groomName || ''} و ${txnDetailsModal.brideName || ''}`.trim() : txnDetailsModal.clientName;
             const reqsText = getReqsText(txnDetailsModal);
+            
+            const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
 
             return (
               <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setTxnDetailsModal(null)}>
@@ -769,6 +773,33 @@
                            </div>
                         </div>
                     )}
+
+                    {customerHistory.length > 0 && (
+                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 mt-4 shadow-inner">
+                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph-fill ph-clock-counter-clockwise text-lg"></i> سجل زيارات العميل السابقة ({customerHistory.length})
+                           </p>
+                           <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                               {customerHistory.map(hist => (
+                                   <div key={hist.id} 
+                                        className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-between items-center text-xs cursor-pointer hover:border-blue-500/50 hover:bg-slate-900 transition-all"
+                                        onClick={() => setTxnDetailsModal(hist)}
+                                        title="اضغط لفتح تفاصيل الإيصال">
+                                       <div>
+                                           <span className={`font-bold ml-2 ${hist.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>
+                                               {hist.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}
+                                           </span>
+                                           <span className="text-slate-500 font-mono">{formatDateOnly(hist.dateTime)}</span>
+                                       </div>
+                                       <div className="text-left font-bold text-slate-300 flex items-center gap-2">
+                                           <span>{hist.total} ج.م</span>
+                                           <i className="ph ph-caret-left text-slate-500"></i>
+                                       </div>
+                                   </div>
+                               ))}
+                           </div>
+                        </div>
+                    )}
                     
                     <div className="text-xs text-slate-500 text-center mt-4">تاريخ التسجيل: {formatDate(txnDetailsModal.dateTime)}</div>
                   </div>
@@ -777,7 +808,7 @@
             );
         };
 
-        const TransactionCard = ({ txn, onDelete, onEdit, onPayRemaining, onViewReceipt, sendInvoice, updateStatus, onViewDetails, settings }) => {
+        const TransactionCard = ({ txn, onDelete, onEdit, onPayRemaining, onViewReceipt, sendInvoice, updateStatus, onViewDetails, settings, allRecords }) => {
             const [showWaMenu, setShowWaMenu] = useState(false);
             const [confirmDelete, setConfirmDelete] = useState(false);
             const [actionError, setActionError] = useState('');
@@ -788,6 +819,8 @@
             const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
             
             const statusesToUse = getTransactionStatuses(txn);
+            const visitCount = allRecords ? allRecords.filter(t => t.phone === txn.phone).length : 1;
+            const isRepeat = visitCount > 1;
 
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
@@ -808,6 +841,11 @@
                            {displayName || 'عميل بدون اسم'}
                         </h3>
                         <div className="flex items-center gap-2">
+                           {isRepeat && (
+                               <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50" title="عميل دائم">
+                                   <i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})
+                               </span>
+                           )}
                            {txn.clientRating > 0 && (
                                <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50" title="تقييم العميل">
                                    <i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5
@@ -897,7 +935,14 @@
                     {showWaMenu && (
                       <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-10 p-1 flex flex-col overflow-hidden">
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2.5 text-sm text-blue-300 hover:bg-slate-700 font-bold border-b border-slate-700">📍 رابط التتبع للعميل</button>
-                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcome', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">👋 رسالة ترحيب</button>
+                        {isRepeat && (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('vipDiscount', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-pink-400 hover:bg-slate-700 font-bold">🎁 إرسال هدية خصم (VIP)</button>
+                        )}
+                        {isRepeat ? (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcomeBack', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700 font-bold">🌟 ترحيب بالعودة</button>
+                        ) : (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcome', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">👋 رسالة ترحيب</button>
+                        )}
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('ready', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">🎉 الشغل خلص</button>
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">⚠️ تذكير بالباقي</button>
                       </div>
@@ -933,10 +978,62 @@
             );
         };
 
-        const DashboardTab = ({ settings, setSettings, transactions, inventory, db }) => {
+        const TopCustomers = ({ allRecords }) => {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+
+            const topCustomers = useMemo(() => {
+                if (!allRecords) return [];
+                const thisMonthRecords = allRecords.filter(t => t.month === currentMonth && t.year === currentYear);
+                const counts = {};
+                thisMonthRecords.forEach(t => {
+                    if (!t.phone) return;
+                    if (!counts[t.phone]) {
+                        counts[t.phone] = {
+                            phone: t.phone,
+                            name: t.clientName || t.groomName || 'بدون اسم',
+                            visits: 0,
+                            totalSpent: 0
+                        };
+                    }
+                    counts[t.phone].visits += 1;
+                    counts[t.phone].totalSpent += (parseFloat(t.total) || 0);
+                });
+                
+                return Object.values(counts)
+                    .filter(c => c.visits > 1) 
+                    .sort((a, b) => b.visits - a.visits || b.totalSpent - a.totalSpent)
+                    .slice(0, 5);
+            }, [allRecords, currentMonth, currentYear]);
+
+            if (topCustomers.length === 0) return null;
+
+            return (
+                <div className="bg-gradient-to-br from-yellow-900/20 to-slate-900 p-6 rounded-2xl shadow-sm border border-yellow-500/30 mb-6">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-400">
+                        <i className="ph-fill ph-crown text-2xl"></i> نجوم الشهر (أكثر العملاء زيارة)
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {topCustomers.map((cust, idx) => (
+                            <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-yellow-500/20 flex flex-col items-center text-center shadow-inner relative overflow-hidden group hover:border-yellow-500/50 transition-colors">
+                                {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-bl-lg z-10">المركز 1</div>}
+                                <div className="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mb-2">
+                                    <i className="ph-fill ph-star text-xl"></i>
+                                </div>
+                                <span className="font-bold text-slate-200 text-sm truncate w-full">{cust.name}</span>
+                                <span className="text-yellow-400 font-black text-xs mt-1">{cust.visits} زيارات</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords }) => {
             const [showAddModal, setShowAddModal] = useState(false);
             const [isEditing, setIsEditing] = useState(false);
             const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: '', requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [] });
+            const [loyaltyAlert, setLoyaltyAlert] = useState('');
             const [query, setQuery] = useState('');
             const [payModal, setPayModal] = useState(null);
             const [receiptImageModal, setReceiptImageModal] = useState(null);
@@ -1035,6 +1132,21 @@
                     await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated);
                 }
             };
+            
+            const handlePhoneChange = (val) => {
+                setFormData(prev => ({...prev, phone: val}));
+                if (val.length >= 10 && allRecords) {
+                    const pastTxn = allRecords.find(t => t.phone === val);
+                    if (pastTxn) {
+                        setFormData(prev => ({
+                            ...prev,
+                            clientName: prev.clientName || pastTxn.clientName || pastTxn.groomName || ''
+                        }));
+                        const visits = allRecords.filter(t => t.phone === val).length;
+                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}! (يمكنك تقديم خصم كهدية ولاء)`);
+                    } else { setLoyaltyAlert(''); }
+                } else { setLoyaltyAlert(''); }
+            };
 
             const filteredTxns = query ? transactions.filter(t => t.clientName.includes(query) || t.phone.includes(query) || t.receiptNo.toString().includes(query)) : [];
             const todaysTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
@@ -1054,11 +1166,14 @@
                 {query && (
                   <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4">
                     <h3 className="text-lg font-bold text-slate-300 border-b border-slate-800 pb-2">نتائج البحث ({filteredTxns.length})</h3>
-                    {filteredTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} />)}
+                    {filteredTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
                   </div>
                 )}
 
                 {!query && (
+                  <>
+                  <TopCustomers allRecords={allRecords} />
+                  
                   <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                     <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
                       <div className="flex items-center gap-2">
@@ -1069,23 +1184,29 @@
                       </span>
                     </h2>
                     <div className="space-y-4">
-                      {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} />)}
+                      {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
                     </div>
                   </div>
+                  </>
                 )}
 
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                      <button onClick={() => setShowAddModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
+                      <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل العملية' : 'إضافة عملية جديدة'}</h2>
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="bg-blue-900/30 p-3 rounded-xl flex justify-between items-center text-sm font-bold text-blue-300 border border-blue-800/50">
                           <span>رقم الإيصال:</span><span className="text-lg">#{isEditing ? formData.receiptNo : settings.nextReceiptNo}</span>
                         </div>
+                        {loyaltyAlert && (
+                            <div className="bg-yellow-950/40 border border-yellow-500/50 text-yellow-400 p-3 rounded-xl text-sm font-bold shadow-inner">
+                                {loyaltyAlert}
+                            </div>
+                        )}
                         <input type="text" placeholder="اسم العميل" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
                         <div className="flex gap-3">
-                          <input type="tel" placeholder="رقم الهاتف" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                          <input type="tel" placeholder="رقم الهاتف" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} />
                           <input type="text" placeholder="رقم الصورة (اختياري)" className="w-1/2 p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.photoNo} onChange={e => setFormData({...formData, photoNo: e.target.value})} />
                         </div>
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -1131,19 +1252,20 @@
                 )}
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} />
+                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} allRecords={allRecords} />
                 <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
               </div>
             );
         };
 
-        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db }) => {
+        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords }) => {
             const [showAddModal, setShowAddModal] = useState(false);
             const [isEditing, setIsEditing] = useState(false);
             const [query, setQuery] = useState('');
             const [payModal, setPayModal] = useState(null);
             const [receiptImageModal, setReceiptImageModal] = useState(null);
             const [txnDetailsModal, setTxnDetailsModal] = useState(null);
+            const [loyaltyAlert, setLoyaltyAlert] = useState('');
             
             const [formData, setFormData] = useState({
                 groomName: '', brideName: '', phone: '', groomAddress: '',
@@ -1296,6 +1418,23 @@
                 }
             };
 
+            const handlePhoneChange = (val) => {
+                setFormData(prev => ({...prev, phone: val}));
+                if (val.length >= 10 && allRecords) {
+                    const pastTxn = allRecords.find(t => t.phone === val);
+                    if (pastTxn) {
+                        setFormData(prev => ({
+                            ...prev,
+                            groomName: prev.groomName || pastTxn.groomName || pastTxn.clientName || '',
+                            brideName: prev.brideName || pastTxn.brideName || '',
+                            groomAddress: prev.groomAddress || pastTxn.groomAddress || ''
+                        }));
+                        const visits = allRecords.filter(t => t.phone === val).length;
+                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}! (يمكنك تقديم خصم كهدية ولاء)`);
+                    } else { setLoyaltyAlert(''); }
+                } else { setLoyaltyAlert(''); }
+            };
+
             const filteredWeds = query ? weddings.filter(t => t.groomName?.includes(query) || t.brideName?.includes(query) || t.phone?.includes(query) || t.receiptNo.toString().includes(query)) : weddings;
 
             return (
@@ -1320,25 +1459,28 @@
                     </span>
                   </h2>
                   <div className="space-y-4">
-                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد حجوزات مسجلة.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} />)}
+                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد حجوزات مسجلة.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
                   </div>
                 </div>
 
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-5xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                      <button onClick={() => setShowAddModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-pink-400"><i className="ph ph-x text-xl"></i></button>
+                      <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-pink-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3 flex items-center gap-2"><i className="ph ph-heart text-pink-500"></i> {isEditing ? 'تعديل حجز الزفاف' : 'تفاصيل حجز زفاف جديد'}</h2>
                       <form onSubmit={handleSubmit} className="space-y-5">
                         
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                           <h4 className="text-sm font-bold text-pink-400 mb-3 border-b border-slate-800 pb-2">بيانات العرسان الأساسية</h4>
+                           <div className="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+                               <h4 className="text-sm font-bold text-pink-400">بيانات العرسان الأساسية</h4>
+                               {loyaltyAlert && <span className="text-yellow-400 text-xs font-bold bg-yellow-950/40 px-3 py-1 rounded-lg border border-yellow-500/50 shadow-inner">{loyaltyAlert}</span>}
+                           </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                               <input type="text" placeholder="اسم العريس (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.groomName} onChange={e => setFormData({...formData, groomName: e.target.value})} />
                               <input type="text" placeholder="اسم العروسة (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.brideName} onChange={e => setFormData({...formData, brideName: e.target.value})} />
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <input type="tel" placeholder="رقم الهاتف (واتساب للتواصل)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                              <input type="tel" placeholder="رقم الهاتف (واتساب للتواصل)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} />
                               <input type="text" placeholder="عنوان العريس (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.groomAddress} onChange={e => setFormData({...formData, groomAddress: e.target.value})} />
                            </div>
                         </div>
@@ -1467,7 +1609,7 @@
                 )}
 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} />
+                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} allRecords={allRecords} />
                 <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
               </div>
             );
@@ -1810,6 +1952,8 @@
                       const getLabel = (k) => {
                         switch(k) {
                           case 'welcome': return '👋 رسالة الترحيب الأولى';
+                          case 'welcomeBack': return '🌟 رسالة ترحيب بالعودة (للعملاء الدائمين)';
+                          case 'vipDiscount': return '🎁 رسالة خصم للعملاء المميزين (VIP)';
                           case 'invoice': return '🧾 شكل الفاتورة الإلكترونية';
                           case 'reminder': return '⚠️ تذكير بالمبلغ المتبقي';
                           case 'ready': return '🎉 رسالة جاهزية الطلب للاستلام';
@@ -1991,6 +2135,8 @@
 
             return () => { unsubTxns(); unsubWeds(); unsubInv(); };
           }, [user, isTracking, trackType]);
+          
+          const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
 
           const saveSettingsToDB = async (newSettings) => {
               if (!user || isTracking) return;
@@ -2251,7 +2397,7 @@
                           {feedbackSubmitted ? (
                               <div className="bg-green-950/40 border border-green-500/30 p-4 rounded-xl text-center">
                                   <i className="ph-fill ph-check-circle text-4xl text-green-500 mb-2"></i>
-                                  <p className="text-green-400 font-bold">شكراً لك! تم إرسال تقييمك بنجاح للإدارة.</p>
+                                  <p className="text-green-400 font-bold">شكراً لك! تم حفظ وإرسال تقييمك بنجاح للإدارة.</p>
                               </div>
                           ) : (
                               <>
@@ -2301,7 +2447,7 @@
                                       {isSubmittingFeedback ? (
                                           <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                                       ) : (
-                                          <><i className="ph-fill ph-paper-plane-right text-lg text-yellow-500 group-hover:scale-110 transition-transform"></i> حفظ وإرسال التقييم</>
+                                          <><i className="ph-fill ph-paper-plane-right text-lg text-yellow-500 group-hover:scale-110 transition-transform"></i> حفظ التقييم وإرساله للإدارة</>
                                       )}
                                   </button>
                               </>
@@ -2333,8 +2479,8 @@
               <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
-                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} />}
-                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} />}
+                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} />}
+                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} />}
                         {activeTab === 'expenses' && <ExpensesTab settings={settings} expenses={expenses} inventory={inventory} db={db} />}
                         {activeTab === 'reports' && <ReportsTab settings={settings} transactions={transactions} weddings={weddings} expenses={expenses} />}
                         {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} inventory={inventory} updateInventoryExact={updateInventoryExact} saveSettingsToDB={saveSettingsToDB} />}
