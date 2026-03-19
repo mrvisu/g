@@ -599,7 +599,6 @@
                       
                       <div className="flex flex-wrap gap-2 text-xs font-bold">
                           <span className="bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-1">سعر البيع: <b className="text-purple-400">{prod.price} ج.م</b></span>
-                          <span className="bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-1">سعر الجملة: <b className="text-orange-400">{prod.wholesalePrice || 0} ج.م</b></span>
                           <span className="bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-1">العدد الكلي: <b className="text-blue-400">{prod.totalQty || 0}</b></span>
                       </div>
                     </div>
@@ -2094,7 +2093,12 @@
                 
                 if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
 
-                if(!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
+                if (!data.waTemplates) {
+                    data.waTemplates = DEFAULT_WA_TEMPLATES;
+                } else {
+                    data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
+                }
+                
                 if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) {
                     data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                 }
