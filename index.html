@@ -322,7 +322,51 @@
 
         // --- Extracted UI Components ---
 
-        const Navigation = ({ settings, activeTab, setActiveTab }) => {
+        const LoginScreen = ({ validPassword, onLogin }) => {
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (password === validPassword) {
+                    onLogin();
+                } else {
+                    setError('كلمة المرور غير صحيحة');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-4">
+                    <div className="bg-slate-900 p-8 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-sm text-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-yellow-300"></div>
+                        <div className="w-20 h-20 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-yellow-500/30 shadow-lg shadow-yellow-900/20">
+                            <i className="ph-fill ph-lock-key text-4xl"></i>
+                        </div>
+                        <h2 className="text-2xl font-black mb-2 text-white">نظام الإدارة والتتبع</h2>
+                        <p className="text-slate-400 text-sm mb-8">الرجاء إدخال كلمة المرور للمتابعة</p>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                                    placeholder="كلمة المرور..." 
+                                    className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-yellow-500 outline-none text-center font-black tracking-widest text-xl shadow-inner transition-colors"
+                                    autoFocus
+                                />
+                                {error && <p className="text-red-400 text-xs font-bold mt-3 bg-red-950/40 p-2 rounded-lg border border-red-900/50 flex items-center justify-center gap-1"><i className="ph ph-warning-circle text-base"></i> {error}</p>}
+                            </div>
+                            <button type="submit" className="w-full bg-gradient-to-l from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-slate-900 font-black py-4 rounded-xl shadow-lg shadow-yellow-900/20 transition-all text-lg flex justify-center items-center gap-2">
+                                <i className="ph-bold ph-sign-in text-xl"></i> تسجيل الدخول
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const Navigation = ({ settings, activeTab, setActiveTab, onLogout }) => {
             const navItems = [
               { id: 'dashboard', icon: <i className="ph ph-squares-four text-xl"></i>, label: 'الرئيسية' },
               { id: 'weddings', icon: <i className="ph ph-heart text-xl"></i>, label: 'حجوزات الزفاف 💍' },
@@ -349,6 +393,10 @@
                           {btn.icon}{btn.label}
                         </button>
                       ))}
+                      <div className="w-px h-6 bg-slate-700 mx-2"></div>
+                      <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all text-red-400 hover:text-white hover:bg-red-900/50" title="تسجيل الخروج وإقفال النظام">
+                          <i className="ph ph-sign-out text-lg"></i> خروج
+                      </button>
                     </div>
                   </div>
                   
@@ -359,6 +407,9 @@
                           {btn.icon}{btn.label}
                         </button>
                       ))}
+                      <button onClick={onLogout} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-900 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50">
+                          <i className="ph ph-sign-out text-lg"></i> خروج
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1680,6 +1731,14 @@
                         }
                       }} className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-purple-400 hover:file:bg-slate-700 transition-colors" />
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block font-bold text-sm text-slate-400 mb-2">كلمة المرور للنظام (الإدارة):</label>
+                      <div className="relative max-w-sm">
+                          <input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 1234" />
+                          <i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">سيتم طلب كلمة المرور هذه عند فتح لوحة التحكم.</p>
+                    </div>
                   </div>
                 </div>
                 
@@ -1803,12 +1862,15 @@
           const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
           const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
           
+          const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
+
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000,
+            adminPassword: '1234',
             services: DEFAULT_SERVICES,
             products: DEFAULT_PRODUCTS,
             weddingPackages: DEFAULT_WEDDING_PACKAGES,
@@ -1824,6 +1886,19 @@
           const trackReceipt = urlParams.get('receipt');
           const trackType = urlParams.get('type') || 't'; 
           const isTracking = trackPhone && trackReceipt;
+
+          useEffect(() => {
+              const savedAuth = localStorage.getItem('studioAdminAuth');
+              if (savedAuth === 'true') {
+                  setIsAuthenticatedAdmin(true);
+              }
+          }, []);
+
+          const handleLogout = () => {
+              setIsAuthenticatedAdmin(false);
+              localStorage.removeItem('studioAdminAuth');
+              window.location.reload();
+          };
 
           useEffect(() => {
             const initAuth = async () => {
@@ -1869,6 +1944,8 @@
                 if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) {
                     data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                 }
+
+                if (!data.adminPassword) data.adminPassword = '1234';
 
                 setSettings(data);
               }
@@ -2164,7 +2241,7 @@
                           {feedbackSubmitted ? (
                               <div className="bg-green-950/40 border border-green-500/30 p-4 rounded-xl text-center">
                                   <i className="ph-fill ph-check-circle text-4xl text-green-500 mb-2"></i>
-                                  <p className="text-green-400 font-bold">شكراً لك! تم إرسال تقييمك بنجاح.</p>
+                                  <p className="text-green-400 font-bold">شكراً لك! تم إرسال تقييمك بنجاح للإدارة.</p>
                               </div>
                           ) : (
                               <>
@@ -2214,7 +2291,7 @@
                                       {isSubmittingFeedback ? (
                                           <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                                       ) : (
-                                          <><i className="ph-fill ph-paper-plane-right text-lg text-yellow-500 group-hover:scale-110 transition-transform"></i> إرسال التقييم للإدارة</>
+                                          <><i className="ph-fill ph-paper-plane-right text-lg text-yellow-500 group-hover:scale-110 transition-transform"></i> حفظ وإرسال التقييم</>
                                       )}
                                   </button>
                               </>
@@ -2234,10 +2311,15 @@
               );
           }
 
+          // إذا لم يكن يتتبع العميل ولم يسجل الدخول للإدارة
+          if (!isTracking && !isAuthenticatedAdmin) {
+              return <LoginScreen validPassword={settings.adminPassword || '1234'} onLogin={() => { setIsAuthenticatedAdmin(true); localStorage.setItem('studioAdminAuth', 'true'); }} />;
+          }
+
           return (
             <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
               {authError && <div className="bg-red-600 text-white text-center py-1 font-bold text-xs">{authError}</div>}
-              {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} />}
+              {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} onLogout={handleLogout} />}
               <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
