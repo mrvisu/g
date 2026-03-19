@@ -1060,8 +1060,13 @@
 
                 {!query && (
                   <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4">
-                      <i className="ph ph-files text-blue-400 text-2xl"></i> عمليات اليوم ({todaysTxns.length})
+                    <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
+                      <div className="flex items-center gap-2">
+                          <i className="ph ph-files text-blue-400 text-2xl"></i> عمليات اليوم
+                      </div>
+                      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
+                          <i className="ph-fill ph-chart-bar text-lg"></i> {todaysTxns.length} عملية
+                      </span>
                     </h2>
                     <div className="space-y-4">
                       {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} />)}
@@ -1306,8 +1311,13 @@
                 </div>
 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4">
-                    <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> حجوزات الزفاف ({filteredWeds.length})
+                  <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-2">
+                        <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> حجوزات الزفاف
+                    </div>
+                    <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
+                        <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
+                    </span>
                   </h2>
                   <div className="space-y-4">
                     {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد حجوزات مسجلة.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} />)}
