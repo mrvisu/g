@@ -72,6 +72,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         const { useState, useEffect, useMemo } = React;
 
@@ -151,6 +152,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Initialize Storage
 
         // --- Helper Functions ---
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
@@ -186,6 +188,43 @@
             }
             return txn.requirements || 'لا يوجد تفاصيل';
         };
+
+        // --- Auto Deletion Cleanup Logic ---
+        const checkAndCleanExpiredPhotos = async (txn, db, storage) => {
+            if (!txn || !txn.uploadedPhotos || txn.uploadedPhotos.length === 0) return txn;
+            let hasExpired = false;
+            const validPhotos = [];
+            const now = Date.now();
+
+            for (const photo of txn.uploadedPhotos) {
+                // Check if photo has expiry and is expired
+                if (photo.expiryTimestamp && now > photo.expiryTimestamp) {
+                    hasExpired = true;
+                    if (photo.path) {
+                        try {
+                            const storageRef = ref(storage, photo.path);
+                            await deleteObject(storageRef);
+                        } catch (e) {
+                            console.warn("Failed to delete expired image from Storage", e);
+                        }
+                    }
+                } else {
+                    validPhotos.push(photo);
+                }
+            }
+
+            if (hasExpired) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
+                const updatedTxn = {...txn, uploadedPhotos: validPhotos};
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updatedTxn);
+                } catch (err) { console.error("Error updating document after cleanup", err); }
+                return updatedTxn;
+            }
+            return txn;
+        };
+
 
         const generateWA_Message = (templateKey, txn, settings, isWedding = false) => {
             let msg = settings.waTemplates[templateKey] || "";
@@ -664,7 +703,7 @@
                 <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4 flex-col gap-4" onClick={onClose}>
                     <button onClick={onClose} className="absolute top-4 left-4 text-slate-300 hover:text-red-400 bg-slate-800 p-2 rounded-full transition-colors z-10"><i className="ph ph-x text-xl"></i></button>
                     <img src={imageUrl} alt="Fullscreen Image" className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()} />
-                    <a href={imageUrl} download="studio_photo.jpg" onClick={e => e.stopPropagation()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
+                    <a href={imageUrl} download="studio_photo.jpg" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
                         <i className="ph ph-download-simple text-xl"></i> تحميل الصورة
                     </a>
                 </div>
@@ -675,6 +714,19 @@
             const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
             const [uploadProgress, setUploadProgress] = useState(0);
 
+            useEffect(() => {
+                if(txnDetailsModal) {
+                    // Check and clean expired photos immediately when modal opens
+                    const runCleanup = async () => {
+                        const updatedTxn = await checkAndCleanExpiredPhotos(txnDetailsModal, db, getStorage());
+                        if(updatedTxn.uploadedPhotos?.length !== txnDetailsModal.uploadedPhotos?.length) {
+                             setTxnDetailsModal(updatedTxn);
+                        }
+                    };
+                    runCleanup();
+                }
+            }, [txnDetailsModal?.id]); // Only run when opening a new modal
+
             if (!txnDetailsModal) return null;
             
             const isWedding = txnDetailsModal.type === 'wedding';
@@ -683,35 +735,7 @@
             
             const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
 
-            // دالة قراءة وضغط الصورة مع دعم حتى 10 ميجا وحفظ جودة عالية قدر الإمكان
-            const readAndCompressFile = (file) => {
-                return new Promise((resolve, reject) => {
-                    if (file.size > 10 * 1024 * 1024) {
-                        reject(new Error("حجم الصورة يتجاوز 10 ميجابايت."));
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = (event) => {
-                        const img = new Image();
-                        img.src = event.target.result;
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 2500; // جودة عالية جداً للصورة
-                            let scaleSize = 1;
-                            if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                            canvas.width = img.width * scaleSize;
-                            canvas.height = img.height * scaleSize;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            // ضغط الصورة إلى JPEG بجودة 85% لتقليل المساحة قليلاً مع الاحتفاظ بالجودة
-                            const base64 = canvas.toDataURL('image/jpeg', 0.85);
-                            resolve({ name: file.name, url: base64 });
-                        };
-                    };
-                });
-            };
-
+            // رفع الصورة مباشرة إلى Firebase Storage بجودتها الأصلية
             const handlePhotoUpload = async (e) => {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
@@ -719,25 +743,46 @@
                 
                 try {
                     let newUploaded = [...(txnDetailsModal.uploadedPhotos || [])];
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                    const storageObj = getStorage();
+
                     for (let i = 0; i < files.length; i++) {
-                        if (files[i].size > 10 * 1024 * 1024) {
-                            alert(`عذراً، الصورة ${files[i].name} تتجاوز مساحتها 10 ميجابايت كحد أقصى للرفع.`);
-                            continue;
-                        }
-                        const compressedPhoto = await readAndCompressFile(files[i]);
+                        const file = files[i];
+                        // تحديد مسار الصورة في Storage
+                        const storagePath = `artifacts/${appId}/public/data/photos/${txnDetailsModal.id}_${Date.now()}_${file.name}`;
+                        const storageRef = ref(storageObj, storagePath);
+
+                        // بدء الرفع
+                        const uploadTask = uploadBytesResumable(storageRef, file);
                         
-                        // التحقق من أن حجم الصور لن يتجاوز مساحة قاعدة بيانات Firestore (حد أقصى حوالي 1 ميجا للعملية)
-                        const testSize = JSON.stringify([...newUploaded, compressedPhoto]).length;
-                        if (testSize > 900000) { 
-                            alert("عذراً، لا يمكن إضافة المزيد من الصور لأنها ستتجاوز الحد الأقصى للمساحة المسموحة للإيصال الواحد في قاعدة البيانات. يرجى استخدام (رابط تحميل خارجي) للألبومات والملفات الكبيرة.");
-                            break;
-                        }
-                        
-                        newUploaded.push(compressedPhoto);
-                        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+                        await new Promise((resolve, reject) => {
+                            uploadTask.on('state_changed', 
+                                (snapshot) => {
+                                    // حساب نسبة التقدم الكلية
+                                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                    const overallProgress = Math.round(((i) / files.length) * 100 + (progress / files.length));
+                                    setUploadProgress(overallProgress);
+                                }, 
+                                (error) => { reject(error); }, 
+                                async () => {
+                                    // اكتمل الرفع، الحصول على الرابط المباشر
+                                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                                    
+                                    // إضافة تاريخ الصلاحية (5 أيام من الآن)
+                                    const expiryTime = Date.now() + (5 * 24 * 60 * 60 * 1000); 
+
+                                    newUploaded.push({
+                                        name: file.name,
+                                        url: downloadURL,
+                                        path: storagePath,
+                                        expiryTimestamp: expiryTime
+                                    });
+                                    resolve();
+                                }
+                            );
+                        });
                     }
 
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                     const updated = {...txnDetailsModal, uploadedPhotos: newUploaded};
                     const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
                     await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
@@ -753,10 +798,18 @@
 
             const handleDeletePhoto = async (index) => {
                 if(!confirm("هل أنت متأكد من حذف هذه الصورة؟")) return;
+                const photoToDelete = txnDetailsModal.uploadedPhotos[index];
                 const newUploaded = [...txnDetailsModal.uploadedPhotos];
                 newUploaded.splice(index, 1);
                 
                 try {
+                    // حذف من Storage أولاً إذا كان لها مسار
+                    if (photoToDelete.path) {
+                        const storageObj = getStorage();
+                        const storageRef = ref(storageObj, photoToDelete.path);
+                        await deleteObject(storageRef).catch(err => console.warn("قد تكون الصورة محذوفة مسبقاً:", err));
+                    }
+
                     const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                     const updated = {...txnDetailsModal, uploadedPhotos: newUploaded};
                     const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
@@ -837,12 +890,15 @@
                        )}
                     </div>
 
-                    {/* قسم رفع الصور المضغوطة (Base64) */}
+                    {/* قسم الرفع السحابي (جودة عالية) */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
                        <p className="text-slate-500 text-sm font-bold flex items-center gap-2 mb-1">
-                           <i className="ph ph-upload-simple text-green-500 text-lg"></i> رفع صور للعميل (بجودة عالية تصل لـ 10 ميجا للصورة)
+                           <i className="ph ph-cloud-arrow-up text-green-500 text-lg"></i> رفع صور للعميل (جودة أصلية)
                        </p>
-                       <p className="text-[10px] text-slate-400 mb-3">*بسبب قيود الاستضافة، إذا كان عدد وحجم الصور كبيراً جداً سيطلب منك النظام استخدام رابط خارجي (كـ جوجل درايف).</p>
+                       <div className="flex bg-yellow-950/30 border border-yellow-900/50 p-2 rounded-lg items-center gap-2 mb-3">
+                            <i className="ph-fill ph-warning-circle text-yellow-500"></i>
+                            <p className="text-[10px] text-yellow-400 leading-tight">سيتم حفظ الصور على السحابة، و<b>ستُحذف تلقائياً بعد 5 أيام</b> من تاريخ الرفع لتوفير مساحة التخزين.</p>
+                       </div>
                        
                        <div className="flex flex-col gap-3">
                           <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhotos} className="block w-full text-sm text-slate-400 file:ml-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-green-900/30 file:text-green-400 hover:file:bg-green-900/50 transition-colors border border-slate-700 rounded-xl cursor-pointer" />
@@ -855,14 +911,20 @@
                        
                        {txnDetailsModal.uploadedPhotos && txnDetailsModal.uploadedPhotos.length > 0 && (
                            <div className="mt-4 pt-4 border-t border-slate-800">
-                               <p className="text-xs text-slate-400 mb-3 font-bold">الصور المرفوعة ({txnDetailsModal.uploadedPhotos.length}):</p>
+                               <p className="text-xs text-slate-400 mb-3 font-bold flex justify-between items-center">
+                                   <span>الصور المرفوعة ({txnDetailsModal.uploadedPhotos.length}):</span>
+                               </p>
                                <div className="flex flex-wrap gap-3">
-                                   {txnDetailsModal.uploadedPhotos.map((photo, idx) => (
+                                   {txnDetailsModal.uploadedPhotos.map((photo, idx) => {
+                                       const daysRemaining = photo.expiryTimestamp ? Math.max(0, Math.ceil((photo.expiryTimestamp - Date.now()) / (1000 * 60 * 60 * 24))) : 5;
+                                       return (
                                        <div key={idx} className="relative group w-16 h-16">
                                            <img src={photo.url} className="w-full h-full object-cover rounded-lg border border-slate-700 cursor-pointer shadow-sm hover:border-green-500 transition-colors" onClick={() => setReceiptImageModal(photo.url)} title="عرض الصورة" />
+                                           <div className="absolute bottom-0 left-0 right-0 bg-slate-950/80 text-[8px] text-center font-mono py-0.5 rounded-b-lg">متبقي {daysRemaining} يوم</div>
                                            <button onClick={() => handleDeletePhoto(idx)} className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 shadow-lg transition-all scale-90 hover:scale-100"><i className="ph ph-x text-xs"></i></button>
                                        </div>
-                                   ))}
+                                       );
+                                   })}
                                </div>
                            </div>
                        )}
@@ -1254,7 +1316,7 @@
                 dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
                 clientName: formData.clientName,
                 phone: formData.phone,
-                photoNo: formData.photoNo.filter(n => n.trim() !== ''), // حفظ الأرقام الغير فارغة فقط
+                photoNo: formData.photoNo.filter(n => n.trim() !== ''),
                 requirements: formData.requirements,
                 total: total,
                 paid: paid,
@@ -1330,13 +1392,13 @@
                 displayTxns = displayTxns.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
             }
 
-            const todaysTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
             // If not filtering, show today's by default
             if (!isFiltering) {
-                displayTxns = todaysTxns;
+                displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
             }
 
-            const todaysTotalCollected = todaysTxns.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
+            // Calculate total collected for the *displayed* transactions
+            const currentTotalCollected = displayTxns.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
 
             return (
               <div className="space-y-6">
@@ -1358,35 +1420,26 @@
                   </div>
                 </div>
 
-                {isFiltering ? (
-                  <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4">
-                    <h3 className="text-lg font-bold text-slate-300 border-b border-slate-800 pb-2">نتائج البحث والفلتر ({displayTxns.length})</h3>
-                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج مطابقة لبحثك.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
-                  </div>
-                ) : (
-                  <>
-                  <TopCustomers allRecords={allRecords} />
+                {isFiltering ? null : <TopCustomers allRecords={allRecords} />}
                   
-                  <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                    <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                      <div className="flex items-center gap-2">
-                          <i className="ph ph-files text-blue-400 text-2xl"></i> عمليات اليوم
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 justify-end">
-                          <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
-                              <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(todaysTotalCollected)}
-                          </span>
-                          <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
-                              <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {todaysTxns.length} عملية
-                          </span>
-                      </div>
-                    </h2>
-                    <div className="space-y-4">
-                      {todaysTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد عمليات مسجلة اليوم.</p> : todaysTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
+                <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
+                  <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-2">
+                        <i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}
                     </div>
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        </span>
+                        <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية
+                        </span>
+                    </div>
+                  </h2>
+                  <div className="space-y-4">
+                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
                   </div>
-                  </>
-                )}
+                </div>
 
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1677,12 +1730,20 @@
 
             // Filtering logic
             let filteredWeds = weddings;
+            const isFiltering = query !== '' || filterDate !== '';
+            
             if (query) {
                 filteredWeds = filteredWeds.filter(t => t.groomName?.includes(query) || t.brideName?.includes(query) || t.phone?.includes(query) || t.receiptNo.toString().includes(query));
             }
             if (filterDate) {
                 filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
             }
+            
+            if (!isFiltering) {
+                filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            }
+
+            const currentTotalCollected = filteredWeds.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
 
             return (
               <div className="space-y-6">
@@ -1707,14 +1768,19 @@
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
                     <div className="flex items-center gap-2">
-                        <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> حجوزات الزفاف {(query || filterDate) ? ' (نتائج الفلتر)' : ''}
+                        <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}
                     </div>
-                    <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
-                        <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        </span>
+                        <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
+                            <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
+                        </span>
+                    </div>
                   </h2>
                   <div className="space-y-4">
-                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد حجوزات مسجلة.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
+                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
                   </div>
                 </div>
 
@@ -1735,7 +1801,7 @@
                               <input type="text" placeholder="اسم العروسة (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.brideName} onChange={e => setFormData({...formData, brideName: e.target.value})} />
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <input type="tel" placeholder="رقم الهاتف (واتساب للتواصل)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} />
+                              <input type="tel" placeholder="رقم الهاتف (واتساب للتواصل)" required className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} />
                               <input type="text" placeholder="عنوان العريس (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.groomAddress} onChange={e => setFormData({...formData, groomAddress: e.target.value})} />
                            </div>
                         </div>
@@ -2575,12 +2641,19 @@
                       return () => clearTimeout(timer);
                   } else {
                       setShowNotFound(false);
-                      if (!currentTxn.viewedByClient) {
-                          const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                          const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
-                          const updated = { ...currentTxn, viewedByClient: true, viewTime: new Date().toISOString() };
-                          setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, currentTxn.id), updated).catch(err => console.error(err));
-                      }
+                      
+                      // Auto-cleanup logic for expired photos on client side tracking
+                      const runClientCleanup = async () => {
+                           const updatedTxn = await checkAndCleanExpiredPhotos(currentTxn, db, getStorage());
+                           // Handle read status logic if not read yet
+                           if (!updatedTxn.viewedByClient) {
+                               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                               const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
+                               const finalTxn = { ...updatedTxn, viewedByClient: true, viewTime: new Date().toISOString() };
+                               setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, finalTxn.id), finalTxn).catch(err => console.error(err));
+                           }
+                      };
+                      runClientCleanup();
                   }
               }
           }, [isTracking, dataLoaded, transactions, weddings, trackPhone, trackReceipt, trackType]);
@@ -2673,21 +2746,26 @@
                       {txn.uploadedPhotos && txn.uploadedPhotos.length > 0 && (
                           <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                               <div className="absolute top-0 right-0 w-2 h-full bg-green-500"></div>
-                              <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-3">
+                              <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-slate-100">
                                   <i className="ph-fill ph-images text-green-400 text-2xl"></i> صورك الخاصة المرفوعة
                               </h3>
+                              <p className="text-[11px] text-slate-400 mb-4 leading-relaxed border-b border-slate-800 pb-3">تنويه: الصور محفوظة بجودتها الأصلية لتنزيلها، <b className="text-red-400">وسيتم حذفها نهائياً خلال 5 أيام</b> من تاريخ الرفع، يرجى حفظها لديكم.</p>
+                              
                               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                  {txn.uploadedPhotos.map((photo, idx) => (
+                                  {txn.uploadedPhotos.map((photo, idx) => {
+                                      const daysRemaining = photo.expiryTimestamp ? Math.max(0, Math.ceil((photo.expiryTimestamp - Date.now()) / (1000 * 60 * 60 * 24))) : 5;
+                                      return(
                                       <div key={idx} onClick={() => setReceiptImageModal(photo.url)} className="relative group block rounded-xl overflow-hidden border border-slate-700 aspect-square shadow-sm cursor-pointer">
                                           <img src={photo.url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                                           <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                                              <i className="ph-bold ph-arrows-out text-white text-xl"></i>
-                                              <span className="text-[10px] text-white font-bold">عرض وتنزيل</span>
+                                              <i className="ph-bold ph-download-simple text-white text-xl"></i>
+                                          </div>
+                                          <div className="absolute bottom-0 left-0 right-0 bg-slate-950/90 text-[8px] text-center text-slate-300 font-mono py-1 rounded-b-lg">
+                                              باقي {daysRemaining} أيام
                                           </div>
                                       </div>
-                                  ))}
+                                  )})}
                               </div>
-                              <p className="text-[11px] text-slate-400 mt-4 text-center"><i className="ph ph-info"></i> اضغط على الصورة لعرضها وحفظها بجودتها الأصلية</p>
                           </div>
                       )}
 
