@@ -693,7 +693,8 @@
                 try {
                     for (let i = 0; i < files.length; i++) {
                         const file = files[i];
-                        const storageRef = ref(storage, `artifacts/${appId}/public/photos/${txnDetailsModal.id}/${Date.now()}_${file.name}`);
+                        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                        const storageRef = ref(storage, `artifacts/${appId}/public/data/photos/${txnDetailsModal.id}_${Date.now()}_${safeName}`);
                         const snapshot = await uploadBytesResumable(storageRef, file);
                         const url = await getDownloadURL(snapshot.ref);
                         newUploaded.push({ name: file.name, url: url, path: snapshot.ref.fullPath });
