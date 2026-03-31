@@ -132,8 +132,8 @@
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nننتظرك دائماً لتسجيل أجمل ذكرياتك.",
           invoice: "أهلاً بك أ. {name} 👋\nنورتنا وشرفتنا في {studio} 📸✨\n\n🧾 فاتورة إلكترونية\n----------------------------------\n🧾 رقم الإيصال: {receipt}\n📅 التاريخ: {date}\n⏰ الوقت: {time}\n----------------------------------\n🛠️ المطلوب بالتفصيل:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م\n🔴 الباقي: {remaining} ج.م\n----------------------------------\n📍 لمتابعة حالة طلبك خطوة بخطوة، تفضل بزيارة الرابط التالي:\n{track_url}\n\nشكراً لثقتكم بنا!",
-          reminder: "مرحباً أ. {name} 🌟\nنأمل أن تكونوا بخير.\nنود تذكيركم بلطف بأنه يتبقى مبلغ لحسابكم في {studio} بقيمة {remaining} ج.م 💳.\n\nلتفاصيل الإيصال ورابط الدفع الإلكتروني المباشر (إنستاباي / محافظ)، يرجى زيارة الرابط التالي:\n{track_url}\n\nنسعد دائماً بخدمتكم وتوثيق أجمل لحظاتكم! ✨",
-          ready: "أهلاً أ. {name} 🎉. الطلب الخاص بك جاهز للاستلام في {studio}! \nباقي الحساب: {remaining} ج.م.\nرابط الطلب:\n{track_url}",
+          reminder: "مرحباً أ. {name} 🌟. نود تذكيركم بأن هناك مبلغ متبقي لحسابكم في {studio} بقيمة {remaining} ج.م. \nرقم الإيصال: {receipt}.",
+          ready: "أهلاً أ. {name} 🎉. الطلب الخاص بك جاهز للاستلام في {studio}! \nباقي الحساب: {remaining} ج.م. نورتنا وشرفتنا!",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!",
           tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك (إيصال #{receipt}) لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨"
         };
@@ -152,12 +152,21 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
+        const storage = getStorage(app); // Initialize Storage
 
         // --- Helper Functions ---
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
-        const formatDateOnly = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('ar-EG') : '';
-        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : '';
+        
+        const formatDateOnly = (dateStr) => {
+             if(!dateStr) return '';
+             return new Date(dateStr).toLocaleDateString('ar-EG');
+        };
+        
+        const formatDate = (dateStr) => {
+             if(!dateStr) return '';
+             return new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+        };
+        
         const formatTimeOnly = (dateStr) => {
              if(!dateStr) return '';
              const d = new Date(dateStr);
@@ -180,6 +189,7 @@
             return txn.requirements || 'لا يوجد تفاصيل';
         };
 
+        // --- Auto Deletion Cleanup Logic ---
         const checkAndCleanExpiredPhotos = async (txn, db, storage) => {
             if (!txn || !txn.uploadedPhotos || txn.uploadedPhotos.length === 0) return txn;
             let hasExpired = false;
@@ -187,6 +197,7 @@
             const now = Date.now();
 
             for (const photo of txn.uploadedPhotos) {
+                // Check if photo has expiry and is expired
                 if (photo.expiryTimestamp && now > photo.expiryTimestamp) {
                     hasExpired = true;
                     if (photo.path) {
@@ -213,6 +224,7 @@
             }
             return txn;
         };
+
 
         const generateWA_Message = (templateKey, txn, settings, isWedding = false) => {
             let msg = settings.waTemplates[templateKey] || "";
@@ -264,13 +276,15 @@
         const addToCalendar = (txn) => {
             if (!txn.weddingDate) return false;
 
-            let description = `✨ تفاصيل حجز الزفاف ✨\n──────────────────\n`;
+            let description = `✨ تفاصيل حجز الزفاف ✨\n`;
+            description += `──────────────────\n`;
             if (txn.groomName || txn.brideName) description += `🤵👰 العروسين: ${txn.groomName || ''} و ${txn.brideName || ''}\n`.trim();
             if (txn.phone) description += `📱 الهاتف: ${txn.phone}\n`;
             if (txn.location) description += `📍 اللوكيشن/القاعة: ${txn.location}\n`;
             if (txn.groomAddress) description += `🏠 عنوان العريس: ${txn.groomAddress}\n`;
             
-            description += `\n⏰ المواعيد والترتيبات\n──────────────────\n`;
+            description += `\n⏰ المواعيد والترتيبات\n`;
+            description += `──────────────────\n`;
             if (txn.makeupArtist) description += `💄 الميك أب: ${txn.makeupArtist}\n`;
             if (txn.leaveTime) description += `🚗 وقت الخروج: ${txn.leaveTime}\n`;
             if (txn.sessionType) description += `📸 نوع السيشن: ${txn.sessionType}\n`;
@@ -284,13 +298,17 @@
             if (txn.addons && txn.addons.length > 0) addonsText = txn.addons.map(a => a.name).join(' + ');
 
             if (pkgs || addonsText) {
-                description += `\n💼 الباقات والإضافات\n──────────────────\n`;
+                description += `\n💼 الباقات والإضافات\n`;
+                description += `──────────────────\n`;
                 if (pkgs) description += `📦 الباقات: ${pkgs}\n`;
                 if (addonsText) description += `➕ إضافات: ${addonsText}\n`;
             }
             
-            description += `\n💰 الحسابات\n──────────────────\n`;
-            description += `💵 الإجمالي: ${txn.total} ج.م\n✅ المدفوع: ${txn.paid} ج.م\n🔴 الباقي: ${txn.remaining} ج.م\n`;
+            description += `\n💰 الحسابات\n`;
+            description += `──────────────────\n`;
+            description += `💵 الإجمالي: ${txn.total} ج.م\n`;
+            description += `✅ المدفوع: ${txn.paid} ج.م\n`;
+            description += `🔴 الباقي: ${txn.remaining} ج.م\n`;
             
             const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=w`;
             description += `\n🔗 رابط تتبع العميل:\n${trackUrl}`;
@@ -305,7 +323,14 @@
             if (txn.leaveTime) {
                 const startDate = new Date(`${txn.weddingDate}T${txn.leaveTime}`);
                 const endDate = new Date(startDate.getTime() + 5 * 60 * 60 * 1000); 
-                const formatGoogleDate = (date) => date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0') + 'T' + String(date.getHours()).padStart(2, '0') + String(date.getMinutes()).padStart(2, '0') + '00';
+                
+                const formatGoogleDate = (date) => {
+                    return date.getFullYear() +
+                        String(date.getMonth() + 1).padStart(2, '0') +
+                        String(date.getDate()).padStart(2, '0') + 'T' +
+                        String(date.getHours()).padStart(2, '0') +
+                        String(date.getMinutes()).padStart(2, '0') + '00';
+                };
                 startStr = formatGoogleDate(startDate);
                 endStr = formatGoogleDate(endDate);
             } else {
@@ -320,7 +345,9 @@
             const encodedLocation = encodeURIComponent(txn.location || '');
             const dates = `${startStr}/${endStr}`;
 
-            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${dates}&details=${encodedDetails}&location=${encodedLocation}`, '_blank');
+            const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${dates}&details=${encodedDetails}&location=${encodedLocation}`;
+
+            window.open(googleCalendarUrl, '_blank');
             return true;
         };
 
@@ -333,70 +360,8 @@
             });
         };
 
+
         // --- Extracted UI Components ---
-
-        const CustomerProfileModal = ({ phone, allRecords, onClose, setTxnDetailsModal }) => {
-            if (!phone) return null;
-            const records = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
-            if (records.length === 0) return null;
-
-            const name = records[0].clientName || records[0].groomName || 'عميل بدون اسم';
-            const totalSpent = records.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0);
-            const totalPaid = records.reduce((sum, r) => sum + (parseFloat(r.paid) || 0), 0);
-            const totalRemaining = records.reduce((sum, r) => sum + (parseFloat(r.remaining) || 0), 0);
-
-            return (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={onClose}>
-                    <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-yellow-500/30 w-full max-w-2xl relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                        <button onClick={onClose} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
-                        
-                        <div className="text-center mb-6 border-b border-slate-800 pb-6">
-                            <div className="w-20 h-20 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500/30">
-                                <i className="ph-fill ph-star text-4xl"></i>
-                            </div>
-                            <h2 className="text-2xl font-black text-slate-100">{name}</h2>
-                            <p className="text-slate-400 font-mono mt-1" dir="ltr">{phone}</p>
-                            
-                            <div className="flex flex-wrap justify-center gap-4 mt-4">
-                                <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 flex-1 min-w-[120px]">
-                                    <p className="text-xs text-slate-500 mb-1">إجمالي التعاملات</p>
-                                    <p className="font-bold text-blue-400">{formatCurrency(totalSpent)}</p>
-                                </div>
-                                <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 flex-1 min-w-[120px]">
-                                    <p className="text-xs text-slate-500 mb-1">إجمالي المدفوع</p>
-                                    <p className="font-bold text-green-400">{formatCurrency(totalPaid)}</p>
-                                </div>
-                                <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 flex-1 min-w-[120px]">
-                                    <p className="text-xs text-slate-500 mb-1">بواقي مستحقة</p>
-                                    <p className={`font-bold ${totalRemaining > 0 ? 'text-red-400' : 'text-slate-300'}`}>{formatCurrency(totalRemaining)}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h3 className="font-bold text-lg mb-3 text-slate-200 flex items-center gap-2"><i className="ph ph-clock-counter-clockwise text-yellow-400"></i> سجل الزيارات والإيصالات ({records.length})</h3>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                            {records.map(r => (
-                                <div key={r.id} onClick={() => { onClose(); setTxnDetailsModal(r); }} className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 cursor-pointer hover:border-yellow-500/50 transition-colors">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <i className={`text-lg ${r.type === 'wedding' ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
-                                            <span className="font-bold text-slate-200">{r.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</span>
-                                            <span className="bg-slate-800 text-slate-400 text-[10px] px-2 py-0.5 rounded font-mono">#{r.receiptNo}</span>
-                                        </div>
-                                        <div className="text-xs text-slate-500 font-mono">📅 {formatDate(r.dateTime)}</div>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
-                                        <div><span className="text-slate-500 text-xs">الإجمالي:</span> <span className="font-bold text-slate-300">{r.total}</span></div>
-                                        <div><span className="text-slate-500 text-xs">الباقي:</span> <span className={`font-bold ${r.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>{r.remaining}</span></div>
-                                        <i className="ph ph-caret-left text-slate-500"></i>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )
-        };
 
         const LoginScreen = ({ validPassword, onLogin }) => {
             const [password, setPassword] = useState('');
@@ -475,6 +440,7 @@
                       </button>
                     </div>
                   </div>
+                  
                   <div className="lg:hidden pb-4 overflow-x-auto hide-scrollbar">
                     <div className="flex items-center gap-2 min-w-max">
                       {navItems.map(btn => (
@@ -493,7 +459,14 @@
         };
 
         const StatCard = ({title, value, color, highlight, onClick}) => {
-            const colors = { green: "bg-green-950/30 text-green-400 border-green-900/50", red: "bg-red-950/30 text-red-400 border-red-900/50", blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50", emerald: "bg-emerald-600 text-white border-emerald-500", rose: "bg-rose-600 text-white border-rose-500" };
+            const colors = { 
+                green: "bg-green-950/30 text-green-400 border-green-900/50", 
+                red: "bg-red-950/30 text-red-400 border-red-900/50", 
+                blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", 
+                indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50",
+                emerald: "bg-emerald-600 text-white border-emerald-500", 
+                rose: "bg-rose-600 text-white border-rose-500" 
+            };
             return (
               <div onClick={onClick} className={`p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
                 <h4 className="text-[11px] sm:text-xs opacity-80 mb-1">{title}</h4>
@@ -505,8 +478,13 @@
         const QuickServiceCard = ({ srvObj, onAdd, colorTheme = 'blue' }) => {
             const [qty, setQty] = useState(1);
             const [customPrice, setCustomPrice] = useState(srvObj.price || 0);
+
             useEffect(() => { setCustomPrice(srvObj.price || 0); }, [srvObj.price]);
-            const themeColors = { blue: { text: 'text-blue-400', hoverText: 'group-hover:text-blue-300', btn: 'bg-blue-600 hover:bg-blue-500' }, purple: { text: 'text-purple-400', hoverText: 'group-hover:text-purple-300', btn: 'bg-purple-600 hover:bg-purple-500' } };
+            
+            const themeColors = {
+                blue: { text: 'text-blue-400', hoverText: 'group-hover:text-blue-300', btn: 'bg-blue-600 hover:bg-blue-500' },
+                purple: { text: 'text-purple-400', hoverText: 'group-hover:text-purple-300', btn: 'bg-purple-600 hover:bg-purple-500' }
+            };
             const currentTheme = themeColors[colorTheme] || themeColors.blue;
 
             return (
@@ -521,9 +499,9 @@
                 {srvObj.desc && <span className="text-[9px] sm:text-[10px] text-slate-500 leading-relaxed truncate" title={srvObj.desc}>{srvObj.desc}</span>}
                 <div className="flex items-center gap-1.5 mt-auto pt-1.5 border-t border-slate-800/50">
                   <div className="flex items-center bg-slate-950 rounded-lg border border-slate-700 overflow-hidden shrink-0">
-                    <button type="button" onClick={(e) => { e.preventDefault(); setQty(Math.max(1, qty - 1)); }} className="px-1.5 py-0.5 text-slate-400 hover:text-white hover:bg-slate-800 font-black text-xs">-</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); setQty(Math.max(1, qty - 1)); }} className="px-1.5 py-0.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-black text-xs">-</button>
                     <input type="number" min="1" value={qty} onChange={e => setQty(parseInt(e.target.value) || 1)} className="w-5 bg-transparent text-white text-center outline-none text-[11px] font-bold" />
-                    <button type="button" onClick={(e) => { e.preventDefault(); setQty(qty + 1); }} className="px-1.5 py-0.5 text-slate-400 hover:text-white hover:bg-slate-800 font-black text-xs">+</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); setQty(qty + 1); }} className="px-1.5 py-0.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-black text-xs">+</button>
                   </div>
                   <button type="button" onClick={(e) => { e.preventDefault(); onAdd({...srvObj, price: customPrice}, qty); setQty(1); setCustomPrice(srvObj.price||0); }} className={`flex-1 text-white text-[10px] sm:text-xs font-bold py-1 rounded-lg transition-colors flex justify-center items-center gap-1 ${currentTheme.btn}`}>
                     <i className="ph ph-plus-circle text-xs"></i> <span className="hidden sm:inline">إضافة</span>
@@ -665,6 +643,7 @@
                       </div>
                     </div>
                   )})}
+                  
                   {items.length === 0 && <p className="text-center text-slate-500 py-4 text-sm">لا توجد منتجات مضافة بعد.</p>}
                 </div>
               </div>
@@ -673,31 +652,45 @@
 
         const PaymentModal = ({ payModal, setPayModal, db }) => {
             if (!payModal) return null;
+
             const handleSubmit = async (e) => {
               e.preventDefault();
               const amount = parseFloat(e.target.amount.value);
-              const updated = { ...payModal, paid: payModal.paid + amount, electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0), remaining: payModal.total - (payModal.paid + amount) };
-              if (updated.pendingReceipt && payModal.paymentType === 'electronic') updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt];
+              const updated = { 
+                  ...payModal, 
+                  paid: payModal.paid + amount, 
+                  electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0),
+                  remaining: payModal.total - (payModal.paid + amount) 
+              };
+              
+              if (updated.pendingReceipt && payModal.paymentType === 'electronic') {
+                  updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt];
+              }
               if (updated.pendingReceipt) delete updated.pendingReceipt;
+              
               delete updated.paymentType;
               const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
               setPayModal(null);
             };
+
             const displayName = payModal.type === 'wedding' ? `${payModal.groomName || ''} و ${payModal.brideName || ''}`.trim() || 'بدون اسم' : payModal.clientName;
+
             return (
               <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-slate-900 p-5 rounded-2xl shadow-xl border border-slate-800 w-full max-w-sm relative">
                   <button onClick={() => setPayModal(null)} className="absolute top-3 left-3 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
-                  <h3 className="text-xl font-black mb-3 border-b border-slate-800 pb-3 text-center text-slate-100">{payModal.paymentType === 'electronic' ? 'سداد إلكتروني (إنستاباي/محافظ)' : 'سداد نقدي'}</h3>
+                  <h3 className="text-xl font-black mb-3 border-b border-slate-800 pb-3 text-center text-slate-100">
+                      {payModal.paymentType === 'electronic' ? 'سداد إلكتروني (إنستاباي/محافظ)' : 'سداد نقدي'}
+                  </h3>
                   <div className="mb-4 bg-slate-950 p-3 rounded-xl text-center border border-slate-800">
                     <p className="text-slate-400 text-sm">العميل: <b className="text-white text-base">{displayName}</b></p>
                     <p className="text-red-400 font-bold mt-1 text-sm">الباقي المستحق: {payModal.remaining} ج.م</p>
                   </div>
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl text-xl font-black text-center outline-none focus:border-blue-500 shadow-inner"/>
-                    <button type="submit" className={`w-full text-white font-black py-3 rounded-xl shadow-lg transition-all text-base ${payModal.paymentType === 'electronic' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-green-600 hover:bg-green-500'}`}>تأكيد تحصيل المبلغ</button>
+                    <button type="submit" className={`w-full text-white font-black py-3 rounded-xl shadow-lg transition-all text-base ${payModal.paymentType === 'electronic' ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20' : 'bg-green-600 hover:bg-green-500 shadow-green-900/20'}`}>تأكيد تحصيل المبلغ</button>
                   </form>
                 </div>
               </div>
@@ -705,47 +698,14 @@
         };
 
         const ReceiptModal = ({ imageUrl, onClose }) => {
-            const [isDownloading, setIsDownloading] = useState(false);
             if (!imageUrl) return null;
-
-            const handleDownload = async (e) => {
-                e.stopPropagation();
-                setIsDownloading(true);
-                try {
-                    const response = await fetch(imageUrl);
-                    const blob = await response.blob();
-                    const blobUrl = window.URL.createObjectURL(blob);
-                    
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = `studio_photo_${Date.now()}.jpg`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(blobUrl);
-                } catch (err) {
-                    console.error("Download failed:", err);
-                    window.open(imageUrl, '_blank');
-                }
-                setIsDownloading(false);
-            };
-
             return (
                 <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4 flex-col gap-4" onClick={onClose}>
                     <button onClick={onClose} className="absolute top-4 left-4 text-slate-300 hover:text-red-400 bg-slate-800 p-2 rounded-full transition-colors z-10"><i className="ph ph-x text-xl"></i></button>
                     <img src={imageUrl} alt="Fullscreen Image" className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()} />
-                    <button 
-                        onClick={handleDownload} 
-                        disabled={isDownloading} 
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-slate-400 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all"
-                    >
-                        {isDownloading ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <i className="ph ph-download-simple text-xl"></i>
-                        )}
-                        {isDownloading ? 'جاري التحميل...' : 'تحميل الصورة الأصلية'}
-                    </button>
+                    <a href={imageUrl} download="studio_photo.jpg" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
+                        <i className="ph ph-download-simple text-xl"></i> تحميل الصورة
+                    </a>
                 </div>
             );
         };
@@ -756,6 +716,7 @@
 
             useEffect(() => {
                 if(txnDetailsModal) {
+                    // Check and clean expired photos immediately when modal opens
                     const runCleanup = async () => {
                         const updatedTxn = await checkAndCleanExpiredPhotos(txnDetailsModal, db, getStorage());
                         if(updatedTxn.uploadedPhotos?.length !== txnDetailsModal.uploadedPhotos?.length) {
@@ -764,18 +725,22 @@
                     };
                     runCleanup();
                 }
-            }, [txnDetailsModal?.id]);
+            }, [txnDetailsModal?.id]); // Only run when opening a new modal
 
             if (!txnDetailsModal) return null;
+            
             const isWedding = txnDetailsModal.type === 'wedding';
             const displayName = isWedding ? `${txnDetailsModal.groomName || ''} و ${txnDetailsModal.brideName || ''}`.trim() : txnDetailsModal.clientName;
             const reqsText = getReqsText(txnDetailsModal);
+            
             const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
 
+            // رفع الصورة مباشرة إلى Firebase Storage بجودتها الأصلية
             const handlePhotoUpload = async (e) => {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
                 setIsUploadingPhotos(true);
+                
                 try {
                     let newUploaded = [...(txnDetailsModal.uploadedPhotos || [])];
                     const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -783,27 +748,49 @@
 
                     for (let i = 0; i < files.length; i++) {
                         const file = files[i];
+                        // تحديد مسار الصورة في Storage
                         const storagePath = `artifacts/${appId}/public/data/photos/${txnDetailsModal.id}_${Date.now()}_${file.name}`;
                         const storageRef = ref(storageObj, storagePath);
+
+                        // بدء الرفع
                         const uploadTask = uploadBytesResumable(storageRef, file);
                         
                         await new Promise((resolve, reject) => {
                             uploadTask.on('state_changed', 
-                                (snapshot) => { setUploadProgress(Math.round(((i) / files.length) * 100 + ((snapshot.bytesTransferred / snapshot.totalBytes) * 100 / files.length))); }, 
+                                (snapshot) => {
+                                    // حساب نسبة التقدم الكلية
+                                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                    const overallProgress = Math.round(((i) / files.length) * 100 + (progress / files.length));
+                                    setUploadProgress(overallProgress);
+                                }, 
                                 (error) => { reject(error); }, 
                                 async () => {
+                                    // اكتمل الرفع، الحصول على الرابط المباشر
                                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                                    newUploaded.push({ name: file.name, url: downloadURL, path: storagePath, expiryTimestamp: Date.now() + (5 * 24 * 60 * 60 * 1000) });
+                                    
+                                    // إضافة تاريخ الصلاحية (5 أيام من الآن)
+                                    const expiryTime = Date.now() + (5 * 24 * 60 * 60 * 1000); 
+
+                                    newUploaded.push({
+                                        name: file.name,
+                                        url: downloadURL,
+                                        path: storagePath,
+                                        expiryTimestamp: expiryTime
+                                    });
                                     resolve();
                                 }
                             );
                         });
                     }
+
                     const updated = {...txnDetailsModal, uploadedPhotos: newUploaded};
                     const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
                     await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
                     setTxnDetailsModal(updated);
-                } catch (error) { alert("حدث خطأ أثناء الرفع."); }
+                } catch (error) {
+                    console.error("Upload error:", error);
+                    alert("حدث خطأ أثناء معالجة وحفظ الصور. " + (error.message || ""));
+                }
                 setIsUploadingPhotos(false);
                 setUploadProgress(0);
                 e.target.value = null; 
@@ -814,23 +801,31 @@
                 const photoToDelete = txnDetailsModal.uploadedPhotos[index];
                 const newUploaded = [...txnDetailsModal.uploadedPhotos];
                 newUploaded.splice(index, 1);
+                
                 try {
+                    // حذف من Storage أولاً إذا كان لها مسار
                     if (photoToDelete.path) {
-                        const storageRef = ref(getStorage(), photoToDelete.path);
-                        await deleteObject(storageRef).catch(e => console.warn(e));
+                        const storageObj = getStorage();
+                        const storageRef = ref(storageObj, photoToDelete.path);
+                        await deleteObject(storageRef).catch(err => console.warn("قد تكون الصورة محذوفة مسبقاً:", err));
                     }
+
                     const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                     const updated = {...txnDetailsModal, uploadedPhotos: newUploaded};
                     const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
                     await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
                     setTxnDetailsModal(updated);
-                } catch (error) { alert("حدث خطأ أثناء الحذف."); }
+                } catch (error) {
+                    console.error("Delete error:", error);
+                    alert("حدث خطأ أثناء الحذف.");
+                }
             };
 
             return (
               <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setTxnDetailsModal(null)}>
                 <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setTxnDetailsModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
+                  
                   <h3 className="text-2xl font-black mb-6 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2">
                     {isWedding ? <i className="ph ph-heart text-pink-500"></i> : <i className="ph ph-files text-blue-500"></i>}
                     تفاصيل {isWedding ? 'حجز زفاف' : 'الإيصال'} #{txnDetailsModal.receiptNo}
@@ -838,8 +833,14 @@
 
                   <div className="space-y-5">
                     <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-                       <div><p className="text-slate-500 text-xs mb-1">الاسم</p><p className="font-bold text-lg text-slate-100">{displayName}</p></div>
-                       <div className="text-left"><p className="text-slate-500 text-xs mb-1">رقم الهاتف</p><p className="font-mono text-slate-300">{txnDetailsModal.phone}</p></div>
+                       <div>
+                          <p className="text-slate-500 text-xs mb-1">الاسم</p>
+                          <p className="font-bold text-lg text-slate-100">{displayName}</p>
+                       </div>
+                       <div className="text-left">
+                          <p className="text-slate-500 text-xs mb-1">رقم الهاتف</p>
+                          <p className="font-mono text-slate-300">{txnDetailsModal.phone}</p>
+                       </div>
                     </div>
 
                     {isWedding && (
@@ -853,53 +854,73 @@
                     )}
 
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                       <p className="text-slate-500 text-xs mb-2">المطلوب بالتفصيل</p>
+                       <p className="text-slate-500 text-xs mb-2">المطلوب (الخدمات والمنتجات)</p>
                        <p className="text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">{reqsText}</p>
                     </div>
 
+                    {/* قسم أرقام الصور المتعددة */}
                     {txnDetailsModal.photoNo && (Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.some(n=>n) : true) && (
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
                            <span className="text-slate-500 text-sm">أرقام الصور:</span>
-                           <span className="font-bold text-slate-200" dir="ltr">{Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(Boolean).join(' , ') : txnDetailsModal.photoNo}</span>
+                           <span className="font-bold text-slate-200" dir="ltr">
+                               {Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(Boolean).join(' , ') : txnDetailsModal.photoNo}
+                           </span>
                         </div>
                     )}
 
+                    {/* قسم إضافة رابط تحميل الصور للعميل */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                       <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-link text-blue-500 text-lg"></i> رابط خارجي لتحميل الصور للعميل</p>
+                       <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2">
+                           <i className="ph ph-link text-blue-500 text-lg"></i> رابط خارجي لتحميل الصور (لإرساله للعميل)
+                       </p>
                        <div className="flex gap-2">
-                          <input type="url" placeholder="رابط درايف..." className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" defaultValue={txnDetailsModal.photosLink || ''} id="photosLinkInput" />
+                          <input type="url" placeholder="ضع رابط جوجل درايف أو الموقع هنا..." className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm focus:border-blue-500" defaultValue={txnDetailsModal.photosLink || ''} id="photosLinkInput" />
                           <button onClick={async () => {
                               const link = document.getElementById('photosLinkInput').value.trim();
                               const updated = {...txnDetailsModal, photosLink: link};
+                              const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
                               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                              await setDoc(doc(db, `artifacts/${appId}/public/data/${isWedding ? 'weddings' : 'transactions'}`, updated.id), updated);
+                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
                               setTxnDetailsModal(updated);
                               alert("تم حفظ رابط الصور بنجاح!");
-                          }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg text-sm font-bold">حفظ</button>
+                          }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg text-sm font-bold transition-colors">حفظ</button>
                        </div>
                        {txnDetailsModal.photosLink && (
                            <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> تم إرفاق الرابط. العميل سيتمكن من تحميل صوره عبر رابط التتبع.</p>
                        )}
                     </div>
 
+                    {/* قسم الرفع السحابي (جودة عالية) */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                       <p className="text-slate-500 text-sm font-bold flex items-center gap-2 mb-1"><i className="ph ph-cloud-arrow-up text-green-500 text-lg"></i> رفع صور للعميل مباشرة (جودة أصلية)</p>
-                       <p className="text-[10px] text-yellow-400 mb-3">ستُحذف تلقائياً بعد 5 أيام من تاريخ الرفع.</p>
+                       <p className="text-slate-500 text-sm font-bold flex items-center gap-2 mb-1">
+                           <i className="ph ph-cloud-arrow-up text-green-500 text-lg"></i> رفع صور للعميل (جودة أصلية)
+                       </p>
+                       <div className="flex bg-yellow-950/30 border border-yellow-900/50 p-2 rounded-lg items-center gap-2 mb-3">
+                            <i className="ph-fill ph-warning-circle text-yellow-500"></i>
+                            <p className="text-[10px] text-yellow-400 leading-tight">سيتم حفظ الصور على السحابة، و<b>ستُحذف تلقائياً بعد 5 أيام</b> من تاريخ الرفع لتوفير مساحة التخزين.</p>
+                       </div>
+                       
                        <div className="flex flex-col gap-3">
                           <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhotos} className="block w-full text-sm text-slate-400 file:ml-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-green-900/30 file:text-green-400 hover:file:bg-green-900/50 transition-colors border border-slate-700 rounded-xl cursor-pointer" />
-                          {isUploadingPhotos && <div className="w-full bg-slate-800 rounded-full h-2 mt-1 overflow-hidden"><div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div></div>}
+                          {isUploadingPhotos && (
+                              <div className="w-full bg-slate-800 rounded-full h-2 mt-1 overflow-hidden">
+                                  <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                              </div>
+                          )}
                        </div>
                        
                        {txnDetailsModal.uploadedPhotos && txnDetailsModal.uploadedPhotos.length > 0 && (
                            <div className="mt-4 pt-4 border-t border-slate-800">
-                               <p className="text-xs text-slate-400 mb-3 font-bold">الصور المرفوعة ({txnDetailsModal.uploadedPhotos.length}):</p>
+                               <p className="text-xs text-slate-400 mb-3 font-bold flex justify-between items-center">
+                                   <span>الصور المرفوعة ({txnDetailsModal.uploadedPhotos.length}):</span>
+                               </p>
                                <div className="flex flex-wrap gap-3">
                                    {txnDetailsModal.uploadedPhotos.map((photo, idx) => {
                                        const daysRemaining = photo.expiryTimestamp ? Math.max(0, Math.ceil((photo.expiryTimestamp - Date.now()) / (1000 * 60 * 60 * 24))) : 5;
                                        return (
                                        <div key={idx} className="relative group w-16 h-16">
-                                           <img src={photo.url} className="w-full h-full object-cover rounded-lg border border-slate-700 cursor-pointer shadow-sm hover:border-green-500 transition-colors" onClick={() => setReceiptImageModal(photo.url)} />
-                                           <div className="absolute bottom-0 left-0 right-0 bg-slate-950/80 text-[8px] text-center font-mono py-0.5 rounded-b-lg">متبقي {daysRemaining}يوم</div>
+                                           <img src={photo.url} className="w-full h-full object-cover rounded-lg border border-slate-700 cursor-pointer shadow-sm hover:border-green-500 transition-colors" onClick={() => setReceiptImageModal(photo.url)} title="عرض الصورة" />
+                                           <div className="absolute bottom-0 left-0 right-0 bg-slate-950/80 text-[8px] text-center font-mono py-0.5 rounded-b-lg">متبقي {daysRemaining} يوم</div>
                                            <button onClick={() => handleDeletePhoto(idx)} className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 shadow-lg transition-all scale-90 hover:scale-100"><i className="ph ph-x text-xs"></i></button>
                                        </div>
                                        );
@@ -912,50 +933,83 @@
                     <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 grid grid-cols-2 gap-4 relative overflow-hidden">
                        <div className={`absolute top-0 right-0 w-1 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
                        <div><p className="text-slate-500 text-xs mb-1">الإجمالي</p><p className="font-bold text-slate-100">{txnDetailsModal.total} ج.م</p></div>
-                       <div><p className="text-slate-500 text-xs mb-1">المدفوع الكلي</p><p className="font-bold text-green-400">{txnDetailsModal.paid} ج.م</p></div>
-                       <div><p className="text-slate-500 text-xs mb-1">النقدي</p><p className="font-bold text-emerald-400">{(txnDetailsModal.paid || 0) - (txnDetailsModal.electronicPaid || 0)} ج.م</p></div>
-                       <div><p className="text-slate-500 text-xs mb-1">الإلكتروني</p><p className="font-bold text-indigo-400">{txnDetailsModal.electronicPaid || 0} ج.م</p></div>
-                       <div className="col-span-2 pt-4 mt-2 border-t border-slate-800 flex justify-between items-center"><span className="text-slate-400 text-sm">الباقي المستحق:</span><span className={`font-black text-xl ${txnDetailsModal.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>{txnDetailsModal.remaining} ج.م</span></div>
+                       <div><p className="text-slate-500 text-xs mb-1">إجمالي المدفوع</p><p className="font-bold text-green-400">{txnDetailsModal.paid} ج.م</p></div>
+                       <div><p className="text-slate-500 text-xs mb-1">الدفع النقدي</p><p className="font-bold text-emerald-400">{(txnDetailsModal.paid || 0) - (txnDetailsModal.electronicPaid || 0)} ج.م</p></div>
+                       <div><p className="text-slate-500 text-xs mb-1">الدفع الإلكتروني</p><p className="font-bold text-indigo-400">{txnDetailsModal.electronicPaid || 0} ج.م</p></div>
+                       <div className="col-span-2 pt-4 mt-2 border-t border-slate-800 flex justify-between items-center">
+                          <span className="text-slate-400 text-sm">الباقي المستحق:</span>
+                          <span className={`font-black text-xl ${txnDetailsModal.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>{txnDetailsModal.remaining} ج.م</span>
+                       </div>
                     </div>
 
-                    {txnDetailsModal.clientRating > 0 && (
+                    {(txnDetailsModal.clientRating > 0 || txnDetailsModal.clientFeedback) && (
                         <div className="bg-yellow-950/20 p-4 rounded-xl border border-yellow-500/30 mt-4">
-                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph-fill ph-star text-lg"></i> تقييم العميل</p>
-                           <div className="flex gap-1 mb-2 text-yellow-500 text-xl" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < txnDetailsModal.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</div>
-                           {txnDetailsModal.clientFeedback && <p className="text-slate-300 text-sm leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800">"{txnDetailsModal.clientFeedback}"</p>}
+                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph-fill ph-star text-lg"></i> تقييم ورأي العميل
+                           </p>
+                           {txnDetailsModal.clientRating > 0 && (
+                               <div className="flex gap-1 mb-2 text-yellow-500 text-xl" dir="ltr">
+                                   {[...Array(5)].map((_, i) => (
+                                       <i key={i} className={`${i < txnDetailsModal.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>
+                                   ))}
+                               </div>
+                           )}
+                           {txnDetailsModal.clientFeedback && (
+                               <p className="text-slate-300 text-sm leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800">"{txnDetailsModal.clientFeedback}"</p>
+                           )}
                         </div>
                     )}
 
                     {txnDetailsModal.pendingReceipt && (
                         <div className="bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/30 mt-4">
-                           <p className="text-indigo-300 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-image text-lg"></i> صورة التحويل قيد المراجعة</p>
-                           <img src={txnDetailsModal.pendingReceipt} alt="Receipt" className="w-full rounded-lg border border-indigo-500/50 cursor-pointer" onClick={() => setReceiptImageModal(txnDetailsModal.pendingReceipt)} />
+                           <p className="text-indigo-300 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph ph-image text-lg"></i> صورة التحويل الإلكتروني المرفقة للمراجعة
+                           </p>
+                           <img src={txnDetailsModal.pendingReceipt} alt="Receipt" className="w-full rounded-lg border border-indigo-500/50 cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setReceiptImageModal(txnDetailsModal.pendingReceipt)} />
                         </div>
                     )}
 
                     {txnDetailsModal.confirmedReceipts && txnDetailsModal.confirmedReceipts.length > 0 && (
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                           <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-check-circle text-green-500 text-lg"></i> الإيصالات المؤكدة</p>
-                           <div className="flex flex-wrap gap-3">{txnDetailsModal.confirmedReceipts.map((imgUrl, idx) => <img key={idx} src={imgUrl} alt="Confirmed Receipt" className="w-24 h-24 object-cover rounded-lg border border-slate-700 cursor-pointer" onClick={() => setReceiptImageModal(imgUrl)} />)}</div>
+                           <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph ph-check-circle text-green-500 text-lg"></i> صور التحويلات المؤكدة
+                           </p>
+                           <div className="flex flex-wrap gap-3">
+                               {txnDetailsModal.confirmedReceipts.map((imgUrl, idx) => (
+                                   <img key={idx} src={imgUrl} alt="Confirmed Receipt" className="w-24 h-24 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" onClick={() => setReceiptImageModal(imgUrl)} />
+                               ))}
+                           </div>
                         </div>
                     )}
 
                     {customerHistory.length > 0 && (
                         <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 mt-4 shadow-inner">
-                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph-fill ph-clock-counter-clockwise text-lg"></i> سجل زيارات العميل السابقة ({customerHistory.length})</p>
+                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2">
+                               <i className="ph-fill ph-clock-counter-clockwise text-lg"></i> سجل زيارات العميل السابقة ({customerHistory.length})
+                           </p>
                            <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
                                {customerHistory.map(hist => (
-                                   <div key={hist.id} className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-between items-center text-xs cursor-pointer hover:border-blue-500/50 transition-all" onClick={() => setTxnDetailsModal(hist)}>
+                                   <div key={hist.id} 
+                                        className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-between items-center text-xs cursor-pointer hover:border-blue-500/50 hover:bg-slate-900 transition-all"
+                                        onClick={() => setTxnDetailsModal(hist)}
+                                        title="اضغط لفتح تفاصيل الإيصال">
                                        <div>
-                                           <span className={`font-bold ml-2 ${hist.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>{hist.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</span>
+                                           <span className={`font-bold ml-2 ${hist.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>
+                                               {hist.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}
+                                           </span>
                                            <span className="text-slate-500 font-mono">{formatDateOnly(hist.dateTime)}</span>
                                        </div>
-                                       <div className="text-left font-bold text-slate-300 flex items-center gap-2"><span>{hist.total} ج.م</span><i className="ph ph-caret-left text-slate-500"></i></div>
+                                       <div className="text-left font-bold text-slate-300 flex items-center gap-2">
+                                           <span>{hist.total} ج.م</span>
+                                           <i className="ph ph-caret-left text-slate-500"></i>
+                                       </div>
                                    </div>
                                ))}
                            </div>
                         </div>
                     )}
+                    
+                    <div className="text-xs text-slate-500 text-center mt-4">تاريخ التسجيل: {formatDate(txnDetailsModal.dateTime)}</div>
                   </div>
                 </div>
               </div>
@@ -976,24 +1030,39 @@
             const visitCount = allRecords ? allRecords.filter(t => t.phone === txn.phone).length : 1;
             const isRepeat = visitCount > 1;
 
+            const handleAddToCalendar = (e) => {
+                e.stopPropagation();
+                const success = addToCalendar(txn);
+                if (!success) {
+                    setActionError('يجب تحديد موعد الزفاف أولاً لإضافته للتقويم.');
+                    setTimeout(() => setActionError(''), 4000);
+                }
+            };
+
             return (
-              <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-6 justify-between hover:border-slate-700 transition-all cursor-pointer group" onClick={() => onViewDetails && onViewDetails(txn)}>
+              <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-6 justify-between hover:border-slate-700 transition-all cursor-pointer group" onClick={() => onViewDetails && onViewDetails(txn)} title="اضغط لعرض التفاصيل">
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <h3 className={`text-lg font-bold flex items-center gap-2 transition-colors ${isWedding ? 'text-pink-100 group-hover:text-pink-400' : 'text-slate-100 group-hover:text-blue-400'}`}>
-                           {isWedding ? <i className="ph ph-heart text-pink-500 text-2xl"></i> : <i className="ph ph-user-circle text-slate-500 text-2xl"></i>}
+                           {isWedding ? <i className="ph ph-heart text-pink-500 text-2xl group-hover:text-pink-400"></i> : <i className="ph ph-user-circle text-slate-500 text-2xl group-hover:text-blue-500"></i>}
                            {displayName || 'عميل بدون اسم'}
                         </h3>
                         <div className="flex items-center gap-2">
                            {(txn.photosLink || (txn.uploadedPhotos && txn.uploadedPhotos.length > 0)) && (
-                               <span className="text-green-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-green-950/30 px-2 py-1 rounded border border-green-900/50"><i className="ph-fill ph-link text-sm"></i> يوجد صور</span>
+                               <span className="text-green-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-green-950/30 px-2 py-1 rounded border border-green-900/50" title="مرفق صور للتحميل">
+                                   <i className="ph-fill ph-link text-sm"></i> يوجد صور
+                               </span>
                            )}
                            {isRepeat && (
-                               <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})</span>
+                               <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50" title="عميل دائم">
+                                   <i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})
+                               </span>
                            )}
                            {txn.clientRating > 0 && (
-                               <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5</span>
+                               <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50" title="تقييم العميل">
+                                   <i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5
+                               </span>
                            )}
                            {txn.viewedByClient ? (
                                <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}>
@@ -1018,16 +1087,39 @@
                           <span className="text-slate-300">الإجمالي: <b className="text-white">{txn.total}</b></span>
                           <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>
                           <span className="text-green-400">المدفوع: <b className="text-green-300">{txn.paid}</b></span>
+                          {(cashPaid > 0 || txn.electronicPaid > 0) && <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>}
+                          {cashPaid > 0 && <span className="text-emerald-400 text-xs bg-emerald-950/30 px-2 py-1 rounded border border-emerald-900/50 flex items-center gap-1"><i className="ph ph-money text-base"></i> نقدي: {cashPaid}</span>}
+                          {txn.electronicPaid > 0 && <span className="text-indigo-400 text-xs bg-indigo-950/30 px-2 py-1 rounded border border-indigo-900/50 flex items-center gap-1"><i className="ph ph-wallet text-base"></i> إلكتروني: {txn.electronicPaid}</span>}
                           <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>
                           <span className={txn.remaining > 0 ? "text-red-400" : "text-green-400"}>الباقي: <b>{txn.remaining}</b></span>
                         </div>
                       </div>
+
+                      {txn.pendingReceipt && (
+                          <div className="mt-3 p-3 bg-indigo-950/20 border border-indigo-500/30 rounded-xl flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                              <img 
+                                  src={txn.pendingReceipt} 
+                                  alt="إيصال تحويل مرفق" 
+                                  className="w-14 h-14 object-cover rounded-lg cursor-pointer border border-indigo-500/50 hover:scale-105 transition-transform shadow-md"
+                                  onClick={(e) => { e.stopPropagation(); onViewReceipt(txn.pendingReceipt); }}
+                                  title="اضغط للتكبير"
+                              />
+                              <div>
+                                  <h4 className="text-sm font-bold text-indigo-300 flex items-center gap-1"><i className="ph ph-warning-circle text-lg"></i> إيصال قيد المراجعة</h4>
+                                  <p className="text-xs text-indigo-200/70 mt-1">العميل قام برفع إيصال، راجع الصورة ثم اضغط (سداد إلكتروني) لتأكيد التحصيل وإضافته.</p>
+                              </div>
+                          </div>
+                      )}
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-slate-800" onClick={e => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-2">
                         {statusesToUse.map(s => (
-                            <button key={s.id} onClick={() => updateStatus(txn.id, s.id)} className={`flex-1 min-w-[70px] py-2 px-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex flex-col items-center gap-1 border ${currentStatus === s.id ? s.activeClass : s.inactiveClass}`}>
+                            <button
+                                key={s.id}
+                                onClick={() => updateStatus(txn.id, s.id)}
+                                className={`flex-1 min-w-[70px] py-2 px-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex flex-col items-center gap-1 border ${currentStatus === s.id ? s.activeClass : s.inactiveClass}`}
+                            >
                                 <i className={`ph ${s.icon} text-lg`}></i>
                                 <span className="text-center leading-tight">{s.label}</span>
                             </button>
@@ -1040,28 +1132,33 @@
                   {actionError && <div className="text-red-400 bg-red-950/40 border border-red-900/50 p-2 rounded-xl text-[10px] font-bold text-center mb-1">{actionError}</div>}
 
                   {isWedding && (
-                    <button onClick={(e) => { e.stopPropagation(); const s = addToCalendar(txn); if(!s) { setActionError('حدد موعد الزفاف أولاً'); setTimeout(()=>setActionError(''), 3000); } }} className="w-full bg-pink-600 hover:bg-pink-500 text-white px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mb-2">
-                      <i className="ph ph-calendar-plus text-xl"></i> للتقويم
+                    <button onClick={handleAddToCalendar} className="w-full bg-pink-600 hover:bg-pink-500 text-white px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm mb-2">
+                      <i className="ph ph-calendar-plus text-xl"></i> إضافة للتقويم
                     </button>
                   )}
 
-                  <button onClick={(e) => { e.stopPropagation(); sendInvoice(); }} className="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm mb-2">
+                  <button onClick={(e) => { e.stopPropagation(); sendInvoice(); }} className="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
                     <i className="ph ph-receipt text-xl"></i> إرسال الفاتورة
                   </button>
-
+                  
                   <div className="relative w-full">
                     <button onClick={(e) => { e.stopPropagation(); setShowWaMenu(!showWaMenu); }} className="w-full bg-green-600 hover:bg-green-500 text-white px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
-                      <i className="ph ph-whatsapp-logo text-xl"></i> واتساب
+                      <i className="ph ph-whatsapp-logo text-xl"></i> رسائل واتساب
                     </button>
                     {showWaMenu && (
                       <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-10 p-1 flex flex-col overflow-hidden">
-                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2.5 text-sm text-blue-300 hover:bg-slate-700 font-bold border-b border-slate-700">📍 رابط التتبع</button>
+                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2.5 text-sm text-blue-300 hover:bg-slate-700 font-bold border-b border-slate-700">📍 رابط التتبع للعميل</button>
                         {(txn.photosLink || (txn.uploadedPhotos && txn.uploadedPhotos.length > 0)) && (
                             <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, `أهلاً ${displayName} 👋\nصورك جاهزة للتحميل بجودة عالية! يمكنك تحميلها وحفظها من هذا الرابط:\n${window.location.href.split('?')[0]}?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-green-400 hover:bg-slate-700 font-bold border-b border-slate-700 flex items-center gap-2"><i className="ph ph-download-simple"></i> إرسال رابط الصور</button>
                         )}
-                        {isRepeat && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('vipDiscount', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-pink-400 hover:bg-slate-700 font-bold">🎁 خصم (VIP)</button>}
-                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcomeBack', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700 font-bold">🌟 ترحيب بالعودة</button>
-                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcome', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">👋 رسالة ترحيب</button>
+                        {isRepeat && (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('vipDiscount', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-pink-400 hover:bg-slate-700 font-bold">🎁 إرسال هدية خصم (VIP)</button>
+                        )}
+                        {isRepeat ? (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcomeBack', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700 font-bold">🌟 ترحيب بالعودة</button>
+                        ) : (
+                            <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcome', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">👋 رسالة ترحيب</button>
+                        )}
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('ready', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">🎉 الشغل خلص</button>
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, isWedding)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">⚠️ تذكير بالباقي</button>
                       </div>
@@ -1070,32 +1167,34 @@
 
                   {txn.remaining > 0 && (
                       <div className="flex gap-2 w-full mt-2">
-                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'cash'}); }} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all"><i className="ph ph-money text-lg"></i> نقدي</button>
-                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'electronic'}); }} className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all"><i className="ph ph-wallet text-lg"></i> إلكتروني</button>
+                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'cash'}); }} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm"><i className="ph ph-money text-lg"></i> نقدي</button>
+                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'electronic'}); }} className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm"><i className="ph ph-wallet text-lg"></i> إلكتروني</button>
                       </div>
                   )}
 
                   {onEdit && (
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(txn); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-2">تعديل</button>
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(txn); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-2">
+                        <i className="ph ph-pencil-simple text-xl"></i> تعديل البيانات
+                    </button>
                   )}
                   
                   {confirmDelete ? (
                       <div className="flex flex-col gap-2 mt-auto pt-2">
-                         <span className="text-xs text-red-400 text-center font-bold">تأكيد الحذف؟</span>
+                         <span className="text-xs text-red-400 text-center font-bold">تأكيد الحذف نهائياً؟</span>
                          <div className="flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(txn.id); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white px-2 py-2 rounded-xl text-xs font-bold">نعم</button>
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }} className="flex-1 bg-slate-700 text-white px-2 py-2 rounded-xl text-xs font-bold">إلغاء</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(txn.id); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white px-2 py-2 rounded-xl text-xs font-bold transition-all">نعم</button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-2 py-2 rounded-xl text-xs font-bold transition-all">إلغاء</button>
                          </div>
                       </div>
                   ) : (
-                      <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} className="bg-red-950/40 text-red-400 border border-red-900/30 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mt-auto"><i className="ph ph-trash text-xl"></i> حذف</button>
+                      <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-auto"><i className="ph ph-trash text-xl"></i> حذف الإيصال</button>
                   )}
                 </div>
               </div>
             );
         };
 
-        const TopCustomers = ({ allRecords, onCustomerClick }) => {
+        const TopCustomers = ({ allRecords }) => {
             const currentMonth = new Date().getMonth() + 1;
             const currentYear = new Date().getFullYear();
 
@@ -1106,26 +1205,38 @@
                 thisMonthRecords.forEach(t => {
                     if (!t.phone) return;
                     if (!counts[t.phone]) {
-                        counts[t.phone] = { phone: t.phone, name: t.clientName || t.groomName || 'بدون اسم', visits: 0, totalSpent: 0 };
+                        counts[t.phone] = {
+                            phone: t.phone,
+                            name: t.clientName || t.groomName || 'بدون اسم',
+                            visits: 0,
+                            totalSpent: 0
+                        };
                     }
                     counts[t.phone].visits += 1;
                     counts[t.phone].totalSpent += (parseFloat(t.total) || 0);
                 });
                 
-                return Object.values(counts).filter(c => c.visits > 1).sort((a, b) => b.visits - a.visits || b.totalSpent - a.totalSpent).slice(0, 5);
+                return Object.values(counts)
+                    .filter(c => c.visits > 1) 
+                    .sort((a, b) => b.visits - a.visits || b.totalSpent - a.totalSpent)
+                    .slice(0, 5);
             }, [allRecords, currentMonth, currentYear]);
 
             if (topCustomers.length === 0) return null;
 
             return (
                 <div className="bg-gradient-to-br from-yellow-900/20 to-slate-900 p-6 rounded-2xl shadow-sm border border-yellow-500/30 mb-6">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-400"><i className="ph-fill ph-crown text-2xl"></i> نجوم الشهر (أكثر العملاء زيارة)</h2>
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-400">
+                        <i className="ph-fill ph-crown text-2xl"></i> نجوم الشهر (أكثر العملاء زيارة)
+                    </h2>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {topCustomers.map((cust, idx) => (
-                            <div key={idx} onClick={() => onCustomerClick(cust.phone)} className="cursor-pointer bg-slate-950 p-4 rounded-xl border border-yellow-500/20 flex flex-col items-center text-center shadow-inner relative group hover:border-yellow-500/50 transition-colors" title="عرض ملف العميل">
-                                {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-bl-lg">المركز 1</div>}
-                                <div className="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"><i className="ph-fill ph-star text-xl"></i></div>
-                                <span className="font-bold text-slate-200 text-sm truncate w-full group-hover:text-yellow-400">{cust.name}</span>
+                            <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-yellow-500/20 flex flex-col items-center text-center shadow-inner relative overflow-hidden group hover:border-yellow-500/50 transition-colors">
+                                {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-bl-lg z-10">المركز 1</div>}
+                                <div className="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mb-2">
+                                    <i className="ph-fill ph-star text-xl"></i>
+                                </div>
+                                <span className="font-bold text-slate-200 text-sm truncate w-full">{cust.name}</span>
                                 <span className="text-yellow-400 font-black text-xs mt-1">{cust.visits} زيارات</span>
                             </div>
                         ))}
@@ -1144,12 +1255,6 @@
             const [payModal, setPayModal] = useState(null);
             const [receiptImageModal, setReceiptImageModal] = useState(null);
             const [txnDetailsModal, setTxnDetailsModal] = useState(null);
-            const [selectedCustomerPhone, setSelectedCustomerPhone] = useState(null);
-
-            const pastRecords = useMemo(() => {
-                if (!formData.phone || formData.phone.length < 10 || !allRecords) return [];
-                return allRecords.filter(t => t.phone === formData.phone && t.id !== formData.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
-            }, [formData.phone, formData.id, allRecords]);
 
             const handleAddService = (srv, qty) => {
               const validQty = parseInt(qty) || 1;
@@ -1165,12 +1270,22 @@
 
             const handleEdit = (txn) => {
                 setFormData({
-                    id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status,
-                    clientName: txn.clientName || '', phone: txn.phone || '',
+                    id: txn.id,
+                    receiptNo: txn.receiptNo,
+                    dateTime: txn.dateTime,
+                    month: txn.month,
+                    year: txn.year,
+                    status: txn.status,
+                    clientName: txn.clientName || '',
+                    phone: txn.phone || '',
                     photoNo: Array.isArray(txn.photoNo) ? txn.photoNo : (txn.photoNo ? txn.photoNo.split(',').map(s=>s.trim()) : ['']),
-                    requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '',
-                    electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash',
-                    soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || ''
+                    requirements: txn.requirements || '',
+                    total: txn.total || '',
+                    paid: txn.paid || '',
+                    electronicPaid: txn.electronicPaid || 0,
+                    paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash',
+                    soldProducts: txn.soldProducts || [],
+                    photosLink: txn.photosLink || ''
                 });
                 setIsEditing(true);
                 setShowAddModal(true);
@@ -1181,22 +1296,35 @@
               const total = parseFloat(formData.total) || 0;
               const paid = parseFloat(formData.paid) || 0;
               
+              // Ensure Unique Receipt No
               let finalReceiptNo = isEditing ? formData.receiptNo : (settings.nextReceiptNo || 1000);
               if (!isEditing && allRecords) {
                   let isDuplicate = true;
                   while(isDuplicate) {
-                      if (allRecords.some(t => t.receiptNo === finalReceiptNo)) finalReceiptNo++;
-                      else isDuplicate = false;
+                      const exists = allRecords.some(t => t.receiptNo === finalReceiptNo);
+                      if (exists) {
+                          finalReceiptNo++;
+                      } else {
+                          isDuplicate = false;
+                      }
                   }
               }
 
               const newTxn = {
-                id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
-                clientName: formData.clientName, phone: formData.phone, photoNo: formData.photoNo.filter(n => n.trim() !== ''),
-                requirements: formData.requirements, total: total, paid: paid,
+                id: isEditing ? formData.id : Date.now().toString(),
+                receiptNo: finalReceiptNo,
+                dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
+                clientName: formData.clientName,
+                phone: formData.phone,
+                photoNo: formData.photoNo.filter(n => n.trim() !== ''),
+                requirements: formData.requirements,
+                total: total,
+                paid: paid,
                 electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0),
-                remaining: total - paid, status: isEditing ? formData.status : 0,
-                month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(),
+                remaining: total - paid,
+                status: isEditing ? formData.status : 0,
+                month: isEditing ? formData.month : new Date().getMonth() + 1,
+                year: isEditing ? formData.year : new Date().getFullYear(),
                 photosLink: formData.photosLink || ''
               };
               
@@ -1207,25 +1335,34 @@
                  const newInv = { ...inventory };
                  let invChanged = false;
                  formData.soldProducts.forEach(item => {
-                    if (settings.products.some(p => (typeof p === 'string' ? p : p.name) === item.name)) {
+                    const isProduct = settings.products.some(p => (typeof p === 'string' ? p : p.name) === item.name);
+                    if (isProduct) {
                        newInv[item.name] = Math.max(0, (newInv[item.name] || 0) - item.qty);
                        invChanged = true;
                     }
                  });
-                 if (invChanged) await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv);
+                 if (invChanged) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv);
+                 }
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
               setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
-              setIsEditing(false); setShowAddModal(false); setLoyaltyAlert('');
+              setIsEditing(false);
+              setShowAddModal(false);
             };
 
-            const handleDelete = async (id) => { await deleteDoc(doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'}/public/data/transactions`, id)); };
+            const handleDelete = async (id) => {
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+              await deleteDoc(doc(db, `artifacts/${appId}/public/data/transactions`, id));
+            };
+
             const updateTxnStatus = async (txnId, newStatus) => {
                 const txnToUpdate = transactions.find(t => t.id === txnId);
                 if(txnToUpdate) {
                     const updated = {...txnToUpdate, status: newStatus};
-                    await setDoc(doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'}/public/data/transactions`, updated.id), updated);
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated);
                 }
             };
             
@@ -1234,25 +1371,37 @@
                 if (val.length >= 10 && allRecords) {
                     const pastTxn = allRecords.find(t => t.phone === val);
                     if (pastTxn) {
-                        setFormData(prev => ({ ...prev, clientName: prev.clientName || pastTxn.clientName || pastTxn.groomName || '' }));
+                        setFormData(prev => ({
+                            ...prev,
+                            clientName: prev.clientName || pastTxn.clientName || pastTxn.groomName || ''
+                        }));
                         const visits = allRecords.filter(t => t.phone === val).length;
-                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}!`);
+                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}! (يمكنك تقديم خصم كهدية ولاء)`);
                     } else { setLoyaltyAlert(''); }
                 } else { setLoyaltyAlert(''); }
             };
 
+            // Filtering logic
             let displayTxns = transactions;
             const isFiltering = query !== '' || filterDate !== '';
             
-            if (query) displayTxns = displayTxns.filter(t => t.clientName.includes(query) || t.phone.includes(query) || t.receiptNo.toString().includes(query));
-            if (filterDate) displayTxns = displayTxns.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
-            if (!isFiltering) displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            if (query) {
+                displayTxns = displayTxns.filter(t => t.clientName.includes(query) || t.phone.includes(query) || t.receiptNo.toString().includes(query));
+            }
+            if (filterDate) {
+                displayTxns = displayTxns.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
+            }
 
+            // If not filtering, show today's by default
+            if (!isFiltering) {
+                displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            }
+
+            // Calculate total collected for the *displayed* transactions
             const currentTotalCollected = displayTxns.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
 
             return (
               <div className="space-y-6">
-                <CustomerProfileModal phone={selectedCustomerPhone} allRecords={allRecords} onClose={() => setSelectedCustomerPhone(null)} setTxnDetailsModal={setTxnDetailsModal} />
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between">
                   <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50">
                     <i className="ph ph-plus-circle text-2xl"></i> إضافة عملية جديدة
@@ -1263,18 +1412,28 @@
                       <input type="text" placeholder="ابحث بالاسم، رقم الهاتف، رقم الإيصال..." className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
                     </div>
                     <input type="date" title="تصفية بيوم محدد" className="p-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                    {filterDate && <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر"><i className="ph ph-x"></i></button>}
+                    {filterDate && (
+                        <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر">
+                            <i className="ph ph-x"></i>
+                        </button>
+                    )}
                   </div>
                 </div>
 
-                {!isFiltering && <TopCustomers allRecords={allRecords} onCustomerClick={setSelectedCustomerPhone} />}
+                {isFiltering ? null : <TopCustomers allRecords={allRecords} />}
                   
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                    <div className="flex items-center gap-2"><i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}</div>
+                    <div className="flex items-center gap-2">
+                        <i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}
+                    </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}</span>
-                        <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية</span>
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        </span>
+                        <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية
+                        </span>
                     </div>
                   </h2>
                   <div className="space-y-4">
@@ -1291,26 +1450,9 @@
                         <div className="bg-blue-900/30 p-3 rounded-xl flex justify-between items-center text-sm font-bold text-blue-300 border border-blue-800/50">
                           <span>رقم الإيصال:</span><span className="text-lg">#{isEditing ? formData.receiptNo : settings.nextReceiptNo}</span>
                         </div>
-                        {loyaltyAlert && <div className="bg-yellow-950/40 border border-yellow-500/50 text-yellow-400 p-3 rounded-xl text-sm font-bold shadow-inner">{loyaltyAlert}</div>}
-
-                        {pastRecords.length > 0 && (
-                            <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-4 shadow-inner">
-                                <h4 className="text-sm font-bold text-yellow-400 mb-3 flex items-center gap-2"><i className="ph-fill ph-folder-open text-lg"></i> السجل السابق للعميل ({pastRecords.length} زيارات)</h4>
-                                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                                    {pastRecords.map(r => (
-                                        <div key={r.id} className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs gap-2 cursor-pointer hover:border-blue-500/50 transition-colors" onClick={() => window.open(`?phone=${encodeURIComponent(r.phone)}&receipt=${encodeURIComponent(r.receiptNo)}&type=${r.type === 'wedding' ? 'w' : 't'}`, '_blank')} title="فتح تفاصيل الإيصال في نافذة جديدة">
-                                            <div>
-                                                <span className={`font-bold ml-2 ${r.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>{r.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</span>
-                                                <span className="text-slate-500 font-mono">{formatDateOnly(r.dateTime)}</span>
-                                                <span className="text-slate-600 font-mono text-[10px] mr-2">#{r.receiptNo}</span>
-                                            </div>
-                                            <div className="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                                                <span className="text-slate-300">الإجمالي: {r.total}</span>
-                                                <span className={r.remaining > 0 ? "text-red-400 font-bold" : "text-green-400 font-bold"}>الباقي: {r.remaining}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        {loyaltyAlert && (
+                            <div className="bg-yellow-950/40 border border-yellow-500/50 text-yellow-400 p-3 rounded-xl text-sm font-bold shadow-inner">
+                                {loyaltyAlert}
                             </div>
                         )}
                         
@@ -1324,24 +1466,46 @@
                             <div className="flex flex-wrap gap-2 items-center">
                                 {formData.photoNo.map((pNo, idx) => (
                                 <div key={idx} className="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors shadow-inner">
-                                    <input type="text" placeholder={idx === 0 ? "رقم..." : "إضافي"} className="w-20 sm:w-24 p-2 bg-transparent text-white text-center outline-none text-sm font-bold" value={pNo} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx] = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
-                                    {formData.photoNo.length > 1 && <button type="button" onClick={() => { const newArr = formData.photoNo.filter((_, i) => i !== idx); setFormData({...formData, photoNo: newArr}); }} className="bg-red-950/40 hover:bg-red-900/80 text-red-400 px-3 py-2 transition-colors border-r border-slate-700"><i className="ph ph-x font-bold text-sm"></i></button>}
+                                    <input type="text" placeholder={idx === 0 ? "رقم..." : "إضافي"} className="w-20 sm:w-24 p-2 bg-transparent text-white text-center outline-none text-sm font-bold" value={pNo} onChange={e => {
+                                        const newArr = [...formData.photoNo];
+                                        newArr[idx] = e.target.value;
+                                        setFormData({...formData, photoNo: newArr});
+                                    }} />
+                                    {formData.photoNo.length > 1 && (
+                                        <button type="button" onClick={() => {
+                                            const newArr = formData.photoNo.filter((_, i) => i !== idx);
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} className="bg-red-950/40 hover:bg-red-900/80 text-red-400 px-3 py-2 transition-colors border-r border-slate-700" title="حذف هذا الرقم"><i className="ph ph-x font-bold text-sm"></i></button>
+                                    )}
                                 </div>
                                 ))}
-                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, '']})} className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-3 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-1"><i className="ph ph-plus"></i> إضافة رقم</button>
+                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, '']})} className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-3 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-1">
+                                    <i className="ph ph-plus"></i> إضافة رقم
+                                </button>
                             </div>
                         </div>
 
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                          <div className="flex justify-between items-center mb-3"><label className="text-sm font-bold text-slate-400"><i className="ph ph-camera text-blue-400 text-lg align-middle"></i> الخدمات السريعة:</label></div>
+                          <div className="flex justify-between items-center mb-3">
+                              <label className="text-sm font-bold text-slate-400"><i className="ph ph-camera text-blue-400 text-lg align-middle"></i> الخدمات السريعة:</label>
+                          </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-5">
-                            {settings.services.map((srv, idx) => <QuickServiceCard key={`srv-${idx}`} srvObj={typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv} onAdd={handleAddService} colorTheme="blue" />)}
+                            {settings.services.map((srv, idx) => {
+                              const srvObj = typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv;
+                              return <QuickServiceCard key={`srv-${idx}`} srvObj={srvObj} onAdd={handleAddService} colorTheme="blue" />;
+                            })}
                           </div>
 
-                          <div className="flex justify-between items-center mb-3 border-t border-slate-800 pt-4"><label className="text-sm font-bold text-slate-400"><i className="ph ph-package text-purple-400 text-lg align-middle"></i> البضاعة والمنتجات:</label></div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
-                            {settings.products && settings.products.map((prod, idx) => <QuickServiceCard key={`prod-${idx}`} srvObj={typeof prod === 'string' ? {name: prod, price: 0, desc: ''} : prod} onAdd={handleAddService} colorTheme="purple" />)}
+                          <div className="flex justify-between items-center mb-3 border-t border-slate-800 pt-4">
+                              <label className="text-sm font-bold text-slate-400"><i className="ph ph-package text-purple-400 text-lg align-middle"></i> البضاعة والمنتجات:</label>
                           </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
+                            {settings.products && settings.products.map((prod, idx) => {
+                              const prodObj = typeof prod === 'string' ? {name: prod, price: 0, desc: ''} : prod;
+                              return <QuickServiceCard key={`prod-${idx}`} srvObj={prodObj} onAdd={handleAddService} colorTheme="purple" />;
+                            })}
+                          </div>
+
                           <textarea placeholder="المطلوب بالتفصيل..." rows="2" className="w-full p-3 mt-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1378,21 +1542,25 @@
             const [receiptImageModal, setReceiptImageModal] = useState(null);
             const [txnDetailsModal, setTxnDetailsModal] = useState(null);
             const [loyaltyAlert, setLoyaltyAlert] = useState('');
-            const [selectedCustomerPhone, setSelectedCustomerPhone] = useState(null);
             
-            const [formData, setFormData] = useState({ groomName: '', brideName: '', phone: '', groomAddress: '', weddingDate: '', location: '', makeupArtist: '', leaveTime: '', sessionType: '', casualShootDate: '', packages: [], addons: [], total: '', paid: '', paymentMethod: 'cash', photosLink: '' });
-
-            const pastRecords = useMemo(() => {
-                if (!formData.phone || formData.phone.length < 10 || !allRecords) return [];
-                return allRecords.filter(t => t.phone === formData.phone && t.id !== formData.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
-            }, [formData.phone, formData.id, allRecords]);
+            const [formData, setFormData] = useState({
+                groomName: '', brideName: '', phone: '', groomAddress: '',
+                weddingDate: '', location: '', makeupArtist: '', leaveTime: '',
+                sessionType: '', casualShootDate: '',
+                packages: [], addons: [],
+                total: '', paid: '', paymentMethod: 'cash', photosLink: ''
+            });
 
             const [newAddon, setNewAddon] = useState({ name: '', notes: '', date: '', price: '' });
 
             const handleAddAddon = () => {
                 if(!newAddon.name) return;
                 const price = parseFloat(newAddon.price) || 0;
-                setFormData(prev => ({ ...prev, addons: [...prev.addons, { ...newAddon, price }], total: (parseFloat(prev.total) || 0) + price }));
+                setFormData(prev => ({
+                    ...prev,
+                    addons: [...prev.addons, { ...newAddon, price }],
+                    total: (parseFloat(prev.total) || 0) + price
+                }));
                 setNewAddon({ name: '', notes: '', date: '', price: '' });
             };
 
@@ -1400,35 +1568,78 @@
                 const addon = formData.addons[index];
                 const newAddons = [...formData.addons];
                 newAddons.splice(index, 1);
-                setFormData(prev => ({ ...prev, addons: newAddons, total: Math.max(0, (parseFloat(prev.total) || 0) - addon.price) }));
+                setFormData(prev => ({
+                    ...prev,
+                    addons: newAddons,
+                    total: Math.max(0, (parseFloat(prev.total) || 0) - addon.price)
+                }));
             };
 
             const handleSelectPackage = (pkg) => {
                 setFormData(prev => {
                     const exists = prev.packages.find(p => p.name === pkg.name);
-                    let newPkgs = exists ? prev.packages.filter(p => p.name !== pkg.name) : [...prev.packages, { ...pkg }];
-                    let priceDiff = exists ? -exists.price : pkg.price;
-                    return { ...prev, packages: newPkgs, total: Math.max(0, (parseFloat(prev.total) || 0) + priceDiff) };
+                    let newPkgs, priceDiff;
+                    if (exists) {
+                        newPkgs = prev.packages.filter(p => p.name !== pkg.name);
+                        priceDiff = -exists.price;
+                    } else {
+                        newPkgs = [...prev.packages, { ...pkg }];
+                        priceDiff = pkg.price;
+                    }
+                    return {
+                        ...prev,
+                        packages: newPkgs,
+                        total: Math.max(0, (parseFloat(prev.total) || 0) + priceDiff)
+                    };
                 });
             };
 
             const handleUpdatePackagePrice = (pkgName, newPrice) => {
                  setFormData(prev => {
                      let diff = 0;
-                     const newPkgs = prev.packages.map(p => { if (p.name === pkgName) { diff = newPrice - p.price; return { ...p, price: newPrice }; } return p; });
-                     return { ...prev, packages: newPkgs, total: Math.max(0, (parseFloat(prev.total) || 0) + diff) };
+                     const newPkgs = prev.packages.map(p => {
+                         if (p.name === pkgName) {
+                             diff = newPrice - p.price;
+                             return { ...p, price: newPrice };
+                         }
+                         return p;
+                     });
+                     return {
+                         ...prev,
+                         packages: newPkgs,
+                         total: Math.max(0, (parseFloat(prev.total) || 0) + diff)
+                     };
                  });
             };
 
             const handleEdit = (txn) => {
                 setFormData({
-                    id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status,
-                    groomName: txn.groomName || '', brideName: txn.brideName || '', phone: txn.phone || '', groomAddress: txn.groomAddress || '',
-                    weddingDate: txn.weddingDate || '', location: txn.location || '', makeupArtist: txn.makeupArtist || '', leaveTime: txn.leaveTime || '', sessionType: txn.sessionType || '', casualShootDate: txn.casualShootDate || '',
-                    packages: txn.packages || (txn.package ? [txn.package] : []), addons: txn.addons || [],
-                    total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', photosLink: txn.photosLink || ''
+                    id: txn.id,
+                    receiptNo: txn.receiptNo,
+                    dateTime: txn.dateTime,
+                    month: txn.month,
+                    year: txn.year,
+                    status: txn.status,
+                    groomName: txn.groomName || '',
+                    brideName: txn.brideName || '',
+                    phone: txn.phone || '',
+                    groomAddress: txn.groomAddress || '',
+                    weddingDate: txn.weddingDate || '',
+                    location: txn.location || '',
+                    makeupArtist: txn.makeupArtist || '',
+                    leaveTime: txn.leaveTime || '',
+                    sessionType: txn.sessionType || '',
+                    casualShootDate: txn.casualShootDate || '',
+                    packages: txn.packages || (txn.package ? [txn.package] : []),
+                    addons: txn.addons || [],
+                    total: txn.total || '',
+                    paid: txn.paid || '',
+                    electronicPaid: txn.electronicPaid || 0,
+                    paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash',
+                    photosLink: txn.photosLink || ''
                 });
-                setIsEditing(true); setShowAddModal(true);
+                setIsEditing(true);
+                setShowAddModal(true);
             };
 
             const handleSubmit = async (e) => {
@@ -1436,33 +1647,67 @@
               const total = parseFloat(formData.total) || 0;
               const paid = parseFloat(formData.paid) || 0;
 
+              // Ensure Unique Receipt No
               let finalReceiptNo = isEditing ? formData.receiptNo : (settings.nextReceiptNo || 1000);
               if (!isEditing && allRecords) {
                   let isDuplicate = true;
-                  while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) finalReceiptNo++; else isDuplicate = false; }
+                  while(isDuplicate) {
+                      const exists = allRecords.some(t => t.receiptNo === finalReceiptNo);
+                      if (exists) {
+                          finalReceiptNo++;
+                      } else {
+                          isDuplicate = false;
+                      }
+                  }
               }
 
               const newWedding = {
-                id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, type: 'wedding', dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
-                groomName: formData.groomName, brideName: formData.brideName, phone: formData.phone, groomAddress: formData.groomAddress,
-                weddingDate: formData.weddingDate, location: formData.location, makeupArtist: formData.makeupArtist, leaveTime: formData.leaveTime, sessionType: formData.sessionType, casualShootDate: formData.casualShootDate,
-                packages: formData.packages, addons: formData.addons, total: total, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0),
-                remaining: total - paid, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || ''
+                id: isEditing ? formData.id : Date.now().toString(),
+                receiptNo: finalReceiptNo,
+                type: 'wedding',
+                dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
+                groomName: formData.groomName,
+                brideName: formData.brideName,
+                phone: formData.phone,
+                groomAddress: formData.groomAddress,
+                weddingDate: formData.weddingDate,
+                location: formData.location,
+                makeupArtist: formData.makeupArtist,
+                leaveTime: formData.leaveTime,
+                sessionType: formData.sessionType,
+                casualShootDate: formData.casualShootDate,
+                packages: formData.packages,
+                addons: formData.addons,
+                total: total,
+                paid: paid,
+                electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0),
+                remaining: total - paid,
+                status: isEditing ? formData.status : 0,
+                month: isEditing ? formData.month : new Date().getMonth() + 1,
+                year: isEditing ? formData.year : new Date().getFullYear(),
+                photosLink: formData.photosLink || ''
               };
               
-              await setDoc(doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'}/public/data/weddings`, newWedding.id), newWedding);
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+              await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, newWedding.id), newWedding);
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
               setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' });
-              setIsEditing(false); setShowAddModal(false);
+              setIsEditing(false);
+              setShowAddModal(false);
             };
 
-            const handleDelete = async (id) => { await deleteDoc(doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'}/public/data/weddings`, id)); };
+            const handleDelete = async (id) => {
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+              await deleteDoc(doc(db, `artifacts/${appId}/public/data/weddings`, id));
+            };
+
             const updateTxnStatus = async (txnId, newStatus) => {
                 const txnToUpdate = weddings.find(t => t.id === txnId);
                 if(txnToUpdate) {
                     const updated = {...txnToUpdate, status: newStatus};
-                    await setDoc(doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'}/public/data/weddings`, updated.id), updated);
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, updated.id), updated);
                 }
             };
 
@@ -1471,24 +1716,37 @@
                 if (val.length >= 10 && allRecords) {
                     const pastTxn = allRecords.find(t => t.phone === val);
                     if (pastTxn) {
-                        setFormData(prev => ({ ...prev, groomName: prev.groomName || pastTxn.groomName || pastTxn.clientName || '', brideName: prev.brideName || pastTxn.brideName || '', groomAddress: prev.groomAddress || pastTxn.groomAddress || '' }));
-                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${allRecords.filter(t => t.phone === val).length + 1}!`);
+                        setFormData(prev => ({
+                            ...prev,
+                            groomName: prev.groomName || pastTxn.groomName || pastTxn.clientName || '',
+                            brideName: prev.brideName || pastTxn.brideName || '',
+                            groomAddress: prev.groomAddress || pastTxn.groomAddress || ''
+                        }));
+                        const visits = allRecords.filter(t => t.phone === val).length;
+                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}! (يمكنك تقديم خصم كهدية ولاء)`);
                     } else { setLoyaltyAlert(''); }
                 } else { setLoyaltyAlert(''); }
             };
 
+            // Filtering logic
             let filteredWeds = weddings;
             const isFiltering = query !== '' || filterDate !== '';
             
-            if (query) filteredWeds = filteredWeds.filter(t => t.groomName?.includes(query) || t.brideName?.includes(query) || t.phone?.includes(query) || t.receiptNo.toString().includes(query));
-            if (filterDate) filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
-            if (!isFiltering) filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            if (query) {
+                filteredWeds = filteredWeds.filter(t => t.groomName?.includes(query) || t.brideName?.includes(query) || t.phone?.includes(query) || t.receiptNo.toString().includes(query));
+            }
+            if (filterDate) {
+                filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
+            }
+            
+            if (!isFiltering) {
+                filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+            }
 
             const currentTotalCollected = filteredWeds.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
 
             return (
               <div className="space-y-6">
-                <CustomerProfileModal phone={selectedCustomerPhone} allRecords={allRecords} onClose={() => setSelectedCustomerPhone(null)} setTxnDetailsModal={setTxnDetailsModal} />
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between">
                   <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full md:w-auto bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50">
                     <i className="ph ph-heart text-2xl"></i> حجز زفاف جديد
@@ -1499,18 +1757,26 @@
                       <input type="text" placeholder="ابحث باسم العريس، العروسة، رقم الهاتف..." className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
                     </div>
                     <input type="date" title="تصفية بيوم محدد" className="p-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                    {filterDate && <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر"><i className="ph ph-x"></i></button>}
+                    {filterDate && (
+                        <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر">
+                            <i className="ph ph-x"></i>
+                        </button>
+                    )}
                   </div>
                 </div>
 
-                {!isFiltering && <TopCustomers allRecords={allRecords} onCustomerClick={setSelectedCustomerPhone} />}
-                  
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                    <div className="flex items-center gap-2"><i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}</div>
+                    <div className="flex items-center gap-2">
+                        <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}
+                    </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}</span>
-                        <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm"><i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز</span>
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        </span>
+                        <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
+                            <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
+                        </span>
                     </div>
                   </h2>
                   <div className="space-y-4">
@@ -1530,28 +1796,6 @@
                                <h4 className="text-sm font-bold text-pink-400">بيانات العرسان الأساسية</h4>
                                {loyaltyAlert && <span className="text-yellow-400 text-xs font-bold bg-yellow-950/40 px-3 py-1 rounded-lg border border-yellow-500/50 shadow-inner">{loyaltyAlert}</span>}
                            </div>
-
-                           {pastRecords.length > 0 && (
-                                <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-4 shadow-inner">
-                                    <h4 className="text-sm font-bold text-yellow-400 mb-3 flex items-center gap-2"><i className="ph-fill ph-folder-open text-lg"></i> السجل السابق للعميل ({pastRecords.length} زيارات)</h4>
-                                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                                        {pastRecords.map(r => (
-                                            <div key={r.id} className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs gap-2 cursor-pointer hover:border-pink-500/50 transition-colors" onClick={() => window.open(`?phone=${encodeURIComponent(r.phone)}&receipt=${encodeURIComponent(r.receiptNo)}&type=${r.type === 'wedding' ? 'w' : 't'}`, '_blank')} title="فتح تفاصيل الإيصال في نافذة جديدة">
-                                                <div>
-                                                    <span className={`font-bold ml-2 ${r.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>{r.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</span>
-                                                    <span className="text-slate-500 font-mono">{formatDateOnly(r.dateTime)}</span>
-                                                    <span className="text-slate-600 font-mono text-[10px] mr-2">#{r.receiptNo}</span>
-                                                </div>
-                                                <div className="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                                                    <span className="text-slate-300">الإجمالي: {r.total}</span>
-                                                    <span className={r.remaining > 0 ? "text-red-400 font-bold" : "text-green-400 font-bold"}>الباقي: {r.remaining}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                               <input type="text" placeholder="اسم العريس (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.groomName} onChange={e => setFormData({...formData, groomName: e.target.value})} />
                               <input type="text" placeholder="اسم العروسة (اختياري)" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.brideName} onChange={e => setFormData({...formData, brideName: e.target.value})} />
@@ -1684,7 +1928,7 @@
                     </div>
                   </div>
                 )}
-                
+
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
               </div>
@@ -1845,6 +2089,7 @@
             const totalCollectedAll = studioStats.collected + wedStats.collected;
             const netProfit = totalCollectedAll - expensesTotal;
 
+            // حسابات الأرشيف (الطلبات المسلمة)
             const completedTxns = filteredTxns.filter(t => t.status === 3);
             const completedWeds = filteredWeds.filter(t => t.status === 6);
             const allCompleted = useMemo(() => {
@@ -1871,7 +2116,7 @@
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <StatCard title="التحصيل العام (استوديو + زفاف)" value={totalCollectedAll} color="blue" highlight />
                   <StatCard title="إجمالي المصروفات" value={expensesTotal} color="red" highlight />
-                  <StatCard title="صاف الربح الفعلي" value={netProfit} color={netProfit >= 0 ? "emerald" : "rose"} highlight />
+                  <StatCard title="صافي الربح الفعلي" value={netProfit} color={netProfit >= 0 ? "emerald" : "rose"} highlight />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1898,7 +2143,7 @@
                               </div>
                               <div className="flex items-center gap-1.5 w-full sm:w-auto">
                                 <span className="text-red-400 font-bold text-xs ml-auto sm:ml-2">{txn.remaining} ج.م</span>
-                                <button onClick={() => openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, false))} className="bg-green-600 hover:bg-green-500 text-white p-1.5 rounded-lg text-sm transition-colors" title="إرسال تذكير عبر الواتس"><i className="ph ph-whatsapp-logo text-base"></i></button>
+                                <button onClick={() => openWhatsApp(txn.phone, `مرحباً أ. ${txn.clientName} 🌟\nتذكير بمبلغ متبقي لحسابكم في ${settings.studioName} بقيمة ${txn.remaining} ج.م.\nيمكن التحويل فودافون كاش أو إنستاباي على رقم: 01126810107`)} className="bg-green-600 hover:bg-green-500 text-white p-1.5 rounded-lg text-sm transition-colors" title="إرسال تذكير عبر الواتس"><i className="ph ph-whatsapp-logo text-base"></i></button>
                               </div>
                             </div>
                           ))}
@@ -1930,7 +2175,7 @@
                               </div>
                               <div className="flex items-center gap-1.5 w-full sm:w-auto">
                                 <span className="text-red-400 font-bold text-xs ml-auto sm:ml-2">{txn.remaining} ج.م</span>
-                                <button onClick={() => openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, true))} className="bg-green-600 hover:bg-green-500 text-white p-1.5 rounded-lg text-sm transition-colors" title="إرسال تذكير عبر الواتس"><i className="ph ph-whatsapp-logo text-base"></i></button>
+                                <button onClick={() => openWhatsApp(txn.phone, `مرحباً العريس ${txn.groomName} 🌟\nتذكير بمبلغ متبقي لحجز الزفاف في ${settings.studioName} بقيمة ${txn.remaining} ج.م.\nيمكن التحويل فودافون كاش أو إنستاباي على رقم: 01126810107`)} className="bg-green-600 hover:bg-green-500 text-white p-1.5 rounded-lg text-sm transition-colors" title="إرسال تذكير عبر الواتس"><i className="ph ph-whatsapp-logo text-base"></i></button>
                               </div>
                             </div>
                           ))}
@@ -2228,7 +2473,9 @@
 
               </div>
             );
-        };
+          };
+
+        // --- Main App Component ---
 
         function App() {
           const [activeTab, setActiveTab] = useState('dashboard');
@@ -2237,6 +2484,15 @@
           const [authError, setAuthError] = useState(null);
           const [dataLoaded, setDataLoaded] = useState(false);
           const [showNotFound, setShowNotFound] = useState(false);
+          const [transferReceipt, setTransferReceipt] = useState(null);
+          const [isUploading, setIsUploading] = useState(false);
+          const [clientViewError, setClientViewError] = useState('');
+          const [feedbackText, setFeedbackText] = useState('');
+          const [rating, setRating] = useState(0);
+          const [hoveredStar, setHoveredStar] = useState(0);
+          const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+          const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+          
           const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
           const [receiptImageModal, setReceiptImageModal] = useState(null);
 
@@ -2245,7 +2501,16 @@
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "ستوديو المراكبى", studioLogo: ""
+            nextReceiptNo: 1000,
+            adminPassword: '1234',
+            services: DEFAULT_SERVICES,
+            products: DEFAULT_PRODUCTS,
+            weddingPackages: DEFAULT_WEDDING_PACKAGES,
+            addonTemplates: DEFAULT_ADDON_TEMPLATES,
+            expenseCategories: DEFAULT_EXPENSE_CATEGORIES,
+            waTemplates: DEFAULT_WA_TEMPLATES,
+            studioName: "ستوديو المراكبى",
+            studioLogo: ""
           });
 
           const urlParams = new URLSearchParams(window.location.search);
@@ -2255,7 +2520,10 @@
           const isTracking = trackPhone && trackReceipt;
 
           useEffect(() => {
-              if (localStorage.getItem('studioAdminAuth') === 'true') setIsAuthenticatedAdmin(true);
+              const savedAuth = localStorage.getItem('studioAdminAuth');
+              if (savedAuth === 'true') {
+                  setIsAuthenticatedAdmin(true);
+              }
           }, []);
 
           const handleLogout = () => {
@@ -2267,9 +2535,16 @@
           useEffect(() => {
             const initAuth = async () => {
               try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
-                else { await signInAnonymously(auth); }
-              } catch (error) { setAuthError("تنبيه: يوجد مشكلة في الاتصال بقاعدة البيانات."); setAuthReady(true); }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                  await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                  await signInAnonymously(auth);
+                }
+              } catch (error) {
+                 console.error("Auth error:", error);
+                 setAuthError("تنبيه: يوجد مشكلة في الاتصال بقاعدة البيانات.");
+                 setAuthReady(true);
+              }
             };
             initAuth();
             const unsubscribe = onAuthStateChanged(auth, (u) => { setUser(u); setAuthReady(true); });
@@ -2286,27 +2561,35 @@
               if (docSnap.exists()) {
                 let data = docSnap.data();
                 if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
+                
                 if (!data.products) data.products = DEFAULT_PRODUCTS;
                 else data.products = data.products.map(p => typeof p === 'string' ? { name: p, price: 0, wholesalePrice: 0, totalQty: 0, desc: '' } : { name: p.name, price: p.price || 0, wholesalePrice: p.wholesalePrice || 0, totalQty: p.totalQty || 0, desc: p.desc || '' });
+                
                 if (!data.weddingPackages) data.weddingPackages = DEFAULT_WEDDING_PACKAGES;
                 if (!data.addonTemplates) data.addonTemplates = DEFAULT_ADDON_TEMPLATES;
-                if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
-                if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
-                else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
                 
-                // Force update old reminder template
-                if (data.waTemplates.reminder === "رابط الدفع وتفاصيل الحساب:\n{track_url}") {
-                    data.waTemplates.reminder = DEFAULT_WA_TEMPLATES.reminder;
+                if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
+
+                if (!data.waTemplates) {
+                    data.waTemplates = DEFAULT_WA_TEMPLATES;
+                } else {
+                    data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
                 }
                 
-                if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
+                if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) {
+                    data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
+                }
+
                 if (!data.adminPassword) data.adminPassword = '1234';
+
                 setSettings(data);
               }
             };
             fetchSettings();
 
-            const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => { if (docSnap.exists()) setInventory(docSnap.data()); });
+            const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
+              if (docSnap.exists()) setInventory(docSnap.data());
+            }, (err) => console.error(err));
 
             const unsubTxns = onSnapshot(collection(db, basePath, 'transactions'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
@@ -2358,8 +2641,11 @@
                       return () => clearTimeout(timer);
                   } else {
                       setShowNotFound(false);
+                      
+                      // Auto-cleanup logic for expired photos on client side tracking
                       const runClientCleanup = async () => {
                            const updatedTxn = await checkAndCleanExpiredPhotos(currentTxn, db, getStorage());
+                           // Handle read status logic if not read yet
                            if (!updatedTxn.viewedByClient) {
                                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                                const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
@@ -2396,8 +2682,307 @@
                       </div>
                   );
               }
+              
+              const currentStatus = txn.status || 0;
+              const isWedding = trackType === 'w';
+              const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+              const displayReqs = getReqsText(txn);
+              
+              const statusesToUse = getTransactionStatuses(txn);
 
-              return <ClientTrackingView txn={txn} trackType={trackType} settings={settings} db={db} setReceiptImageModal={setReceiptImageModal} allRecords={allRecords} />;
+              return (
+                  <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center">
+                      <div className="flex flex-col items-center gap-4 mb-8 mt-8">
+                          <div className="relative">
+                              <div className={`absolute inset-0 blur-2xl opacity-30 rounded-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
+                              {settings.studioLogo ? (
+                                  <img src={settings.studioLogo} className={`relative z-10 w-24 h-24 rounded-full object-cover shadow-2xl border-2 ${isWedding ? 'border-pink-900/50' : 'border-blue-900/50'}`} alt="Studio Logo" />
+                              ) : (
+                                  <div className={`relative z-10 w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border shadow-2xl ${isWedding ? 'border-pink-900/50 shadow-pink-900/20' : 'border-blue-900/50 shadow-blue-900/20'}`}>
+                                      <i className={`ph-fill ph-camera text-5xl ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
+                                  </div>
+                              )}
+                          </div>
+                          <div className={`bg-slate-900/80 backdrop-blur-md px-6 py-2.5 rounded-full border shadow-sm mt-2 ${isWedding ? 'border-pink-500/20' : 'border-blue-500/20'}`}>
+                              <h1 className={`text-base md:text-lg font-bold tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>
+                                  {isWedding ? 'تتبع حجز الزفاف الخاص بك 💍' : 'تتبع حالة الطلب الخاص بك 📸'}
+                              </h1>
+                          </div>
+                      </div>
+
+                      {txn.photosLink && (
+                          <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-8 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
+                             <div className="bg-white/20 p-2 rounded-full group-hover:animate-bounce">
+                                 <i className="ph-bold ph-download-simple text-2xl"></i>
+                             </div>
+                             <span>تحميل الصور (رابط خارجي)</span>
+                          </a>
+                      )}
+
+                      {isWedding && (
+                          <div className="w-full max-w-md bg-gradient-to-br from-pink-950/40 to-slate-900 p-6 rounded-3xl border border-pink-500/20 mb-8 text-center shadow-lg">
+                              <div className="w-16 h-16 bg-pink-500/20 text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-pink-500/30">
+                                  <i className="ph-fill ph-heart text-3xl"></i>
+                              </div>
+                              <h2 className="text-xl font-bold text-pink-300 mb-2">شكراً لاختياركم {settings.studioName}</h2>
+                              <p className="text-sm text-pink-200/80 leading-relaxed font-medium">
+                                  يسعدنا ونتشرف بأن نكون جزءاً من أجمل لحظات حياتكم. نسعى دائماً لتوثيق ذكرياتكم بأفضل جودة وحب لتدوم للأبد. ألف مبروك للعروسين! 🎉💍
+                              </p>
+                          </div>
+                      )}
+
+                      {!isWedding && (
+                          <div className="w-full max-w-md bg-gradient-to-br from-blue-950/40 to-slate-900 p-6 rounded-3xl border border-blue-500/20 mb-8 text-center shadow-lg">
+                              <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
+                                  <i className="ph-fill ph-camera text-3xl"></i>
+                              </div>
+                              <h2 className="text-xl font-bold text-blue-300 mb-2">شكراً لاختياركم {settings.studioName}</h2>
+                              <p className="text-sm text-blue-200/80 leading-relaxed font-medium">
+                                  نسعد دائماً بزيارتكم وثقتكم بنا لتوثيق ذكرياتكم الجميلة. نعمل بكل حب واحترافية لتقديم أفضل جودة تليق بكم. 🌟📸
+                              </p>
+                          </div>
+                      )}
+
+                      {txn.uploadedPhotos && txn.uploadedPhotos.length > 0 && (
+                          <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
+                              <div className="absolute top-0 right-0 w-2 h-full bg-green-500"></div>
+                              <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-slate-100">
+                                  <i className="ph-fill ph-images text-green-400 text-2xl"></i> صورك الخاصة المرفوعة
+                              </h3>
+                              <p className="text-[11px] text-slate-400 mb-4 leading-relaxed border-b border-slate-800 pb-3">تنويه: الصور محفوظة بجودتها الأصلية لتنزيلها، <b className="text-red-400">وسيتم حذفها نهائياً خلال 5 أيام</b> من تاريخ الرفع، يرجى حفظها لديكم.</p>
+                              
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {txn.uploadedPhotos.map((photo, idx) => {
+                                      const daysRemaining = photo.expiryTimestamp ? Math.max(0, Math.ceil((photo.expiryTimestamp - Date.now()) / (1000 * 60 * 60 * 24))) : 5;
+                                      return(
+                                      <div key={idx} onClick={() => setReceiptImageModal(photo.url)} className="relative group block rounded-xl overflow-hidden border border-slate-700 aspect-square shadow-sm cursor-pointer">
+                                          <img src={photo.url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                          <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                              <i className="ph-bold ph-download-simple text-white text-xl"></i>
+                                          </div>
+                                          <div className="absolute bottom-0 left-0 right-0 bg-slate-950/90 text-[8px] text-center text-slate-300 font-mono py-1 rounded-b-lg">
+                                              باقي {daysRemaining} أيام
+                                          </div>
+                                      </div>
+                                  )})}
+                              </div>
+                          </div>
+                      )}
+
+                      <div className="bg-slate-900 w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
+                          <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
+                          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
+                              <span className="text-slate-400 text-sm">إيصال رقم</span>
+                              <span className="text-2xl font-black font-mono text-white">#{txn.receiptNo}</span>
+                          </div>
+                          <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>
+                             {isWedding ? <i className="ph ph-heart"></i> : <i className="ph ph-user"></i>} {displayName}
+                          </h3>
+                          <p className="text-sm text-slate-400 mb-5 leading-relaxed whitespace-pre-wrap">{displayReqs}</p>
+                          
+                          {isWedding && txn.weddingDate && (
+                              <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
+                                  <span className="text-slate-400">موعد الزفاف:</span>
+                                  <span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span>
+                              </div>
+                          )}
+
+                          {txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(n=>n) : true) && (
+                              <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
+                                  <span className="text-slate-400">أرقام الصور:</span>
+                                  <span className="font-bold text-white" dir="ltr">{Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(' , ') : txn.photoNo}</span>
+                              </div>
+                          )}
+
+                          <div className="flex justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800 text-sm">
+                               <div className="flex flex-col items-center gap-1">
+                                   <span className="text-slate-500 text-xs">المدفوع</span>
+                                   <span className="text-green-400 font-bold">{txn.paid} ج.م</span>
+                               </div>
+                               <div className="w-px bg-slate-800"></div>
+                               <div className="flex flex-col items-center gap-1">
+                                   <span className="text-slate-500 text-xs">الباقي الدفع</span>
+                                   <span className="text-red-400 font-bold">{txn.remaining} ج.م</span>
+                               </div>
+                          </div>
+                      </div>
+
+                      {txn.remaining > 0 && (
+                          <div className="w-full max-w-md bg-gradient-to-br from-indigo-950 to-slate-900 p-6 rounded-3xl shadow-xl border border-indigo-500/30 mb-8 text-center relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                              <div className="flex justify-center mb-4">
+                                  <div className="bg-indigo-500/20 p-4 rounded-full text-indigo-400 shadow-lg shadow-indigo-900/20">
+                                      <i className="ph ph-wallet text-3xl"></i>
+                                  </div>
+                              </div>
+                              <h3 className="text-lg font-bold text-white mb-2">سداد إلكتروني متاح 💳</h3>
+                              <p className="text-sm text-indigo-200/80 leading-relaxed mb-4">
+                                  لراحتك، يمكنك الآن سداد باقي المبلغ المستحق (<b className="text-white">{txn.remaining} ج.م</b>) بكل سهولة عبر 
+                                  <span className="text-white font-bold mx-1">إنستاباي (InstaPay)</span> أو <span className="text-white font-bold mx-1">المحافظ الإلكترونية</span>.
+                              </p>
+                              
+                              <div className="bg-slate-950/80 py-3 px-4 rounded-2xl border border-indigo-500/20 flex flex-col items-center gap-1 shadow-inner mb-4">
+                                  <span className="text-xs text-indigo-300">رقم التحويل (فودافون كاش / إنستاباي):</span>
+                                  <div className="flex items-center gap-3 mt-1">
+                                      <span className="text-2xl font-black font-mono text-white tracking-widest">01126810107</span>
+                                      <button onClick={(e) => {
+                                          const el = document.createElement('textarea');
+                                          el.value = '01126810107';
+                                          document.body.appendChild(el);
+                                          el.select();
+                                          document.execCommand('copy');
+                                          document.body.removeChild(el);
+                                          const originalHTML = e.currentTarget.innerHTML;
+                                          e.currentTarget.innerHTML = '<i class="ph ph-check text-lg"></i>';
+                                          setTimeout(() => e.currentTarget.innerHTML = originalHTML, 2000);
+                                      }} className="text-indigo-400 hover:text-indigo-300 bg-indigo-900/30 p-2 rounded-lg transition-colors" title="نسخ الرقم"><i className="ph ph-copy text-lg"></i></button>
+                                  </div>
+                              </div>
+
+                              <div className="mb-5 text-right bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
+                                  <label className="block text-sm font-bold text-indigo-300 mb-3"><i className="ph ph-upload-simple text-lg align-middle ml-1"></i> إرفاق صورة التحويل أولاً لتأكيد السداد:</label>
+                                  <input type="file" accept="image/*" onChange={(e) => {
+                                          const file = e.target.files[0];
+                                          if (!file) return;
+                                          const reader = new FileReader();
+                                          reader.readAsDataURL(file);
+                                          reader.onload = (event) => {
+                                              const img = new Image();
+                                              img.src = event.target.result;
+                                              img.onload = () => {
+                                                  const canvas = document.createElement('canvas');
+                                                  const MAX_WIDTH = 800;
+                                                  let scaleSize = 1;
+                                                  if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                                                  canvas.width = img.width * scaleSize;
+                                                  canvas.height = img.height * scaleSize;
+                                                  const ctx = canvas.getContext('2d');
+                                                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                  setTransferReceipt(canvas.toDataURL('image/jpeg', 0.6));
+                                                  setClientViewError('');
+                                              };
+                                          };
+                                      }} className="block w-full text-sm text-slate-400 file:ml-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 transition-colors bg-slate-950 rounded-xl"
+                                  />
+                                  {clientViewError && <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1"><i className="ph ph-warning text-base"></i> {clientViewError}</p>}
+                                  {transferReceipt && <p className="text-green-400 text-xs mt-3 font-bold flex items-center gap-1"><i className="ph ph-check-circle text-base"></i> تم إرفاق الصورة بنجاح وجاهز للتأكيد</p>}
+                              </div>
+
+                              <button onClick={async () => {
+                                  if (!transferReceipt) { setClientViewError('عذراً، برجاء إرفاق صورة التحويل أولاً لتأكيد السداد.'); return; }
+                                  setIsUploading(true);
+                                  try {
+                                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                                      const updated = { ...txn, pendingReceipt: transferReceipt };
+                                      const targetCol = isWedding ? 'weddings' : 'transactions';
+                                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated);
+                                      const confirmMsg = `مرحباً، قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد باقي حساب إيصال رقم #${txn.receiptNo} باسم ${displayName}.\n✅ وقمت برفع صورة التحويل في رابط التتبع لتأكيد الدفع.`;
+                                      openWhatsApp('01201260040', confirmMsg);
+                                  } catch (err) { setClientViewError('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.'); }
+                                  setIsUploading(false);
+                              }} disabled={isUploading} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
+                                  {isUploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><i className="ph ph-whatsapp-logo text-2xl"></i> تأكيد التحويل عبر واتساب</>}
+                              </button>
+                          </div>
+                      )}
+
+                      {/* Timeline */}
+                      <div className="w-full max-w-md bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 mb-8">
+                          <h3 className="font-bold text-lg mb-8 flex items-center gap-2 border-b border-slate-800 pb-4"><i className="ph ph-clock-counter-clockwise text-blue-500"></i> مراحل تجهيز الطلب:</h3>
+                          <div className="relative pl-4 space-y-8 pr-4">
+                              <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
+                              {statusesToUse.map((s, index) => {
+                                  const isCompleted = currentStatus >= s.id;
+                                  const isCurrent = currentStatus === s.id;
+                                  return (
+                                      <div key={s.id} className="relative flex items-start gap-5">
+                                          <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
+                                              <i className={`ph ${s.icon} text-xl`}></i>
+                                          </div>
+                                          <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
+                                              <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
+                                              {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
+                                              {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
+                                          </div>
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      </div>
+
+                      {/* Feedback Box */}
+                      <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-1 h-full bg-yellow-500"></div>
+                          <h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-slate-100">
+                              <i className="ph-fill ph-star text-yellow-500 text-2xl"></i> رأيك يهمنا
+                          </h3>
+                          <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                              نسعى دائماً لتقديم الأفضل لكم. كيف كانت تجربتكم معنا؟ يسعدنا سماع رأيكم أو أي ملاحظات لتطوير خدماتنا.
+                          </p>
+                          
+                          {feedbackSubmitted ? (
+                              <div className="bg-green-950/40 border border-green-500/30 p-4 rounded-xl text-center">
+                                  <i className="ph-fill ph-check-circle text-4xl text-green-500 mb-2"></i>
+                                  <p className="text-green-400 font-bold">شكراً لك! تم حفظ وإرسال تقييمك بنجاح للإدارة.</p>
+                              </div>
+                          ) : (
+                              <>
+                                  <div className="flex justify-center gap-3 mb-5" dir="ltr">
+                                      {[1, 2, 3, 4, 5].map(star => (
+                                          <i
+                                              key={star}
+                                              className={`ph-fill ph-star text-4xl cursor-pointer transition-transform hover:scale-110 ${
+                                                  star <= (hoveredStar || rating) ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 'text-slate-700'
+                                              }`}
+                                              onMouseEnter={() => setHoveredStar(star)}
+                                              onMouseLeave={() => setHoveredStar(0)}
+                                              onClick={() => setRating(star)}
+                                          ></i>
+                                      ))}
+                                  </div>
+                                  <textarea 
+                                      value={feedbackText}
+                                      onChange={(e) => setFeedbackText(e.target.value)}
+                                      placeholder="اكتب رسالتك وتفاصيل تقييمك هنا (اختياري)..." 
+                                      className="w-full p-4 rounded-xl bg-slate-950/50 border border-slate-700 text-sm text-white mb-4 outline-none focus:border-yellow-500 focus:bg-slate-900 transition-colors custom-scrollbar resize-none shadow-inner"
+                                      rows="4"
+                                  ></textarea>
+                                  <button 
+                                      onClick={async () => {
+                                          if(rating === 0 && !feedbackText.trim()) return;
+                                          setIsSubmittingFeedback(true);
+                                          try {
+                                              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                                              const targetCol = isWedding ? 'weddings' : 'transactions';
+                                              const updatedTxn = { ...txn, clientRating: rating, clientFeedback: feedbackText };
+                                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updatedTxn);
+                                              
+                                              setFeedbackSubmitted(true);
+                                          } catch(err) {
+                                              console.error("Error saving feedback:", err);
+                                          }
+                                          setIsSubmittingFeedback(false);
+                                      }}
+                                      disabled={isSubmittingFeedback || (rating === 0 && !feedbackText.trim())}
+                                      className={`w-full text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm border shadow-md group ${
+                                          (rating === 0 && !feedbackText.trim()) || isSubmittingFeedback
+                                              ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed'
+                                              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-yellow-500/50'
+                                      }`}
+                                  >
+                                      {isSubmittingFeedback ? (
+                                          <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                      ) : (
+                                          <><i className="ph-fill ph-paper-plane-right text-lg text-yellow-500 group-hover:scale-110 transition-transform"></i> حفظ التقييم وإرساله للإدارة</>
+                                      )}
+                                  </button>
+                              </>
+                          )}
+                      </div>
+                      
+                      <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
+                  </div>
+              );
           }
 
           if (!authReady) {
