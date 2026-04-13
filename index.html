@@ -197,7 +197,6 @@
             const now = Date.now();
 
             for (const photo of txn.uploadedPhotos) {
-                // Check if photo has expiry and is expired
                 if (photo.expiryTimestamp && now > photo.expiryTimestamp) {
                     hasExpired = true;
                     if (photo.path) {
@@ -224,7 +223,6 @@
             }
             return txn;
         };
-
 
         const generateWA_Message = (templateKey, txn, settings, isWedding = false) => {
             let msg = settings.waTemplates[templateKey] || "";
@@ -1292,31 +1290,32 @@
             return (
               <div className="space-y-6">
                 
-                <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                      <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50">
-                        <i className="ph ph-plus-circle text-2xl"></i> إضافة عملية جديدة
+                {/* شريط التحكم: بحث، إضافة، ديون، وتاريخ */}
+                <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
+                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base">
+                    <i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية
+                  </button>
+                  
+                  {totalDebts > 0 && (
+                      <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base" title={`إجمالي الديون: ${formatCurrency(totalDebts)}`}>
+                        <i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>
+                        الديون ({uniqueDebtorsCount}) عميل
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span>
                       </button>
-                      
-                      {totalDebts > 0 && (
-                          <button onClick={() => setShowDebtsModal(true)} className="w-full sm:w-auto bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group" title={`إجمالي الديون: ${formatCurrency(totalDebts)}`}>
-                            <i className="ph-fill ph-warning-circle text-xl group-hover:scale-110 transition-transform"></i>
-                            ديون لـ {uniqueDebtorsCount} عميل
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span>
+                  )}
+
+                  <div className="relative w-full h-12 sm:h-14">
+                    <i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i>
+                    <input type="text" placeholder="ابحث بالاسم، هاتف، إيصال..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  </div>
+                  
+                  <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
+                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                      {filterDate && (
+                          <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0" title="إلغاء الفلتر">
+                              <i className="ph ph-x text-lg"></i>
                           </button>
                       )}
-                  </div>
-                  <div className="relative w-full md:w-1/2 flex gap-2">
-                    <div className="relative flex-1">
-                      <i className="ph ph-magnifying-glass absolute right-4 top-4 text-slate-500 text-xl"></i>
-                      <input type="text" placeholder="ابحث بالاسم، رقم الهاتف، رقم الإيصال..." className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
-                    </div>
-                    <input type="date" title="تصفية بيوم محدد" className="p-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                    {filterDate && (
-                        <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر">
-                            <i className="ph ph-x"></i>
-                        </button>
-                    )}
                   </div>
                 </div>
 
@@ -1385,12 +1384,16 @@
                                                 <span className="text-red-400 font-black text-sm bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-900/30 ml-auto sm:ml-4">
                                                     {txn.remaining} ج.م
                                                 </span>
-                                                <div className="flex gap-2">
+                                                {/* أزرار السداد بالإضافة لزر التذكير الواتساب */}
+                                                <div className="flex flex-wrap gap-2 justify-end">
                                                     <button onClick={() => { setPayModal({...txn, paymentType: 'cash'}); setShowDebtsModal(false); }} className="bg-yellow-600 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
                                                         <i className="ph ph-money text-base"></i> نقدي
                                                     </button>
                                                     <button onClick={() => { setPayModal({...txn, paymentType: 'electronic'}); setShowDebtsModal(false); }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
                                                         <i className="ph ph-wallet text-base"></i> إلكتروني
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, txn.type === 'wedding')); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5" title="إرسال تذكير عبر واتساب">
+                                                        <i className="ph ph-whatsapp-logo text-base"></i> تذكير
                                                     </button>
                                                 </div>
                                             </div>
@@ -1728,31 +1731,32 @@
             return (
               <div className="space-y-6">
                 
-                <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                      <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full sm:w-auto bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50">
-                        <i className="ph ph-heart text-2xl"></i> حجز زفاف جديد
-                      </button>
+                {/* شريط التحكم: بحث، إضافة، ديون، وتاريخ */}
+                <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
+                  <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base">
+                    <i className="ph ph-heart text-xl sm:text-2xl"></i> حجز زفاف جديد
+                  </button>
 
-                      {totalDebts > 0 && (
-                          <button onClick={() => setShowDebtsModal(true)} className="w-full sm:w-auto bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group" title={`إجمالي الديون: ${formatCurrency(totalDebts)}`}>
-                            <i className="ph-fill ph-warning-circle text-xl group-hover:scale-110 transition-transform"></i>
-                            ديون لـ {uniqueDebtorsCount} عميل
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span>
+                  {totalDebts > 0 && (
+                      <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base" title={`إجمالي الديون: ${formatCurrency(totalDebts)}`}>
+                        <i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>
+                        ديون ({uniqueDebtorsCount}) عميل
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span>
+                      </button>
+                  )}
+
+                  <div className="relative w-full h-12 sm:h-14">
+                    <i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i>
+                    <input type="text" placeholder="ابحث باسم العريس، العروسة، الهاتف..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  </div>
+
+                  <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
+                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                      {filterDate && (
+                          <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0" title="إلغاء الفلتر">
+                              <i className="ph ph-x text-lg"></i>
                           </button>
                       )}
-                  </div>
-                  <div className="relative w-full md:w-1/2 flex gap-2">
-                    <div className="relative flex-1">
-                      <i className="ph ph-magnifying-glass absolute right-4 top-4 text-slate-500 text-xl"></i>
-                      <input type="text" placeholder="ابحث باسم العريس، العروسة، رقم الهاتف..." className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} />
-                    </div>
-                    <input type="date" title="تصفية بيوم محدد" className="p-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                    {filterDate && (
-                        <button onClick={() => setFilterDate('')} className="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 p-3 rounded-xl transition-colors" title="إلغاء الفلتر">
-                            <i className="ph ph-x"></i>
-                        </button>
-                    )}
                   </div>
                 </div>
 
@@ -1816,12 +1820,16 @@
                                                 <span className="text-red-400 font-black text-sm bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-900/30 ml-auto sm:ml-4">
                                                     {txn.remaining} ج.م
                                                 </span>
-                                                <div className="flex gap-2">
+                                                {/* أزرار السداد بالإضافة لزر التذكير الواتساب */}
+                                                <div className="flex flex-wrap gap-2 justify-end">
                                                     <button onClick={() => { setPayModal({...txn, paymentType: 'cash'}); setShowDebtsModal(false); }} className="bg-yellow-600 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
                                                         <i className="ph ph-money text-base"></i> نقدي
                                                     </button>
                                                     <button onClick={() => { setPayModal({...txn, paymentType: 'electronic'}); setShowDebtsModal(false); }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
                                                         <i className="ph ph-wallet text-base"></i> إلكتروني
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, txn.type === 'wedding')); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5" title="إرسال تذكير عبر واتساب">
+                                                        <i className="ph ph-whatsapp-logo text-base"></i> تذكير
                                                     </button>
                                                 </div>
                                             </div>
@@ -2583,7 +2591,6 @@
                 if (!data.waTemplates) {
                     data.waTemplates = DEFAULT_WA_TEMPLATES;
                 } else {
-                    // Update fallback dynamically if database versions differ
                     data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
                 }
                 
@@ -2653,10 +2660,8 @@
                   } else {
                       setShowNotFound(false);
                       
-                      // Auto-cleanup logic for expired photos on client side tracking
                       const runClientCleanup = async () => {
                            const updatedTxn = await checkAndCleanExpiredPhotos(currentTxn, db, getStorage());
-                           // Handle read status logic if not read yet
                            if (!updatedTxn.viewedByClient) {
                                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                                const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
@@ -2731,7 +2736,7 @@
                           </a>
                       )}
 
-                      {isWedding && (
+                      {isWedding ? (
                           <div className="w-full max-w-md bg-gradient-to-br from-pink-950/40 to-slate-900 p-6 rounded-3xl border border-pink-500/20 mb-8 text-center shadow-lg">
                               <div className="w-16 h-16 bg-pink-500/20 text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-pink-500/30">
                                   <i className="ph-fill ph-heart text-3xl"></i>
@@ -2741,9 +2746,7 @@
                                   يسعدنا ونتشرف بأن نكون جزءاً من أجمل لحظات حياتكم. نسعى دائماً لتوثيق ذكرياتكم بأفضل جودة وحب لتدوم للأبد. ألف مبروك للعروسين! 🎉💍
                               </p>
                           </div>
-                      )}
-
-                      {!isWedding && (
+                      ) : (
                           <div className="w-full max-w-md bg-gradient-to-br from-blue-950/40 to-slate-900 p-6 rounded-3xl border border-blue-500/20 mb-8 text-center shadow-lg">
                               <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
                                   <i className="ph-fill ph-camera text-3xl"></i>
@@ -2764,8 +2767,6 @@
                           <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>
                              {isWedding ? <i className="ph ph-heart"></i> : <i className="ph ph-user"></i>} {displayName}
                           </h3>
-                          
-                          {/* تم إخفاء ملخص الطلب من هنا */}
 
                           {isWedding && txn.weddingDate && (
                               <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
