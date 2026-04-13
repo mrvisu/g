@@ -189,7 +189,6 @@
             return txn.requirements || 'لا يوجد تفاصيل';
         };
 
-        // --- Auto Deletion Cleanup Logic ---
         const checkAndCleanExpiredPhotos = async (txn, db, storage) => {
             if (!txn || !txn.uploadedPhotos || txn.uploadedPhotos.length === 0) return txn;
             let hasExpired = false;
@@ -403,7 +402,9 @@
             );
         };
 
-        const Navigation = ({ settings, activeTab, setActiveTab, onLogout }) => {
+        const Navigation = ({ settings, activeTab, setActiveTab, onLogout, feedbacks, unreadCount, onViewFeedback }) => {
+            const [showNotif, setShowNotif] = useState(false);
+
             const navItems = [
               { id: 'dashboard', icon: <i className="ph ph-squares-four text-xl"></i>, label: 'الرئيسية' },
               { id: 'weddings', icon: <i className="ph ph-heart text-xl"></i>, label: 'حجوزات الزفاف 💍' },
@@ -411,10 +412,12 @@
               { id: 'reports', icon: <i className="ph ph-calendar-blank text-xl"></i>, label: 'التقارير' },
               { id: 'settings', icon: <i className="ph ph-gear text-xl"></i>, label: 'الإعدادات' },
             ];
+
             return (
               <nav className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 text-white sticky top-0 z-50 shadow-2xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between items-center h-20">
+                    
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">
                         {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}
@@ -424,18 +427,56 @@
                         <span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span>
                       </div>
                     </div>
-                    <div className="hidden lg:flex items-center space-x-1 space-x-reverse bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                      {navItems.map(btn => (
-                        <button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>
-                          {btn.icon}{btn.label}
-                        </button>
-                      ))}
-                      <div className="w-px h-6 bg-slate-700 mx-2"></div>
-                      <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all text-red-400 hover:text-white hover:bg-red-900/50" title="تسجيل الخروج وإقفال النظام">
-                          <i className="ph ph-sign-out text-lg"></i> خروج
-                      </button>
+
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="relative">
+                            <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-300 hover:text-yellow-400 transition-colors bg-slate-900 rounded-full border border-slate-800">
+                                <i className="ph-fill ph-bell text-xl"></i>
+                                {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg">{unreadCount}</span>}
+                            </button>
+                            
+                            {showNotif && (
+                                <div className="absolute left-0 lg:left-auto lg:right-0 mt-3 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col max-h-[400px]">
+                                    <div className="flex justify-between items-center mb-2 px-2 pb-2 border-b border-slate-700">
+                                        <span className="font-bold text-slate-200">التقييمات والآراء ({feedbacks.length})</span>
+                                        <button onClick={() => setShowNotif(false)} className="text-slate-400 hover:text-white"><i className="ph ph-x"></i></button>
+                                    </div>
+                                    <div className="overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
+                                        {feedbacks.length === 0 ? (
+                                            <p className="text-center text-slate-500 text-sm py-4">لا توجد تقييمات بعد.</p>
+                                        ) : (
+                                            feedbacks.map(fb => (
+                                                <div key={fb.id} onClick={() => { onViewFeedback(fb); setShowNotif(false); }} className={`p-3 rounded-lg border cursor-pointer transition-colors ${!fb.adminReadFeedback ? 'bg-slate-700/50 border-yellow-500/50' : 'bg-slate-900 border-slate-700 hover:border-slate-500'}`}>
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="font-bold text-sm text-slate-200">{fb.type === 'wedding' ? (fb.groomName + ' و ' + fb.brideName) : fb.clientName}</span>
+                                                        <div className="flex gap-0.5 text-yellow-500 text-xs" dir="ltr">
+                                                            {[...Array(5)].map((_, i) => <i key={i} className={`${i < fb.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}
+                                                        </div>
+                                                    </div>
+                                                    {fb.clientFeedback && <p className="text-xs text-slate-400 line-clamp-2">{fb.clientFeedback}</p>}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="hidden lg:flex items-center space-x-1 space-x-reverse bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                            {navItems.map(btn => (
+                                <button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>
+                                {btn.icon}{btn.label}
+                                </button>
+                            ))}
+                            <div className="w-px h-6 bg-slate-700 mx-2"></div>
+                            <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all text-red-400 hover:text-white hover:bg-red-900/50" title="تسجيل الخروج وإقفال النظام">
+                                <i className="ph ph-sign-out text-lg"></i> خروج
+                            </button>
+                        </div>
                     </div>
+
                   </div>
+                  
                   <div className="lg:hidden pb-4 overflow-x-auto hide-scrollbar">
                     <div className="flex items-center gap-2 min-w-max">
                       {navItems.map(btn => (
@@ -1763,6 +1804,7 @@
                                                 <span className="text-red-400 font-black text-sm bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-900/30 ml-auto sm:ml-4">
                                                     {txn.remaining} ج.م
                                                 </span>
+                                                {/* أزرار السداد بالإضافة لزر التذكير الواتساب */}
                                                 <div className="flex flex-wrap gap-2 justify-end">
                                                     <button onClick={() => { setPayModal({...txn, paymentType: 'cash'}); setShowDebtsModal(false); }} className="bg-yellow-600 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
                                                         <i className="ph ph-money text-base"></i> نقدي
@@ -1927,7 +1969,7 @@
                     </div>
                   </div>
                 )}
-
+                
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
               </div>
@@ -2436,6 +2478,7 @@
           const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
           const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
           const [receiptImageModal, setReceiptImageModal] = useState(null);
+          const [txnDetailsModal, setTxnDetailsModal] = useState(null);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
@@ -2532,6 +2575,21 @@
           }, [user, isTracking, trackType]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
+
+          const feedbacks = useMemo(() => {
+              return allRecords.filter(r => r.clientRating > 0 || r.clientFeedback).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
+          }, [allRecords]);
+          const unreadFeedbackCount = feedbacks.filter(r => !r.adminReadFeedback).length;
+
+          const handleViewFeedback = (txn) => {
+              setTxnDetailsModal(txn);
+              if (!txn.adminReadFeedback) {
+                  const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                  const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
+                  const updated = { ...txn, adminReadFeedback: true };
+                  setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated).catch(console.error);
+              }
+          };
 
           const saveSettingsToDB = async (newSettings) => {
               if (!user || isTracking) return;
@@ -2886,7 +2944,7 @@
           return (
             <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
               {authError && <div className="bg-red-600 text-white text-center py-1 font-bold text-xs">{authError}</div>}
-              {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} onLogout={handleLogout} />}
+              {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} onLogout={handleLogout} feedbacks={feedbacks} unreadCount={unreadFeedbackCount} onViewFeedback={handleViewFeedback} />}
               <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
