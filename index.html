@@ -1360,7 +1360,7 @@
                                         <div key={txn.id} onClick={() => setTxnDetailsModal(txn)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
                                             <div>
                                                 <span className={`font-bold text-sm ${txn.type === 'wedding' ? 'text-pink-300' : 'text-slate-200'}`}>
-                                                    {txn.type === 'wedding' ? `${txn.groomName || ''} و ${txn.brideName || ''}` : txn.clientName}
+                                                    {txn.type === 'wedding' ? (txn.groomName + ' و ' + txn.brideName) : txn.clientName}
                                                 </span>
                                                 <div className="text-xs text-slate-500 mt-1 font-mono flex items-center gap-2">
                                                     <span>📞 {txn.phone}</span>
@@ -2469,6 +2469,7 @@
           const [showNotFound, setShowNotFound] = useState(false);
           const [transferReceipt, setTransferReceipt] = useState(null);
           const [isUploading, setIsUploading] = useState(false);
+          const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
           const [clientViewError, setClientViewError] = useState('');
           const [feedbackText, setFeedbackText] = useState('');
           const [rating, setRating] = useState(0);
@@ -2659,23 +2660,84 @@
               const statusesToUse = getTransactionStatuses(txn);
               const isDelivered = currentStatus === statusesToUse[statusesToUse.length - 1].id;
 
+              // جلب كل سجلات العميل لعمل الأرشيف وعرض الصورة الشخصية إن وجدت
+              const clientArchiveRecords = [...transactions, ...weddings]
+                  .filter(t => t.phone === trackPhone)
+                  .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
+              
+              const existingProfilePic = clientArchiveRecords.find(t => t.clientProfilePic)?.clientProfilePic || null;
+
+              const handleProfilePicUpload = async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  setIsUploadingProfilePic(true);
+                  try {
+                      const reader = new FileReader();
+                      reader.readAsDataURL(file);
+                      reader.onload = (event) => {
+                          const img = new Image();
+                          img.src = event.target.result;
+                          img.onload = async () => {
+                              const canvas = document.createElement('canvas');
+                              const MAX_WIDTH = 250; 
+                              let scaleSize = 1;
+                              if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                              canvas.width = img.width * scaleSize;
+                              canvas.height = img.height * scaleSize;
+                              const ctx = canvas.getContext('2d');
+                              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                              const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                              
+                              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                              const targetCol = isWedding ? 'weddings' : 'transactions';
+                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, clientProfilePic: dataUrl });
+                              setIsUploadingProfilePic(false);
+                          };
+                      };
+                  } catch (err) {
+                      console.error("Error uploading profile pic", err);
+                      setIsUploadingProfilePic(false);
+                  }
+              };
+
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center">
-                      <div className="flex flex-col items-center gap-4 mb-8 mt-8">
-                          <div className="relative">
-                              <div className={`absolute inset-0 blur-2xl opacity-30 rounded-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
-                              {settings.studioLogo ? (
-                                  <img src={settings.studioLogo} className={`relative z-10 w-24 h-24 rounded-full object-cover shadow-2xl border-2 ${isWedding ? 'border-pink-900/50' : 'border-blue-900/50'}`} alt="Studio Logo" />
-                              ) : (
-                                  <div className={`relative z-10 w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border shadow-2xl ${isWedding ? 'border-pink-900/50 shadow-pink-900/20' : 'border-blue-900/50 shadow-blue-900/20'}`}>
-                                      <i className={`ph-fill ph-camera text-5xl ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
+                      
+                      {/* 1. البطاقة المدمجة (الصورة الشخصية + الترحيب) */}
+                      <div className={`w-full max-w-md bg-gradient-to-br ${isWedding ? 'from-pink-950/50' : 'from-blue-950/50'} to-slate-900 p-6 md:p-8 rounded-3xl border ${isWedding ? 'border-pink-500/30 shadow-pink-900/20' : 'border-blue-500/30 shadow-blue-900/20'} mb-6 shadow-2xl relative overflow-hidden mt-4`}>
+                          <div className={`absolute top-0 right-0 w-full h-2 bg-gradient-to-l ${isWedding ? 'from-pink-400 to-rose-500' : 'from-blue-400 to-indigo-500'}`}></div>
+                          <div className="flex flex-col sm:flex-row items-center text-center sm:text-right gap-5 relative z-10">
+                              <div className="relative group shrink-0">
+                                  <div className={`w-24 h-24 sm:w-20 sm:h-20 rounded-full overflow-hidden border-4 ${isWedding ? 'border-pink-500/40' : 'border-blue-500/40'} shadow-lg bg-slate-800 flex items-center justify-center`}>
+                                      {existingProfilePic ? (
+                                          <img src={existingProfilePic} alt="Profile" className="w-full h-full object-cover" />
+                                      ) : (
+                                          <i className="ph-fill ph-user text-4xl text-slate-500"></i>
+                                      )}
                                   </div>
-                              )}
+                                  <label className="absolute -bottom-1 -left-1 w-8 h-8 bg-yellow-500 text-slate-900 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-yellow-400 hover:scale-110 transition-all border-2 border-slate-900" title="إضافة/تغيير صورتك الشخصية">
+                                      {isUploadingProfilePic ? <i className="ph ph-spinner animate-spin"></i> : <i className="ph-fill ph-camera-plus text-sm"></i>}
+                                      <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicUpload} disabled={isUploadingProfilePic} />
+                                  </label>
+                              </div>
+                              <div>
+                                  <h1 className={`text-xl md:text-2xl font-black mb-1.5 tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>تتبع حالة الطلب الخاص بك 📸</h1>
+                                  <p className="text-sm font-bold text-slate-300">شكراً لاختياركم <span className="text-yellow-400">{settings.studioName}</span> ✨</p>
+                              </div>
                           </div>
-                          <div className={`bg-slate-900/80 backdrop-blur-md px-6 py-2.5 rounded-full border shadow-sm mt-2 ${isWedding ? 'border-pink-500/20' : 'border-blue-500/20'}`}>
-                              <h1 className={`text-base md:text-lg font-bold tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>
-                                  {isWedding ? 'تتبع حجز الزفاف الخاص بك 💍' : 'تتبع حالة الطلب الخاص بك 📸'}
-                              </h1>
+                      </div>
+
+                      {/* 2. البطاقة الإعلانية (Promotional Card) */}
+                      <div className="w-full max-w-md bg-gradient-to-l from-yellow-600 to-amber-500 p-5 rounded-2xl mb-8 shadow-lg shadow-yellow-900/20 text-slate-900 flex items-center gap-4 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform border border-yellow-400">
+                          <div className="absolute -right-2 -top-4 text-yellow-100/30">
+                              <i className="ph-fill ph-gift text-6xl transform rotate-12"></i>
+                          </div>
+                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 relative z-10 backdrop-blur-sm border border-white/30 shadow-inner">
+                              <i className="ph-fill ph-ticket text-2xl text-white"></i>
+                          </div>
+                          <div className="relative z-10">
+                              <h3 className="font-black text-lg text-white mb-1">عرض خاص لعملائنا! 🎁</h3>
+                              <p className="text-[11px] sm:text-xs font-bold text-yellow-50 leading-tight">احصل على خصم 15% على طباعة الألبومات والتابلوهات عند إبراز هذا الرابط في زيارتك القادمة.</p>
                           </div>
                       </div>
 
@@ -2687,16 +2749,6 @@
                              <span>تحميل الصور (رابط خارجي)</span>
                           </a>
                       )}
-
-                      <div className={`w-full max-w-md bg-gradient-to-br ${isWedding ? 'from-pink-950/40 to-slate-900 border-pink-500/20' : 'from-blue-950/40 to-slate-900 border-blue-500/20'} p-6 rounded-3xl border mb-8 text-center shadow-lg`}>
-                          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${isWedding ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
-                              <i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-camera'} text-3xl`}></i>
-                          </div>
-                          <h2 className={`text-xl font-bold ${isWedding ? 'text-pink-300' : 'text-blue-300'} mb-2`}>شكراً لاختياركم {settings.studioName}</h2>
-                          <p className={`text-sm leading-relaxed font-medium ${isWedding ? 'text-pink-200/80' : 'text-blue-200/80'}`}>
-                              {isWedding ? 'يسعدنا ونتشرف بأن نكون جزءاً من أجمل لحظات حياتكم. نسعى دائماً لتوثيق ذكرياتكم بأفضل جودة وحب لتدوم للأبد. ألف مبروك للعروسين! 🎉💍' : 'نسعد دائماً بزيارتكم وثقتكم بنا لتوثيق ذكرياتكم الجميلة. نعمل بكل حب واحترافية لتقديم أفضل جودة تليق بكم. 🌟📸'}
-                          </p>
-                      </div>
 
                       <div className="bg-slate-900 w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
@@ -2862,6 +2914,41 @@
                               </p>
                           </div>
                       )}
+
+                      {/* 3. الأرشيف الخاص بالعميل */}
+                      <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
+                           <div className="absolute top-0 right-0 w-1 h-full bg-slate-600"></div>
+                           <h3 className="font-bold text-lg mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
+                               <span className="flex items-center gap-2"><i className="ph-fill ph-folder-open text-2xl text-slate-400"></i> أرشيف زياراتي للاستوديو</span>
+                               <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-mono">{clientArchiveRecords.length} زيارات</span>
+                           </h3>
+                           <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
+                               {clientArchiveRecords.map(record => {
+                                   const isWedRec = record.type === 'wedding';
+                                   const recStatuses = isWedRec ? WEDDING_STATUSES : ORDER_STATUSES;
+                                   const recStatusObj = recStatuses.find(s => s.id === (record.status || 0)) || recStatuses[0];
+                                   const isActive = record.id === txn.id;
+                                   
+                                   return (
+                                       <a key={record.id} href={window.location.href.split('?')[0] + `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${isWedRec ? 'w' : 't'}`} className={`block p-4 rounded-2xl border transition-all ${isActive ? 'bg-blue-950/20 border-blue-500/50 shadow-inner' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
+                                           <div className="flex justify-between items-start mb-2">
+                                               <div className="flex items-center gap-2">
+                                                   <i className={`text-xl ${isWedRec ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
+                                                   <span className="font-bold text-sm text-slate-200">إيصال #{record.receiptNo}</span>
+                                               </div>
+                                               <span className="text-xs text-slate-500 font-mono">{formatDateOnly(record.dateTime)}</span>
+                                           </div>
+                                           <div className="flex justify-between items-center mt-3">
+                                               <span className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1 ${recStatusObj.clientIconCompleted.split(' ')[0]} ${recStatusObj.clientIconCompleted.split(' ')[1]} bg-opacity-20 text-opacity-100 border ${recStatusObj.clientIconCompleted.split(' ')[4]}`}>
+                                                   <i className={`ph ${recStatusObj.icon}`}></i> {recStatusObj.label}
+                                               </span>
+                                               <span className="text-sm font-black text-slate-300">{record.total} ج.م</span>
+                                           </div>
+                                       </a>
+                                   );
+                               })}
+                           </div>
+                      </div>
 
                       {/* Feedback Box */}
                       <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
