@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ستوديو المراكبى - الإدارة والتتبع</title>
+    <title>Mrakby Studio - الإدارة والتتبع</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23eab308'%3E%3Cpath d='M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z'/%3E%3C/svg%3E">
@@ -40,7 +40,7 @@
         main .font-black { font-weight: 600 !important; }
         main b, main strong { font-weight: 500 !important; }
         
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
@@ -63,6 +63,14 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body>
@@ -72,9 +80,9 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+        import { getStorage, ref, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         // --- Data Definitions ---
         const ORDER_STATUSES = [
@@ -172,6 +180,16 @@
              const d = new Date(dateStr);
              if(isNaN(d.getTime())) return dateStr; 
              return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        };
+
+        const getDiffDays = (dateStr) => {
+            if (!dateStr) return null;
+            const target = new Date(dateStr);
+            const today = new Date();
+            target.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            const diffTime = target - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         };
 
         const getReqsText = (txn) => {
@@ -357,6 +375,61 @@
             });
         };
 
+        const calculatePeriodRevenue = (records, targetDateObj, period = 'day') => {
+            let total = 0, cash = 0, electronic = 0;
+            
+            records.forEach(rec => {
+                if (rec.payments && rec.payments.length > 0) {
+                    rec.payments.forEach(p => {
+                        const pDate = new Date(p.date);
+                        let isMatch = false;
+                        if (period === 'day') {
+                            isMatch = pDate.toDateString() === targetDateObj.toDateString();
+                        } else if (period === 'month') {
+                            isMatch = pDate.getMonth() === targetDateObj.getMonth() && pDate.getFullYear() === targetDateObj.getFullYear();
+                        }
+                        if (isMatch) {
+                            total += p.amount;
+                            if (p.method === 'electronic') electronic += p.amount;
+                            else cash += p.amount;
+                        }
+                    });
+                } else {
+                    const rDate = new Date(rec.dateTime);
+                    let isMatch = false;
+                    if (period === 'day') {
+                        isMatch = rDate.toDateString() === targetDateObj.toDateString();
+                    } else if (period === 'month') {
+                        isMatch = rDate.getMonth() === targetDateObj.getMonth() && rDate.getFullYear() === targetDateObj.getFullYear();
+                    }
+                    if (isMatch) {
+                        const recTotalPaid = parseFloat(rec.paid) || 0;
+                        const recElecPaid = parseFloat(rec.electronicPaid) || 0;
+                        total += recTotalPaid;
+                        electronic += recElecPaid;
+                        cash += (recTotalPaid - recElecPaid);
+                    }
+                }
+            });
+            return { total, cash, electronic };
+        };
+
+        // --- Notification Helper ---
+        const requestNotificationPermission = () => {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        };
+
+        const showBrowserNotification = (title, body) => {
+            if (Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23eab308"%3E%3Cpath d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/%3E%3C/svg%3E'
+                });
+            }
+        };
+
         // --- UI Components ---
         const LoginScreen = ({ validPassword, onLogin }) => {
             const [password, setPassword] = useState('');
@@ -499,14 +572,16 @@
                 green: "bg-green-950/30 text-green-400 border-green-900/50", 
                 red: "bg-red-950/30 text-red-400 border-red-900/50", 
                 blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", 
+                pink: "bg-pink-950/30 text-pink-400 border-pink-900/50",
                 indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50",
-                emerald: "bg-emerald-600 text-white border-emerald-500", 
-                rose: "bg-rose-600 text-white border-rose-500" 
+                emerald: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50", 
+                rose: "bg-rose-950/30 text-rose-400 border-rose-900/50",
+                yellow: "bg-yellow-950/30 text-yellow-400 border-yellow-900/50"
             };
             return (
-              <div onClick={onClick} className={`p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
-                <h4 className="text-[11px] sm:text-xs opacity-80 mb-1">{title}</h4>
-                <div className="text-base sm:text-lg font-black">{hideValue ? '••••••' : formatCurrency(value)}</div>
+              <div onClick={onClick} className={`flex flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
+                <h4 className="text-[10px] sm:text-xs font-bold opacity-80 mb-1 leading-tight">{title}</h4>
+                <div className="text-sm sm:text-lg font-black">{hideValue ? '••••••' : formatCurrency(value)}</div>
               </div>
             );
         };
@@ -658,11 +733,13 @@
             const handleSubmit = async (e) => {
               e.preventDefault();
               const amount = parseFloat(e.target.amount.value);
+              const newPayment = { amount, method: payModal.paymentType, date: new Date().toISOString() };
               const updated = { 
                   ...payModal, 
                   paid: payModal.paid + amount, 
                   electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0),
-                  remaining: payModal.total - (payModal.paid + amount) 
+                  remaining: payModal.total - (payModal.paid + amount),
+                  payments: [...(payModal.payments || []), newPayment] 
               };
               if (updated.pendingReceipt && payModal.paymentType === 'electronic') {
                   updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt];
@@ -896,6 +973,10 @@
             const visitCount = allRecords ? allRecords.filter(t => t.phone === txn.phone).length : 1;
             const isRepeat = visitCount > 1;
 
+            const isCreatedToday = new Date(txn.dateTime).toDateString() === new Date().toDateString();
+            const hasPaymentToday = txn.payments && txn.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString());
+            const isPastPayment = !isCreatedToday && hasPaymentToday;
+
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
                 const success = addToCalendar(txn);
@@ -914,7 +995,7 @@
                            {isWedding ? <i className="ph ph-heart text-pink-500 text-2xl group-hover:text-pink-400"></i> : <i className="ph ph-user-circle text-slate-500 text-2xl group-hover:text-blue-500"></i>}
                            {displayName || 'عميل بدون اسم'}
                         </h3>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap justify-end items-center gap-2 max-w-[50%]">
                            {txn.photosLink && (
                                <span className="text-green-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-green-950/30 px-2 py-1 rounded border border-green-900/50" title="مرفق رابط للصور">
                                    <i className="ph-fill ph-link text-sm"></i> يوجد رابط
@@ -939,6 +1020,25 @@
                                    <i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد
                                </span>
                            )}
+                           
+                           {isPastPayment && (
+                               <span className="text-purple-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-purple-950/30 px-2 py-1 rounded border border-purple-900/50" title="تم سداد دفعة لهذا الإيصال اليوم">
+                                   <i className="ph-fill ph-clock-counter-clockwise text-sm"></i> سداد من يوم سابق
+                               </span>
+                           )}
+                           
+                           {txn.writeNameOnPhoto ? (
+                               <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse" title="يجب كتابة الاسم على هذه الصورة">
+                                   <i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة الاسم (صور: {Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(', ') : txn.photoNo})
+                               </span>
+                           ) : (
+                               txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(n=>n) : true) ? (
+                                   <span className="text-slate-400 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="أرقام الصور">
+                                       <i className="ph ph-images text-sm sm:text-base"></i> صور: {Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(', ') : txn.photoNo}
+                                   </span>
+                               ) : null
+                           )}
+
                            <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>
                         </div>
                       </div>
@@ -1110,11 +1210,211 @@
             );
         };
 
+        const WeddingCalendar = ({ weddings, onDayClick }) => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+
+            const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+            const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay(); // 0 = Sunday
+
+            const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
+            const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
+            
+            const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            
+            const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+            const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+            
+            const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+            const renderDays = () => {
+                let days = [];
+                for (let i = 0; i < firstDay; i++) {
+                    days.push(<div key={`empty-${i}`} className="p-2 opacity-10"></div>);
+                }
+                
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const checkDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    
+                    const dayEvents = weddings.filter(w => w.weddingDate === checkDateStr || w.casualShootDate === checkDateStr);
+                    const hasWedding = dayEvents.some(w => w.weddingDate === checkDateStr);
+                    const hasCasual = dayEvents.some(w => w.casualShootDate === checkDateStr);
+                    
+                    const isToday = checkDateStr === new Date().toISOString().split('T')[0];
+
+                    days.push(
+                        <div 
+                            key={d} 
+                            onClick={() => onDayClick(checkDateStr)}
+                            className={`p-1 sm:p-2 border border-slate-800 rounded-lg flex flex-col items-center justify-start h-12 sm:h-16 relative transition-colors cursor-pointer hover:bg-slate-800 ${isToday ? 'bg-slate-800/80 border-slate-600' : 'bg-slate-950'}`}
+                        >
+                            <span className={`text-xs sm:text-sm font-bold ${isToday ? 'text-white' : 'text-slate-400'}`}>{d}</span>
+                            <div className="flex gap-1 mt-1">
+                                {hasWedding && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-pink-500 shadow-[0_0_5px_#ec4899]"></div>}
+                                {hasCasual && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-teal-500 shadow-[0_0_5px_#14b8a6]"></div>}
+                            </div>
+                        </div>
+                    );
+                }
+                return days;
+            };
+
+            return (
+                <div className="w-full">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-100">
+                            <i className="ph-fill ph-calendar text-xl sm:text-2xl text-indigo-400"></i>
+                            جدول المواعيد
+                        </h2>
+                        <div className="flex items-center gap-3">
+                            <button onClick={prevMonth} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"><i className="ph-bold ph-caret-right"></i></button>
+                            <span className="font-bold text-sm sm:text-base w-24 text-center text-indigo-300">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+                            <button onClick={nextMonth} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"><i className="ph-bold ph-caret-left"></i></button>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center">
+                        {weekDays.map(day => (
+                            <div key={day} className="text-[10px] sm:text-xs font-bold text-slate-500">{day}</div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                        {renderDays()}
+                    </div>
+                    <div className="flex items-center gap-4 mt-4 text-[10px] sm:text-xs text-slate-400 justify-center">
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-pink-500"></div> زفاف</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-teal-500"></div> كاجوال</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const UpcomingEventsTracker = ({ weddings, onEventClick }) => {
+            const upcomingEvents = useMemo(() => {
+                let events = [];
+                weddings.forEach(w => {
+                    const diffWed = getDiffDays(w.weddingDate);
+                    if (diffWed !== null && diffWed >= 0) {
+                        events.push({
+                            ...w,
+                            displayDate: w.weddingDate,
+                            diffDays: diffWed,
+                            eventType: 'wedding',
+                            title: 'حفل زفاف',
+                            icon: 'ph-heart',
+                            color: 'pink'
+                        });
+                    }
+                    
+                    const diffCas = getDiffDays(w.casualShootDate);
+                    if (diffCas !== null && diffCas >= 0 && diffCas <= 7) { 
+                        events.push({
+                            ...w,
+                            displayDate: w.casualShootDate,
+                            diffDays: diffCas,
+                            eventType: 'casual',
+                            title: 'تصوير كاجوال',
+                            icon: 'ph-camera',
+                            color: 'teal'
+                        });
+                    }
+                });
+
+                return events.sort((a, b) => a.diffDays - b.diffDays);
+            }, [weddings]);
+
+            if (upcomingEvents.length === 0) {
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 py-10">
+                        <i className="ph ph-calendar-check text-4xl mb-2"></i>
+                        <p>لا توجد مواعيد قريبة</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="w-full relative">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-100">
+                        <i className="ph-fill ph-calendar-heart text-2xl text-pink-400"></i>
+                        المواعيد القادمة
+                        <span className="bg-pink-500/20 text-pink-400 text-xs px-2 py-0.5 rounded-full border border-pink-500/30 font-bold ml-auto">
+                            {upcomingEvents.length} مواعيد
+                        </span>
+                    </h2>
+
+                    <div className="flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[350px] pr-1 pb-1">
+                        {upcomingEvents.map((evt, idx) => {
+                            let urgencyClass = "border-slate-700 bg-slate-900/50";
+                            let urgencyText = "";
+                            let urgencyBadge = "";
+
+                            if (evt.diffDays === 0) {
+                                urgencyClass = "border-red-500 bg-red-950/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]";
+                                urgencyText = "اليوم!";
+                                urgencyBadge = "bg-red-500 text-white animate-pulse";
+                            } else if (evt.diffDays === 1) {
+                                urgencyClass = "border-orange-500 bg-orange-950/30";
+                                urgencyText = "غداً";
+                                urgencyBadge = "bg-orange-500 text-white";
+                            } else if (evt.diffDays === 2) {
+                                urgencyClass = "border-yellow-500 bg-yellow-950/30";
+                                urgencyText = "بعد غد";
+                                urgencyBadge = "bg-yellow-500 text-slate-900";
+                            } else {
+                                urgencyText = `بعد ${evt.diffDays} أيام`;
+                                urgencyBadge = "bg-slate-700 text-slate-300";
+                            }
+
+                            const names = `${evt.groomName || ''} ${evt.brideName ? 'و ' + evt.brideName : ''}`.trim() || 'بدون اسم';
+
+                            const colorStyles = evt.eventType === 'wedding'
+                                ? { bgIcon: "bg-pink-500/10", borderIcon: "border-pink-500/30", textIcon: "text-pink-400", hoverBgIcon: "group-hover:bg-pink-500", hoverTextIcon: "group-hover:text-white", textTitle: "text-pink-400" }
+                                : { bgIcon: "bg-teal-500/10", borderIcon: "border-teal-500/30", textIcon: "text-teal-400", hoverBgIcon: "group-hover:bg-teal-500", hoverTextIcon: "group-hover:text-white", textTitle: "text-teal-400" };
+
+                            return (
+                                <div 
+                                    key={`${evt.id}-${evt.eventType}`} 
+                                    onClick={() => onEventClick && onEventClick(evt)}
+                                    className={`w-full p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all group ${urgencyClass}`}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${colorStyles.borderIcon} ${colorStyles.bgIcon} ${colorStyles.textIcon} ${colorStyles.hoverBgIcon} ${colorStyles.hoverTextIcon} transition-colors`}>
+                                                <i className={`ph-fill ${evt.icon} text-xl`}></i>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-100 text-sm truncate">{names}</h4>
+                                                <p className={`text-xs font-bold ${colorStyles.textTitle}`}>{evt.title} • {formatDateOnly(evt.displayDate)}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md shadow-sm ${urgencyBadge}`}>
+                                            {urgencyText}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const WeddingScheduleView = ({ weddings, onDayClick, onEventClick }) => {
+            return (
+                <div className="bg-slate-900 rounded-3xl shadow-xl border border-slate-800 mb-6 overflow-hidden flex flex-col lg:flex-row">
+                    <div className="flex-1 p-5 sm:p-6 border-b lg:border-b-0 border-l border-slate-800">
+                        <WeddingCalendar weddings={weddings} onDayClick={onDayClick} />
+                    </div>
+                    <div className="flex-1 p-5 sm:p-6 bg-slate-950/30">
+                        <UpcomingEventsTracker weddings={weddings} onEventClick={onEventClick} />
+                    </div>
+                </div>
+            );
+        };
+
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords }) => {
             const [showAddModal, setShowAddModal] = useState(false);
             const [showDebtsModal, setShowDebtsModal] = useState(false);
             const [isEditing, setIsEditing] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
+            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
             const [loyaltyAlert, setLoyaltyAlert] = useState('');
             const [query, setQuery] = useState('');
             const [debtSearch, setDebtSearch] = useState('');
@@ -1146,6 +1446,7 @@
                     clientName: txn.clientName || '',
                     phone: txn.phone || '',
                     photoNo: Array.isArray(txn.photoNo) ? txn.photoNo : (txn.photoNo ? txn.photoNo.split(',').map(s=>s.trim()) : ['']),
+                    writeNameOnPhoto: txn.writeNameOnPhoto || false,
                     requirements: txn.requirements || '',
                     total: txn.total || '',
                     paid: txn.paid || '',
@@ -1175,6 +1476,12 @@
                       }
                   }
               }
+              
+              const initialPayment = paid > 0 ? [{
+                  amount: paid,
+                  method: formData.paymentMethod,
+                  date: new Date().toISOString()
+              }] : [];
 
               const newTxn = {
                 id: isEditing ? formData.id : Date.now().toString(),
@@ -1183,6 +1490,7 @@
                 clientName: formData.clientName,
                 phone: formData.phone,
                 photoNo: formData.photoNo.filter(n => n.trim() !== ''),
+                writeNameOnPhoto: formData.writeNameOnPhoto,
                 requirements: formData.requirements,
                 total: total,
                 paid: paid,
@@ -1191,7 +1499,8 @@
                 status: isEditing ? formData.status : 0,
                 month: isEditing ? formData.month : new Date().getMonth() + 1,
                 year: isEditing ? formData.year : new Date().getFullYear(),
-                photosLink: formData.photosLink || ''
+                photosLink: formData.photosLink || '',
+                payments: isEditing ? (formData.payments || []) : initialPayment 
               };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -1213,7 +1522,7 @@
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
+              setFormData({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
               setIsEditing(false);
               setShowAddModal(false);
             };
@@ -1257,11 +1566,18 @@
                 displayTxns = displayTxns.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
             }
 
+            const todayStr = new Date().toDateString();
             if (!isFiltering) {
-                displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+                displayTxns = transactions.filter(t => {
+                    const isCreatedToday = new Date(t.dateTime).toDateString() === todayStr;
+                    const hasPaymentToday = t.payments && t.payments.some(p => new Date(p.date).toDateString() === todayStr);
+                    return isCreatedToday || hasPaymentToday;
+                });
             }
 
-            const currentTotalCollected = displayTxns.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
+            const todayRevenue = calculatePeriodRevenue(transactions, new Date(), 'day');
+            const currentTotalCollected = todayRevenue.total;
+
             const totalDebts = useMemo(() => transactions?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [transactions]);
             
             const filteredDebts = useMemo(() => {
@@ -1282,7 +1598,7 @@
               <div className="space-y-6">
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base">
+                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base">
                     <i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية
                   </button>
                   
@@ -1320,8 +1636,8 @@
                         <i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
-                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها اليوم (حتى لو لإيصالات قديمة)">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> يومية اليوم: {formatCurrency(currentTotalCollected)}
                         </span>
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
                             <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية
@@ -1435,6 +1751,13 @@
                                 <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, '']})} className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-3 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-1">
                                     <i className="ph ph-plus"></i> إضافة رقم
                                 </button>
+                            </div>
+                            
+                            <div className="flex items-center justify-between bg-slate-900 border border-slate-700 p-3 rounded-xl mt-3">
+                                <label className="text-sm font-bold text-slate-300 flex items-center gap-2 cursor-pointer w-full">
+                                    <input type="checkbox" checked={formData.writeNameOnPhoto} onChange={e => setFormData({...formData, writeNameOnPhoto: e.target.checked})} className="w-4 h-4 accent-blue-500" />
+                                    تنبيه: أريد كتابة الاسم على الصورة
+                                </label>
                             </div>
                         </div>
 
@@ -1615,6 +1938,12 @@
                   }
               }
 
+              const initialPayment = paid > 0 ? [{
+                  amount: paid,
+                  method: formData.paymentMethod,
+                  date: new Date().toISOString()
+              }] : [];
+
               const newWedding = {
                 id: isEditing ? formData.id : Date.now().toString(),
                 receiptNo: finalReceiptNo,
@@ -1639,7 +1968,8 @@
                 status: isEditing ? formData.status : 0,
                 month: isEditing ? formData.month : new Date().getMonth() + 1,
                 year: isEditing ? formData.year : new Date().getFullYear(),
-                photosLink: formData.photosLink || ''
+                photosLink: formData.photosLink || '',
+                payments: isEditing ? (formData.payments || []) : initialPayment 
               };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -1692,11 +2022,18 @@
                 filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
             }
             
+            const todayStr = new Date().toDateString();
             if (!isFiltering) {
-                filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString());
+                filteredWeds = weddings.filter(t => {
+                    const isCreatedToday = new Date(t.dateTime).toDateString() === todayStr;
+                    const hasPaymentToday = t.payments && t.payments.some(p => new Date(p.date).toDateString() === todayStr);
+                    return isCreatedToday || hasPaymentToday;
+                });
             }
 
-            const currentTotalCollected = filteredWeds.reduce((sum, txn) => sum + (parseFloat(txn.paid) || 0), 0);
+            const todayRevenue = calculatePeriodRevenue(weddings, new Date(), 'day');
+            const currentTotalCollected = todayRevenue.total;
+
             const totalDebts = useMemo(() => weddings?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [weddings]);
             
             const filteredDebts = useMemo(() => {
@@ -1713,8 +2050,16 @@
 
             const uniqueDebtorsCount = useMemo(() => new Set(filteredDebts.map(t => t.phone)).size, [filteredDebts]);
 
+            const handleDayClick = (dateStr) => {
+                setIsEditing(false);
+                setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate: dateStr, location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' });
+                setShowAddModal(true);
+            };
+
             return (
               <div className="space-y-6">
+
+                {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={setTxnDetailsModal} onDayClick={handleDayClick} />}
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
                   <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base">
@@ -1750,8 +2095,8 @@
                         <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
-                            <i className="ph-fill ph-money text-base sm:text-lg"></i> المحصل: {formatCurrency(currentTotalCollected)}
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها اليوم (حتى لو لإيصالات قديمة)">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> يومية اليوم: {formatCurrency(currentTotalCollected)}
                         </span>
                         <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
                             <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
@@ -1976,14 +2321,14 @@
         };
 
         const ExpensesTab = ({ settings, expenses, inventory, db }) => {
-            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '' });
+            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio' });
             
             const handleAddExpense = async (e) => {
               e.preventDefault();
-              const newExp = { id: Date.now().toString(), date: new Date().toISOString(), amount: parseFloat(expData.amount), category: expData.category, notes: expData.notes, month: new Date().getMonth() + 1, year: new Date().getFullYear() };
+              const newExp = { id: Date.now().toString(), date: new Date().toISOString(), amount: parseFloat(expData.amount), category: expData.category, notes: expData.notes, month: new Date().getMonth() + 1, year: new Date().getFullYear(), type: expData.type };
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/expenses`, newExp.id), newExp);
-              setExpData({ amount: '', category: settings.expenseCategories[0], notes: '' });
+              setExpData({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio' });
             };
 
             const todaysExpenses = expenses.filter(e => new Date(e.date).toDateString() === new Date().toDateString());
@@ -2005,7 +2350,7 @@
                 <div className="xl:col-span-2 space-y-6">
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4"><i className="ph ph-money text-red-400 text-2xl"></i> تسجيل مصروفات</h2>
-                     <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                     <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                        <div>
                          <label className="block text-sm font-bold text-slate-400 mb-2">المبلغ (ج.م)</label>
                          <input type="number" required placeholder="المبلغ" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold" />
@@ -2017,10 +2362,17 @@
                          </select>
                        </div>
                        <div>
-                         <label className="block text-sm font-bold text-slate-400 mb-2">ملاحظات</label>
-                         <input type="text" placeholder="اختياري..." value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 placeholder-slate-500" />
+                         <label className="block text-sm font-bold text-slate-400 mb-2">نوع المصروف</label>
+                         <select value={expData.type} onChange={e => setExpData({...expData, type: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold">
+                           <option value="studio">الاستوديو</option>
+                           <option value="wedding">حجوزات الزفاف</option>
+                         </select>
                        </div>
-                       <button type="submit" className="sm:col-span-3 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"><i className="ph ph-plus-circle text-xl"></i> إضافة المصروف</button>
+                       <div>
+                         <label className="block text-sm font-bold text-slate-400 mb-2">ملاحظات (اختياري)</label>
+                         <input type="text" placeholder="مثال: صيانة كاميرا..." value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 placeholder-slate-500" />
+                       </div>
+                       <button type="submit" className="sm:col-span-4 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"><i className="ph ph-plus-circle text-xl"></i> إضافة المصروف</button>
                      </form>
                    </div>
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
@@ -2032,7 +2384,12 @@
                         {todaysExpenses.length === 0 ? <p className="text-slate-500 text-center p-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لم يتم تسجيل مصروفات اليوم.</p> : todaysExpenses.map(exp => (
                           <div key={exp.id} className="flex justify-between items-center p-4 bg-slate-950 rounded-xl border border-slate-800">
                             <div>
-                                <p className="font-bold text-slate-200">{exp.category} <span className="text-red-400 mr-2">{exp.amount} ج.م</span></p>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-bold text-slate-200">{exp.category} <span className="text-red-400 mr-2">{exp.amount} ج.م</span></p>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${exp.type === 'wedding' ? 'bg-pink-900/40 text-pink-400 border border-pink-500/30' : 'bg-blue-900/40 text-blue-400 border border-blue-500/30'}`}>
+                                        {exp.type === 'wedding' ? 'زفاف' : 'استوديو'}
+                                    </span>
+                                </div>
                                 {exp.notes && <p className="text-xs text-slate-500 mt-1">{exp.notes}</p>}
                                 <p className="text-xs text-slate-600 mt-2 font-mono">{formatDate(exp.date)}</p>
                             </div>
@@ -2043,7 +2400,7 @@
                           </div>
                         ))}
                       </div>
-                    </div>
+                   </div>
                 </div>
 
                 <div className="xl:col-span-1">
@@ -2112,23 +2469,40 @@
             const filteredWeds = weddings.filter(t => t.month == filter.month && t.year == filter.year);
             const filteredExp = expenses.filter(e => e.month == filter.month && e.year == filter.year);
             
+            const targetDateObj = new Date(filter.year, filter.month - 1, 1);
+
+            const studioCollectedStats = useMemo(() => calculatePeriodRevenue(transactions, targetDateObj, 'month'), [transactions, filter]);
+            const wedCollectedStats = useMemo(() => calculatePeriodRevenue(weddings, targetDateObj, 'month'), [weddings, filter]);
+
+            // Calculate expenses specific to each category
+            const studioExpTotal = useMemo(() => filteredExp.filter(e => e.type !== 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
+            const weddingExpTotal = useMemo(() => filteredExp.filter(e => e.type === 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
+
             const studioStats = useMemo(() => {
-              const expected = filteredTxns.reduce((sum, t) => sum + t.total, 0);
-              const collected = filteredTxns.reduce((sum, t) => sum + t.paid, 0);
-              const electronic = filteredTxns.reduce((sum, t) => sum + (t.electronicPaid || 0), 0);
-              return { expected, collected, cash: collected - electronic, electronic, debts: filteredTxns.reduce((sum, t) => sum + t.remaining, 0) };
-            }, [filteredTxns]);
+              const expected = filteredTxns.reduce((sum, t) => sum + (parseFloat(t.total)||0), 0);
+              return { 
+                  expected, 
+                  collected: studioCollectedStats.total, 
+                  cash: studioCollectedStats.cash, 
+                  electronic: studioCollectedStats.electronic, 
+                  debts: filteredTxns.reduce((sum, t) => sum + (parseFloat(t.remaining)||0), 0),
+                  expenses: studioExpTotal,
+                  netProfit: studioCollectedStats.total - studioExpTotal
+              };
+            }, [filteredTxns, studioCollectedStats, studioExpTotal]);
 
             const wedStats = useMemo(() => {
-              const expected = filteredWeds.reduce((sum, t) => sum + t.total, 0);
-              const collected = filteredWeds.reduce((sum, t) => sum + t.paid, 0);
-              const electronic = filteredWeds.reduce((sum, t) => sum + (t.electronicPaid || 0), 0);
-              return { expected, collected, cash: collected - electronic, electronic, debts: filteredWeds.reduce((sum, t) => sum + t.remaining, 0) };
-            }, [filteredWeds]);
-
-            const expensesTotal = useMemo(() => filteredExp.reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
-            const totalCollectedAll = studioStats.collected + wedStats.collected;
-            const netProfit = totalCollectedAll - expensesTotal;
+              const expected = filteredWeds.reduce((sum, t) => sum + (parseFloat(t.total)||0), 0);
+              return { 
+                  expected, 
+                  collected: wedCollectedStats.total, 
+                  cash: wedCollectedStats.cash, 
+                  electronic: wedCollectedStats.electronic, 
+                  debts: filteredWeds.reduce((sum, t) => sum + (parseFloat(t.remaining)||0), 0),
+                  expenses: weddingExpTotal,
+                  netProfit: wedCollectedStats.total - weddingExpTotal
+              };
+            }, [filteredWeds, wedCollectedStats, weddingExpTotal]);
 
             const completedTxns = filteredTxns.filter(t => t.status === 3);
             const completedWeds = filteredWeds.filter(t => t.status === 6);
@@ -2156,32 +2530,46 @@
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <StatCard hideValue={!showAmounts} title="التحصيل العام (استوديو + زفاف)" value={totalCollectedAll} color="blue" highlight />
-                  <StatCard hideValue={!showAmounts} title="إجمالي المصروفات" value={expensesTotal} color="red" highlight />
-                  <StatCard hideValue={!showAmounts} title="صافي الربح الفعلي" value={netProfit} color={netProfit >= 0 ? "emerald" : "rose"} highlight />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
-                    <h3 className="text-base sm:text-lg font-bold text-blue-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2"><i className="ph ph-camera text-lg"></i> تقرير الاستوديو (تصوير عادي)</h3>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <StatCard hideValue={!showAmounts} title="إجمالي الشغل" value={studioStats.expected} color="blue" />
-                      <StatCard hideValue={!showAmounts} title="التحصيل الفعلي" value={studioStats.collected} color="green" />
-                      <StatCard hideValue={!showAmounts} title="محصل نقدي" value={studioStats.cash} color="green" />
-                      <StatCard hideValue={!showAmounts} title="محصل إلكتروني 👆" value={studioStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (استوديو)', data: filteredTxns.filter(t => (t.electronicPaid || 0) > 0) })} />
+                <div className="grid grid-cols-1 gap-6">
+                  
+                  {/* قسم تقرير الاستوديو */}
+                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                    <h3 className="text-lg font-bold text-blue-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
+                        <span className="flex items-center gap-2"><i className="ph-fill ph-camera"></i> تقرير الاستوديو (تفصيلي)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                      <StatCard hideValue={!showAmounts} title="إجمالي الشغل المطلوب (هذا الشهر)" value={studioStats.expected} color="blue" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={studioStats.collected} color="green" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي مصروفات الاستوديو (هذا الشهر)" value={studioStats.expenses} color="red" />
+                      <StatCard hideValue={!showAmounts} title="ديون متبقية لشغل (هذا الشهر)" value={studioStats.debts} color="rose" />
+                      <StatCard hideValue={!showAmounts} title="صافي ربح الاستوديو الفعلي" value={studioStats.netProfit} color="yellow" highlight />
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3 max-w-lg">
+                        <StatCard hideValue={!showAmounts} title="محصل نقدي (كاش)" value={studioStats.cash} color="emerald" />
+                        <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={studioStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (استوديو)', data: transactions.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
-                    <h3 className="text-base sm:text-lg font-bold text-pink-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2"><i className="ph ph-heart text-lg"></i> تقرير حجوزات الزفاف</h3>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <StatCard hideValue={!showAmounts} title="إجمالي الحجوزات" value={wedStats.expected} color="blue" />
-                      <StatCard hideValue={!showAmounts} title="العربون المحصل" value={wedStats.collected} color="green" />
-                      <StatCard hideValue={!showAmounts} title="محصل نقدي" value={wedStats.cash} color="green" />
-                      <StatCard hideValue={!showAmounts} title="محصل إلكتروني 👆" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: filteredWeds.filter(t => (t.electronicPaid || 0) > 0) })} />
+                  {/* قسم تقرير حجوزات الزفاف */}
+                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2 h-full bg-pink-500"></div>
+                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
+                        <span className="flex items-center gap-2"><i className="ph-fill ph-heart"></i> تقرير حجوزات الزفاف (تفصيلي)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                      <StatCard hideValue={!showAmounts} title="إجمالي الحجوزات (المسجلة هذا الشهر)" value={wedStats.expected} color="pink" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={wedStats.collected} color="green" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي مصروفات الزفاف (هذا الشهر)" value={wedStats.expenses} color="red" />
+                      <StatCard hideValue={!showAmounts} title="ديون متبقية للحجوزات (هذا الشهر)" value={wedStats.debts} color="rose" />
+                      <StatCard hideValue={!showAmounts} title="صافي ربح الزفاف الفعلي" value={wedStats.netProfit} color="yellow" highlight />
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3 max-w-lg">
+                        <StatCard hideValue={!showAmounts} title="محصل نقدي (كاش)" value={wedStats.cash} color="emerald" />
+                        <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: weddings.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
                     </div>
                   </div>
+
                 </div>
 
                 <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col mt-4">
@@ -2332,6 +2720,9 @@
             
             const handleSaveClick = async () => {
                 setIsSaving(true);
+                if (settings.enableNotifications) {
+                    requestNotificationPermission();
+                }
                 await saveSettingsToDB(settings);
                 setTimeout(() => setIsSaving(false), 1000);
             };
@@ -2339,11 +2730,15 @@
             return (
               <div className="space-y-8 pb-20">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو</h2>
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو وإعدادات النظام</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label>
                       <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-sm text-slate-400 mb-2">رقم هاتف الاستوديو (للرد على حجوزات العملاء):</label>
+                      <input type="text" value={settings.studioPhone || ''} onChange={e => setSettings({...settings, studioPhone: e.target.value})} placeholder="مثال: 01201260040" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none dir-ltr" />
                     </div>
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">الشعار (Logo):</label>
@@ -2356,13 +2751,22 @@
                         }
                       }} className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-purple-400 hover:file:bg-slate-700 transition-colors" />
                     </div>
-                    <div className="md:col-span-2">
+                    <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">كلمة المرور للنظام (الإدارة):</label>
-                      <div className="relative max-w-sm">
+                      <div className="relative w-full">
                           <input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 1234" />
                           <i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i>
                       </div>
-                      <p className="text-xs text-slate-500 mt-2">سيتم طلب كلمة المرور هذه عند فتح لوحة التحكم.</p>
+                    </div>
+                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p className="font-bold text-sm text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
+                            <p className="text-xs text-slate-500 mt-1">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={settings.enableNotifications || false} onChange={e => setSettings({...settings, enableNotifications: e.target.checked})} />
+                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                        </label>
                     </div>
                   </div>
                 </div>
@@ -2480,13 +2884,16 @@
           
           const [receiptImageModal, setReceiptImageModal] = useState(null);
           const [txnDetailsModal, setTxnDetailsModal] = useState(null);
+          
+          // Promotional details state
+          const [showPromoDetails, setShowPromoDetails] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "ستوديو المراكبى", studioLogo: ""
+            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: ""
           });
 
           const urlParams = new URLSearchParams(window.location.search);
@@ -2494,6 +2901,9 @@
           const trackReceipt = urlParams.get('receipt');
           const trackType = urlParams.get('type') || 't'; 
           const isTracking = trackPhone && trackReceipt;
+
+          // Desktop notifications logic
+          const [previousFeedbackCount, setPreviousFeedbackCount] = useState(0);
 
           useEffect(() => {
               const savedAuth = localStorage.getItem('studioAdminAuth');
@@ -2540,6 +2950,7 @@
                 else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
                 if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                 if (!data.adminPassword) data.adminPassword = '1234';
+                if (!data.studioPhone) data.studioPhone = '01201260040';
                 setSettings(data);
               }
             };
@@ -2581,6 +2992,13 @@
               return allRecords.filter(r => r.clientRating > 0 || r.clientFeedback).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
           }, [allRecords]);
           const unreadFeedbackCount = feedbacks.filter(r => !r.adminReadFeedback).length;
+
+          useEffect(() => {
+              if (settings.enableNotifications && unreadFeedbackCount > previousFeedbackCount) {
+                  showBrowserNotification("تقييم جديد", "قام أحد العملاء بترك تقييم لخدمات الاستوديو.");
+              }
+              setPreviousFeedbackCount(unreadFeedbackCount);
+          }, [unreadFeedbackCount, settings.enableNotifications]);
 
           const handleViewFeedback = (txn) => {
               setTxnDetailsModal(txn);
@@ -2660,7 +3078,6 @@
               const statusesToUse = getTransactionStatuses(txn);
               const isDelivered = currentStatus === statusesToUse[statusesToUse.length - 1].id;
 
-              // جلب كل سجلات العميل لعمل الأرشيف وعرض الصورة الشخصية إن وجدت
               const clientArchiveRecords = [...transactions, ...weddings]
                   .filter(t => t.phone === trackPhone)
                   .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
@@ -2728,19 +3145,44 @@
                       </div>
 
                       {/* 2. البطاقة الإعلانية (Promotional Card) */}
-                      <div className="w-full max-w-md bg-gradient-to-l from-yellow-600 to-amber-500 p-5 rounded-2xl mb-8 shadow-lg shadow-yellow-900/20 text-slate-900 flex items-center gap-4 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform border border-yellow-400">
+                      <div 
+                          onClick={() => setShowPromoDetails(!showPromoDetails)}
+                          className={`w-full max-w-md bg-gradient-to-l from-yellow-600 to-amber-500 p-5 rounded-2xl mb-8 shadow-lg shadow-yellow-900/20 text-slate-900 flex flex-col gap-4 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform border border-yellow-400`}
+                      >
                           <div className="absolute -right-2 -top-4 text-yellow-100/30">
                               <i className="ph-fill ph-gift text-6xl transform rotate-12"></i>
                           </div>
-                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 relative z-10 backdrop-blur-sm border border-white/30 shadow-inner">
-                              <i className="ph-fill ph-ticket text-2xl text-white"></i>
+                          
+                          <div className="flex items-center gap-4 relative z-10">
+                              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/30 shadow-inner">
+                                  <i className="ph-fill ph-ticket text-2xl text-white"></i>
+                              </div>
+                              <div className="flex-1">
+                                  <h3 className="font-black text-lg text-white mb-1">عرض خاص لعملائنا! 🎁</h3>
+                                  <p className="text-[11px] sm:text-xs font-bold text-yellow-50 leading-tight">اضغط هنا لمعرفة التفاصيل والخصم المتاح لك.</p>
+                              </div>
+                              <i className={`ph-bold ph-caret-${showPromoDetails ? 'up' : 'down'} text-white text-xl transition-transform`}></i>
                           </div>
-                          <div className="relative z-10">
-                              <h3 className="font-black text-lg text-white mb-1">عرض خاص لعملائنا! 🎁</h3>
-                              <p className="text-[11px] sm:text-xs font-bold text-yellow-50 leading-tight">احصل على خصم 15% على طباعة الألبومات والتابلوهات عند إبراز هذا الرابط في زيارتك القادمة.</p>
+                          
+                          {/* Details section that expands */}
+                          <div className={`relative z-10 overflow-hidden transition-all duration-300 ease-in-out ${showPromoDetails ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
+                              <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl border border-white/30 shadow-inner">
+                                  <p className="text-sm font-bold text-white mb-2 leading-relaxed">
+                                      احصل على خصم <span className="text-yellow-900 bg-white px-1.5 py-0.5 rounded shadow-sm mx-1">15%</span> على:
+                                  </p>
+                                  <ul className="text-xs text-yellow-50 font-bold space-y-1.5 pr-1">
+                                      <li className="flex items-center gap-1.5"><i className="ph-fill ph-check-circle"></i> طباعة الألبومات بكل المقاسات.</li>
+                                      <li className="flex items-center gap-1.5"><i className="ph-fill ph-check-circle"></i> طباعة التابلوهات الخشب والبراويز.</li>
+                                      <li className="flex items-center gap-1.5"><i className="ph-fill ph-check-circle"></i> جلسات التصوير القادمة.</li>
+                                  </ul>
+                                  <p className="text-[10px] text-yellow-900 mt-3 font-bold bg-white/40 p-1.5 rounded text-center">
+                                      * يرجى إبراز هذه الشاشة في الاستوديو للحصول على الخصم.
+                                  </p>
+                              </div>
                           </div>
                       </div>
 
+                      {/* 3. Download Link */}
                       {txn.photosLink && (
                           <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-8 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
                              <div className="bg-white/20 p-2 rounded-full group-hover:animate-bounce">
@@ -2750,14 +3192,63 @@
                           </a>
                       )}
 
+                      {/* 4. Stages of Preparation */}
+                      {!isDelivered ? (
+                          <div className="w-full max-w-md bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 mb-8">
+                              <h3 className="font-bold text-lg mb-8 flex items-center gap-2 border-b border-slate-800 pb-4"><i className="ph ph-clock-counter-clockwise text-blue-500"></i> مراحل تجهيز الطلب:</h3>
+                              <div className="relative pl-4 space-y-8 pr-4">
+                                  <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
+                                  {statusesToUse.map((s, index) => {
+                                      const isCompleted = currentStatus >= s.id;
+                                      const isCurrent = currentStatus === s.id;
+                                      return (
+                                          <div key={s.id} className="relative flex items-start gap-5">
+                                              <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
+                                                  <i className={`ph ${s.icon} text-xl`}></i>
+                                              </div>
+                                              <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
+                                                  <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
+                                                  {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
+                                                  {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
+                                              </div>
+                                          </div>
+                                      );
+                                  })}
+                              </div>
+                          </div>
+                      ) : (
+                          <div className="w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl shadow-2xl border border-green-500/30 mb-8 text-center relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+                              <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/50 shadow-lg shadow-green-900/40">
+                                  <i className="ph-fill ph-check-circle text-5xl"></i>
+                              </div>
+                              <h3 className="font-black text-2xl mb-2 text-white">تم تسليم الطلب بنجاح! 🎉</h3>
+                              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                                  شكراً لاختيارك {settings.studioName}. نتمنى أن تكون الصور والأعمال قد نالت إعجابكم، ونسعد دائماً بتوثيق أجمل لحظاتكم!
+                              </p>
+                              <p className="text-xs text-yellow-400 mt-6 font-bold flex items-center justify-center gap-1 animate-pulse">
+                                  <i className="ph-fill ph-arrow-down"></i> برجاء تقييم تجربتك معنا بالأسفل
+                              </p>
+                          </div>
+                      )}
+
+                      {/* 5. Details Card */}
                       <div className="bg-slate-900 w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
+                          
                           <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
-                              <span className="text-slate-400 text-sm">إيصال رقم</span>
-                              <span className="text-2xl font-black font-mono text-white">#{txn.receiptNo}</span>
+                              <span className="text-slate-400 text-sm">العميل</span>
+                              <span className={`text-lg font-bold ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>{displayName}</span>
                           </div>
-                          <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>
-                             {isWedding ? <i className="ph ph-heart"></i> : <i className="ph ph-user"></i>} {displayName}
+                          
+                          <h3 className="text-xl font-black mb-4 flex items-center justify-between text-white">
+                              <span className="flex items-center gap-2">
+                                  {isWedding ? <i className="ph ph-heart text-pink-400"></i> : <i className="ph ph-user text-blue-400"></i>}
+                                  إيصال #{txn.receiptNo}
+                              </span>
+                              <span className="text-lg bg-slate-800 px-3 py-1 rounded-lg border border-slate-700 text-yellow-400 font-bold shadow-inner">
+                                  {txn.total} ج.م
+                              </span>
                           </h3>
 
                           {isWedding && txn.weddingDate && (
@@ -2814,10 +3305,10 @@
                               <div className="bg-slate-950/80 py-3 px-4 rounded-2xl border border-indigo-500/20 flex flex-col items-center gap-1 shadow-inner mb-4">
                                   <span className="text-xs text-indigo-300">رقم التحويل (فودافون كاش / إنستاباي):</span>
                                   <div className="flex items-center gap-3 mt-1">
-                                      <span className="text-2xl font-black font-mono text-white tracking-widest">01126810107</span>
+                                      <span className="text-2xl font-black font-mono text-white tracking-widest">{settings.studioPhone || '01201260040'}</span>
                                       <button onClick={(e) => {
                                           const el = document.createElement('textarea');
-                                          el.value = '01126810107';
+                                          el.value = settings.studioPhone || '01201260040';
                                           document.body.appendChild(el);
                                           el.select();
                                           document.execCommand('copy');
@@ -2867,7 +3358,7 @@
                                       const targetCol = isWedding ? 'weddings' : 'transactions';
                                       await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated);
                                       const confirmMsg = `مرحباً، قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد باقي حساب إيصال رقم #${txn.receiptNo} باسم ${displayName}.\n✅ وقمت برفع صورة التحويل في رابط التتبع لتأكيد الدفع.`;
-                                      openWhatsApp('01201260040', confirmMsg);
+                                      openWhatsApp(settings.studioPhone || '01201260040', confirmMsg);
                                   } catch (err) { setClientViewError('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.'); }
                                   setIsUploading(false);
                               }} disabled={isUploading} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
@@ -2876,46 +3367,7 @@
                           </div>
                       )}
 
-                      {!isDelivered ? (
-                          <div className="w-full max-w-md bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 mb-8">
-                              <h3 className="font-bold text-lg mb-8 flex items-center gap-2 border-b border-slate-800 pb-4"><i className="ph ph-clock-counter-clockwise text-blue-500"></i> مراحل تجهيز الطلب:</h3>
-                              <div className="relative pl-4 space-y-8 pr-4">
-                                  <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
-                                  {statusesToUse.map((s, index) => {
-                                      const isCompleted = currentStatus >= s.id;
-                                      const isCurrent = currentStatus === s.id;
-                                      return (
-                                          <div key={s.id} className="relative flex items-start gap-5">
-                                              <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
-                                                  <i className={`ph ${s.icon} text-xl`}></i>
-                                              </div>
-                                              <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
-                                                  <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
-                                                  {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
-                                                  {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
-                                              </div>
-                                          </div>
-                                      );
-                                  })}
-                              </div>
-                          </div>
-                      ) : (
-                          <div className="w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl shadow-2xl border border-green-500/30 mb-8 text-center relative overflow-hidden">
-                              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500"></div>
-                              <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/50 shadow-lg shadow-green-900/40">
-                                  <i className="ph-fill ph-check-circle text-5xl"></i>
-                              </div>
-                              <h3 className="font-black text-2xl mb-2 text-white">تم تسليم الطلب بنجاح! 🎉</h3>
-                              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                                  شكراً لاختيارك {settings.studioName}. نتمنى أن تكون الصور والأعمال قد نالت إعجابكم، ونسعد دائماً بتوثيق أجمل لحظاتكم!
-                              </p>
-                              <p className="text-xs text-yellow-400 mt-6 font-bold flex items-center justify-center gap-1 animate-pulse">
-                                  <i className="ph-fill ph-arrow-down"></i> برجاء تقييم تجربتك معنا بالأسفل
-                              </p>
-                          </div>
-                      )}
-
-                      {/* 3. الأرشيف الخاص بالعميل */}
+                      {/* 6. الأرشيف الخاص بالعميل */}
                       <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                            <div className="absolute top-0 right-0 w-1 h-full bg-slate-600"></div>
                            <h3 className="font-bold text-lg mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
