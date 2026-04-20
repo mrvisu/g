@@ -3007,41 +3007,49 @@
             const basePath = `artifacts/${appId}/public/data`;
 
             const fetchSettings = async () => {
-              const docSnap = await getDoc(doc(db, basePath, 'settings', 'main'));
-              if (docSnap.exists()) {
-                let data = docSnap.data();
-                if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
-                if (!data.products) data.products = DEFAULT_PRODUCTS;
-                else data.products = data.products.map(p => typeof p === 'string' ? { name: p, price: 0, wholesalePrice: 0, totalQty: 0, desc: '' } : { name: p.name, price: p.price || 0, wholesalePrice: p.wholesalePrice || 0, totalQty: p.totalQty || 0, desc: p.desc || '' });
-                if (!data.weddingPackages) data.weddingPackages = DEFAULT_WEDDING_PACKAGES;
-                if (!data.addonTemplates) data.addonTemplates = DEFAULT_ADDON_TEMPLATES;
-                if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
-                if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
-                else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
-                if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
-                if (!data.adminPassword) data.adminPassword = '1234';
-                if (!data.studioPhone) data.studioPhone = '01201260040';
-                setSettings(data);
-              }
+              try {
+                  const docSnap = await getDoc(doc(db, basePath, 'settings', 'main'));
+                  if (docSnap.exists()) {
+                    let data = docSnap.data();
+                    if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
+                    if (!data.products) data.products = DEFAULT_PRODUCTS;
+                    else data.products = data.products.map(p => typeof p === 'string' ? { name: p, price: 0, wholesalePrice: 0, totalQty: 0, desc: '' } : { name: p.name, price: p.price || 0, wholesalePrice: p.wholesalePrice || 0, totalQty: p.totalQty || 0, desc: p.desc || '' });
+                    if (!data.weddingPackages) data.weddingPackages = DEFAULT_WEDDING_PACKAGES;
+                    if (!data.addonTemplates) data.addonTemplates = DEFAULT_ADDON_TEMPLATES;
+                    if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
+                    if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
+                    else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
+                    if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
+                    if (!data.adminPassword) data.adminPassword = '1234';
+                    if (!data.studioPhone) data.studioPhone = '01201260040';
+                    setSettings(data);
+                  }
+              } catch(e) { console.error("Error fetching settings", e); }
             };
             fetchSettings();
 
             const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
               if (docSnap.exists()) setInventory(docSnap.data());
-            }, (err) => console.error(err));
+            }, (err) => console.error("Inventory error", err));
 
             const unsubTxns = onSnapshot(collection(db, basePath, 'transactions'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
               data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
               setTransactions(data);
-              if(trackType !== 'w') setDataLoaded(true);
+              setDataLoaded(true);
+            }, (err) => {
+              console.error("Transactions error", err);
+              setDataLoaded(true);
             });
 
             const unsubWeds = onSnapshot(collection(db, basePath, 'weddings'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
               data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
               setWeddings(data);
-              if(trackType === 'w') setDataLoaded(true);
+              setDataLoaded(true);
+            }, (err) => {
+              console.error("Weddings error", err);
+              setDataLoaded(true);
             });
 
             if(!isTracking) {
@@ -3049,12 +3057,12 @@
                   const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
                   data.sort((a, b) => new Date(b.date) - new Date(a.date));
                   setExpenses(data);
-                });
+                }, (err) => console.error("Expenses error", err));
                 return () => { unsubTxns(); unsubWeds(); unsubExps(); unsubInv(); };
             }
 
             return () => { unsubTxns(); unsubWeds(); unsubInv(); };
-          }, [user, isTracking, trackType]);
+          }, [user, isTracking]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
 
@@ -3095,7 +3103,7 @@
           useEffect(() => {
               if (isTracking && dataLoaded) {
                   const targetArr = trackType === 'w' ? weddings : transactions;
-                  const currentTxn = targetArr.find(t => t.phone === trackPhone && t.receiptNo.toString() === trackReceipt);
+                  const currentTxn = targetArr.find(t => t.phone === trackPhone && t.receiptNo && t.receiptNo.toString() === trackReceipt);
                   
                   if (!currentTxn) {
                       const timer = setTimeout(() => setShowNotFound(true), 2500);
@@ -3103,7 +3111,7 @@
                   } else {
                       setShowNotFound(false);
                       const runClientCleanup = async () => {
-                           const updatedTxn = await checkAndCleanExpiredPhotos(currentTxn, db, getStorage());
+                           const updatedTxn = await checkAndCleanExpiredPhotos(currentTxn, db, storage);
                            if (!updatedTxn.viewedByClient) {
                                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                                const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
@@ -3118,7 +3126,7 @@
 
           if (isTracking && authReady) {
               const targetArr = trackType === 'w' ? weddings : transactions;
-              const txn = targetArr.find(t => t.phone === trackPhone && t.receiptNo.toString() === trackReceipt);
+              const txn = targetArr.find(t => t.phone === trackPhone && t.receiptNo && t.receiptNo.toString() === trackReceipt);
 
               if (!dataLoaded || (!txn && !showNotFound)) {
                   return (
