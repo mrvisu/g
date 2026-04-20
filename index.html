@@ -843,12 +843,23 @@
                        <p className="text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">{reqsText}</p>
                     </div>
 
-                    {txnDetailsModal.photoNo && (Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.some(n=>n) : true) && (
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                           <span className="text-slate-500 text-sm">أرقام الصور:</span>
-                           <span className="font-bold text-slate-200" dir="ltr">
-                               {Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(Boolean).join(' , ') : txnDetailsModal.photoNo}
-                           </span>
+                    {txnDetailsModal.photoNo && (Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
+                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
+                           <span className="text-slate-500 text-sm mb-3 block"><i className="ph ph-images text-blue-500 text-lg align-middle"></i> أرقام الصور المختارة:</span>
+                           <div className="flex flex-wrap gap-2">
+                               {Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => {
+                                   const num = typeof p === 'object' ? p.number : p;
+                                   const note = typeof p === 'object' ? p.note : '';
+                                   const needsName = typeof p === 'object' ? p.needsName : false;
+                                   return (
+                                       <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-xl border shadow-inner ${needsName ? 'bg-red-950/20 border-red-900/40' : 'bg-slate-900 border-slate-700'}`}>
+                                           <span className="font-black text-blue-400 bg-blue-950/30 px-2 py-1 rounded border border-blue-900/30" dir="ltr">{num}</span>
+                                           {needsName && <span className="text-xs text-red-400 font-bold bg-red-950/50 px-2 py-1 rounded flex items-center gap-1"><i className="ph-fill ph-text-t"></i> يكتب اسم</span>}
+                                           {note && <span className="text-xs text-slate-300"><i className="ph ph-text-aa text-slate-500 mr-1"></i> {note}</span>}
+                                       </div>
+                                   )
+                               }) : <span className="font-bold text-slate-200" dir="ltr">{txnDetailsModal.photoNo}</span>}
+                           </div>
                         </div>
                     )}
 
@@ -977,6 +988,8 @@
             const hasPaymentToday = txn.payments && txn.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString());
             const isPastPayment = !isCreatedToday && hasPaymentToday;
 
+            const hasPhotoNeedingName = txn.writeNameOnPhoto || (Array.isArray(txn.photoNo) && txn.photoNo.some(p => typeof p === 'object' && p.needsName));
+
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
                 const success = addToCalendar(txn);
@@ -1027,14 +1040,14 @@
                                </span>
                            )}
                            
-                           {txn.writeNameOnPhoto ? (
-                               <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse" title="يجب كتابة الاسم على هذه الصورة">
-                                   <i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة الاسم (صور: {Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(', ') : txn.photoNo})
+                           {hasPhotoNeedingName ? (
+                               <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse" title="يجب كتابة الاسم على صورة">
+                                   <i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة اسم (صورة: {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => p.needsName).map(p => p.number).join(', ') : txn.photoNo})
                                </span>
                            ) : (
-                               txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(n=>n) : true) ? (
+                               txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) ? (
                                    <span className="text-slate-400 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="أرقام الصور">
-                                       <i className="ph ph-images text-sm sm:text-base"></i> صور: {Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(', ') : txn.photoNo}
+                                       <i className="ph ph-images text-sm sm:text-base"></i> صور: {Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'object' ? p.number : p).filter(Boolean).join(', ') : txn.photoNo}
                                    </span>
                                ) : null
                            )}
@@ -1414,7 +1427,7 @@
             const [showAddModal, setShowAddModal] = useState(false);
             const [showDebtsModal, setShowDebtsModal] = useState(false);
             const [isEditing, setIsEditing] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
+            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
             const [loyaltyAlert, setLoyaltyAlert] = useState('');
             const [query, setQuery] = useState('');
             const [debtSearch, setDebtSearch] = useState('');
@@ -1445,7 +1458,7 @@
                     status: txn.status,
                     clientName: txn.clientName || '',
                     phone: txn.phone || '',
-                    photoNo: Array.isArray(txn.photoNo) ? txn.photoNo : (txn.photoNo ? txn.photoNo.split(',').map(s=>s.trim()) : ['']),
+                    photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]),
                     writeNameOnPhoto: txn.writeNameOnPhoto || false,
                     requirements: txn.requirements || '',
                     total: txn.total || '',
@@ -1489,7 +1502,7 @@
                 dateTime: isEditing ? formData.dateTime : new Date().toISOString(),
                 clientName: formData.clientName,
                 phone: formData.phone,
-                photoNo: formData.photoNo.filter(n => n.trim() !== ''),
+                photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== ''),
                 writeNameOnPhoto: formData.writeNameOnPhoto,
                 requirements: formData.requirements,
                 total: total,
@@ -1522,7 +1535,7 @@
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
+              setFormData({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' });
               setIsEditing(false);
               setShowAddModal(false);
             };
@@ -1598,7 +1611,7 @@
               <div className="space-y-6">
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [''], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base">
+                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base">
                     <i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية
                   </button>
                   
@@ -1731,60 +1744,67 @@
                         </div>
 
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
-                            <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-images text-blue-400 text-lg align-middle"></i> أرقام الصور (اختياري):</label>
-                            <div className="flex flex-wrap gap-2 items-center">
-                                {formData.photoNo.map((pNo, idx) => (
-                                <div key={idx} className="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 transition-colors shadow-inner">
-                                    <input type="text" placeholder={idx === 0 ? "رقم..." : "إضافي"} className="w-20 sm:w-24 p-2 bg-transparent text-white text-center outline-none text-sm font-bold" value={pNo} onChange={e => {
-                                        const newArr = [...formData.photoNo];
-                                        newArr[idx] = e.target.value;
-                                        setFormData({...formData, photoNo: newArr});
-                                    }} />
-                                    {formData.photoNo.length > 1 && (
-                                        <button type="button" onClick={() => {
-                                            const newArr = formData.photoNo.filter((_, i) => i !== idx);
+                            <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-images text-blue-400 text-lg align-middle"></i> أرقام الصور والتفاصيل (اختياري):</label>
+                            <div className="flex flex-col gap-3 w-full">
+                                {formData.photoNo.map((pObj, idx) => (
+                                <div key={idx} className={`flex flex-col sm:flex-row items-stretch sm:items-center bg-slate-900 border rounded-xl overflow-hidden transition-colors shadow-inner w-full ${pObj.needsName ? 'border-red-500/50 focus-within:border-red-400' : 'border-slate-700 focus-within:border-blue-500'}`}>
+                                    <div className="flex items-center w-full sm:w-auto">
+                                        <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400'}`}>صورة {idx + 1}</span>
+                                        <input type="text" placeholder="رقم..." className="w-full sm:w-20 p-2.5 bg-slate-950 text-white text-center outline-none text-sm font-bold border-b sm:border-b-0 sm:border-l border-slate-700" value={pObj.number} onChange={e => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].number = e.target.value;
                                             setFormData({...formData, photoNo: newArr});
-                                        }} className="bg-red-950/40 hover:bg-red-900/80 text-red-400 px-3 py-2 transition-colors border-r border-slate-700" title="حذف هذا الرقم"><i className="ph ph-x font-bold text-sm"></i></button>
-                                    )}
+                                        }} />
+                                    </div>
+                                    <div className="flex flex-1 items-center">
+                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].note = e.target.value;
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} />
+                                        
+                                        <button type="button" onClick={() => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].needsName = !newArr[idx].needsName;
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`} title="تنبيه: مطلوب كتابة اسم على هذه الصورة">
+                                            <i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i>
+                                            <span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span>
+                                        </button>
+
+                                        {formData.photoNo.length > 1 && (
+                                            <button type="button" onClick={() => {
+                                                const newArr = formData.photoNo.filter((_, i) => i !== idx);
+                                                setFormData({...formData, photoNo: newArr});
+                                            }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0" title="حذف الصورة"><i className="ph ph-x font-bold text-sm"></i></button>
+                                        )}
+                                    </div>
                                 </div>
                                 ))}
-                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, '']})} className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-3 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-1">
-                                    <i className="ph ph-plus"></i> إضافة رقم
+                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false}]})} className="self-start bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1">
+                                    <i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى
                                 </button>
                             </div>
-                            
-                            <div className="flex items-center justify-between bg-slate-900 border border-slate-700 p-3 rounded-xl mt-3">
-                                <label className="text-sm font-bold text-slate-300 flex items-center gap-2 cursor-pointer w-full">
-                                    <input type="checkbox" checked={formData.writeNameOnPhoto} onChange={e => setFormData({...formData, writeNameOnPhoto: e.target.checked})} className="w-4 h-4 accent-blue-500" />
-                                    تنبيه: أريد كتابة الاسم على الصورة
-                                </label>
-                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-5">
+                          {settings.services.map((srv, idx) => {
+                            const srvObj = typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv;
+                            return <QuickServiceCard key={`srv-${idx}`} srvObj={srvObj} onAdd={handleAddService} colorTheme="blue" />;
+                          })}
                         </div>
 
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                          <div className="flex justify-between items-center mb-3">
-                              <label className="text-sm font-bold text-slate-400"><i className="ph ph-camera text-blue-400 text-lg align-middle"></i> الخدمات السريعة:</label>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-5">
-                            {settings.services.map((srv, idx) => {
-                              const srvObj = typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv;
-                              return <QuickServiceCard key={`srv-${idx}`} srvObj={srvObj} onAdd={handleAddService} colorTheme="blue" />;
-                            })}
-                          </div>
-
-                          <div className="flex justify-between items-center mb-3 border-t border-slate-800 pt-4">
-                              <label className="text-sm font-bold text-slate-400"><i className="ph ph-package text-purple-400 text-lg align-middle"></i> البضاعة والمنتجات:</label>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
-                            {settings.products && settings.products.map((prod, idx) => {
-                              const prodObj = typeof prod === 'string' ? {name: prod, price: 0, desc: ''} : prod;
-                              return <QuickServiceCard key={`prod-${idx}`} srvObj={prodObj} onAdd={handleAddService} colorTheme="purple" />;
-                            })}
-                          </div>
-
-                          <textarea placeholder="المطلوب بالتفصيل..." rows="2" className="w-full p-3 mt-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
+                        <div className="flex justify-between items-center mb-3 border-t border-slate-800 pt-4">
+                            <label className="text-sm font-bold text-slate-400"><i className="ph ph-package text-purple-400 text-lg align-middle"></i> البضاعة والمنتجات:</label>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
+                          {settings.products && settings.products.map((prod, idx) => {
+                            const prodObj = typeof prod === 'string' ? {name: prod, price: 0, desc: ''} : prod;
+                            return <QuickServiceCard key={`prod-${idx}`} srvObj={prodObj} onAdd={handleAddService} colorTheme="purple" />;
+                          })}
+                        </div>
+
+                        <textarea placeholder="المطلوب بالتفصيل..." rows="2" className="w-full p-3 mt-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
                           <input type="number" placeholder="الإجمالي" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-blue-500 text-sm font-bold" value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
                           <input type="number" placeholder="المدفوع الان" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 text-sm font-bold" value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} />
                           {!isEditing && (
@@ -1794,10 +1814,10 @@
                               </select>
                           )}
                         </div>
-                        <div className={`p-3 rounded-xl text-center font-black text-lg border ${(parseFloat(formData.total)||0 - parseFloat(formData.paid)||0) > 0 ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-green-950/40 text-green-400 border-green-900/50'}`}>
+                        <div className={`p-3 rounded-xl text-center font-black text-lg border mt-4 ${(parseFloat(formData.total)||0 - parseFloat(formData.paid)||0) > 0 ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-green-950/40 text-green-400 border-green-900/50'}`}>
                           الباقي: {formatCurrency((parseFloat(formData.total) || 0) - (parseFloat(formData.paid) || 0))}
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-500 font-black py-3 rounded-xl shadow-lg text-sm"><i className="ph ph-floppy-disk text-lg ml-2 align-middle"></i>حفظ</button>
+                        <button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4"><i className="ph ph-floppy-disk text-lg ml-2 align-middle"></i>حفظ</button>
                       </form>
                     </div>
                   </div>
@@ -1826,6 +1846,7 @@
                 weddingDate: '', location: '', makeupArtist: '', leaveTime: '',
                 sessionType: '', casualShootDate: '',
                 packages: [], addons: [],
+                photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false,
                 total: '', paid: '', paymentMethod: 'cash', photosLink: ''
             });
 
@@ -1910,6 +1931,8 @@
                     casualShootDate: txn.casualShootDate || '',
                     packages: txn.packages || (txn.package ? [txn.package] : []),
                     addons: txn.addons || [],
+                    photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]),
+                    writeNameOnPhoto: txn.writeNameOnPhoto || false,
                     total: txn.total || '',
                     paid: txn.paid || '',
                     electronicPaid: txn.electronicPaid || 0,
@@ -1961,6 +1984,8 @@
                 casualShootDate: formData.casualShootDate,
                 packages: formData.packages,
                 addons: formData.addons,
+                photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== ''),
+                writeNameOnPhoto: formData.writeNameOnPhoto,
                 total: total,
                 paid: paid,
                 electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0),
@@ -1976,7 +2001,7 @@
               await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, newWedding.id), newWedding);
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' });
+              setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'' });
               setIsEditing(false);
               setShowAddModal(false);
             };
@@ -2052,7 +2077,7 @@
 
             const handleDayClick = (dateStr) => {
                 setIsEditing(false);
-                setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate: dateStr, location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' });
+                setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate: dateStr, location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'' });
                 setShowAddModal(true);
             };
 
@@ -2062,7 +2087,7 @@
                 {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={setTxnDetailsModal} onDayClick={handleDayClick} />}
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base">
+                  <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base">
                     <i className="ph ph-heart text-xl sm:text-2xl"></i> حجز زفاف جديد
                   </button>
 
@@ -2221,6 +2246,50 @@
                               <label className="text-xs text-slate-500 mb-1 block">تاريخ تصوير الكاجوال (إن وجد)</label>
                               <input type="date" className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-pink-500 text-sm" value={formData.casualShootDate} onChange={e => setFormData({...formData, casualShootDate: e.target.value})} />
                            </div>
+                        </div>
+
+                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
+                            <label className="text-sm font-bold text-pink-400 mb-3 block"><i className="ph ph-images text-pink-400 text-lg align-middle"></i> أرقام الصور والتفاصيل (اختياري):</label>
+                            <div className="flex flex-col gap-3 w-full">
+                                {formData.photoNo.map((pObj, idx) => (
+                                <div key={idx} className={`flex flex-col sm:flex-row items-stretch sm:items-center bg-slate-900 border rounded-xl overflow-hidden transition-colors shadow-inner w-full ${pObj.needsName ? 'border-red-500/50 focus-within:border-red-400' : 'border-slate-700 focus-within:border-pink-500'}`}>
+                                    <div className="flex items-center w-full sm:w-auto">
+                                        <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400'}`}>صورة {idx + 1}</span>
+                                        <input type="text" placeholder="رقم..." className="w-full sm:w-20 p-2.5 bg-slate-950 text-white text-center outline-none text-sm font-bold border-b sm:border-b-0 sm:border-l border-slate-700" value={pObj.number} onChange={e => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].number = e.target.value;
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} />
+                                    </div>
+                                    <div className="flex flex-1 items-center">
+                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].note = e.target.value;
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} />
+                                        
+                                        <button type="button" onClick={() => {
+                                            const newArr = [...formData.photoNo];
+                                            newArr[idx].needsName = !newArr[idx].needsName;
+                                            setFormData({...formData, photoNo: newArr});
+                                        }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`} title="تنبيه: مطلوب كتابة اسم على هذه الصورة">
+                                            <i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i>
+                                            <span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span>
+                                        </button>
+
+                                        {formData.photoNo.length > 1 && (
+                                            <button type="button" onClick={() => {
+                                                const newArr = formData.photoNo.filter((_, i) => i !== idx);
+                                                setFormData({...formData, photoNo: newArr});
+                                            }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0" title="حذف الصورة"><i className="ph ph-x font-bold text-sm"></i></button>
+                                        )}
+                                    </div>
+                                </div>
+                                ))}
+                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false}]})} className="self-start bg-pink-900/30 hover:bg-pink-800/50 text-pink-400 px-4 py-2 rounded-xl border border-pink-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1">
+                                    <i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى
+                                </button>
+                            </div>
                         </div>
 
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -2887,6 +2956,7 @@
           
           // Promotional details state
           const [showPromoDetails, setShowPromoDetails] = useState(false);
+          const [showStages, setShowStages] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
@@ -3194,26 +3264,43 @@
 
                       {/* 4. Stages of Preparation */}
                       {!isDelivered ? (
-                          <div className="w-full max-w-md bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 mb-8">
-                              <h3 className="font-bold text-lg mb-8 flex items-center gap-2 border-b border-slate-800 pb-4"><i className="ph ph-clock-counter-clockwise text-blue-500"></i> مراحل تجهيز الطلب:</h3>
-                              <div className="relative pl-4 space-y-8 pr-4">
-                                  <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
-                                  {statusesToUse.map((s, index) => {
-                                      const isCompleted = currentStatus >= s.id;
-                                      const isCurrent = currentStatus === s.id;
-                                      return (
-                                          <div key={s.id} className="relative flex items-start gap-5">
-                                              <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
-                                                  <i className={`ph ${s.icon} text-xl`}></i>
+                          <div className="w-full max-w-md bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 transition-all">
+                              <div 
+                                  className="flex justify-between items-center cursor-pointer group"
+                                  onClick={() => setShowStages(!showStages)}
+                              >
+                                  <h3 className="font-bold text-base sm:text-lg flex items-center gap-2 text-white">
+                                      <i className="ph ph-clock-counter-clockwise text-blue-500 text-2xl group-hover:rotate-[-30deg] transition-transform"></i> 
+                                      مراحل تجهيز الطلب
+                                  </h3>
+                                  <div className="flex items-center gap-2 sm:gap-3">
+                                      <span className="text-[10px] sm:text-xs font-bold text-blue-400 bg-blue-950/50 border border-blue-900/50 px-2 py-1 rounded-md max-w-[100px] truncate text-center" title="المرحلة الحالية">
+                                          {statusesToUse.find(s => s.id === currentStatus)?.label || 'جاري العمل'}
+                                      </span>
+                                      <i className={`ph-bold ph-caret-${showStages ? 'up' : 'down'} text-slate-400 text-lg sm:text-xl transition-transform`}></i>
+                                  </div>
+                              </div>
+                              
+                              <div className={`transition-all duration-500 ease-in-out ${showStages ? 'max-h-[1200px] opacity-100 mt-6 border-t border-slate-800 pt-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                                  <div className="relative pl-4 space-y-8 pr-4">
+                                      <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
+                                      {statusesToUse.map((s, index) => {
+                                          const isCompleted = currentStatus >= s.id;
+                                          const isCurrent = currentStatus === s.id;
+                                          return (
+                                              <div key={s.id} className="relative flex items-start gap-5">
+                                                  <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
+                                                      <i className={`ph ${s.icon} text-xl`}></i>
+                                                  </div>
+                                                  <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
+                                                      <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
+                                                      {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
+                                                      {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
+                                                  </div>
                                               </div>
-                                              <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
-                                                  <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
-                                                  {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
-                                                  {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
-                                              </div>
-                                          </div>
-                                      );
-                                  })}
+                                          );
+                                      })}
+                                  </div>
                               </div>
                           </div>
                       ) : (
@@ -3232,24 +3319,25 @@
                           </div>
                       )}
 
-                      {/* 5. Details Card */}
+                      {/* 5. Details Card (Redesigned) */}
                       <div className="bg-slate-900 w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
                           
-                          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
-                              <span className="text-slate-400 text-sm">العميل</span>
-                              <span className={`text-lg font-bold ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>{displayName}</span>
+                          <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-800">
+                              <div className="flex items-center gap-3">
+                                  <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border-2 ${isWedding ? 'border-pink-500/30 text-pink-400' : 'border-blue-500/30 text-blue-400'} shadow-inner`}>
+                                      {isWedding ? <i className="ph-fill ph-users text-2xl"></i> : <i className="ph-fill ph-user text-2xl"></i>}
+                                  </div>
+                                  <div className="flex flex-col">
+                                      <span className="text-slate-400 text-[10px] mb-0.5">اسم العميل</span>
+                                      <span className="text-base sm:text-lg font-black text-white">{displayName}</span>
+                                  </div>
+                              </div>
+                              <div className="text-left flex flex-col items-end">
+                                  <span className="text-slate-400 text-[10px] mb-0.5">رقم الإيصال</span>
+                                  <span className={`text-lg sm:text-xl font-black font-mono ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>#{txn.receiptNo}</span>
+                              </div>
                           </div>
-                          
-                          <h3 className="text-xl font-black mb-4 flex items-center justify-between text-white">
-                              <span className="flex items-center gap-2">
-                                  {isWedding ? <i className="ph ph-heart text-pink-400"></i> : <i className="ph ph-user text-blue-400"></i>}
-                                  إيصال #{txn.receiptNo}
-                              </span>
-                              <span className="text-lg bg-slate-800 px-3 py-1 rounded-lg border border-slate-700 text-yellow-400 font-bold shadow-inner">
-                                  {txn.total} ج.م
-                              </span>
-                          </h3>
 
                           {isWedding && txn.weddingDate && (
                               <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
@@ -3258,15 +3346,26 @@
                               </div>
                           )}
 
-                          {txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(n=>n) : true) && (
-                              <div className="bg-slate-950/80 p-3.5 rounded-xl mb-4 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm shadow-inner gap-2">
-                                  <span className="text-slate-300 font-bold flex items-center gap-1.5"><i className="ph-fill ph-images text-blue-400 text-lg"></i> أرقام الصور المحددة:</span>
-                                  <span className="font-black text-blue-300 bg-blue-950/50 px-3 py-1 rounded-lg border border-blue-900/50" dir="ltr">{Array.isArray(txn.photoNo) ? txn.photoNo.filter(Boolean).join(' , ') : txn.photoNo}</span>
+                          {txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
+                              <div className="bg-slate-950/80 p-4 rounded-xl mb-4 border border-blue-500/30 flex flex-col gap-3 shadow-inner">
+                                  <span className="text-slate-300 font-bold flex items-center gap-1.5"><i className="ph-fill ph-images text-blue-400 text-xl"></i> أرقام الصور المحددة لك:</span>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => {
+                                         const num = typeof p === 'object' ? p.number : p;
+                                         const note = typeof p === 'object' ? p.note : '';
+                                         return (
+                                             <div key={i} className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 flex flex-col gap-1 shadow-sm">
+                                                 <span className="font-black text-blue-400 flex items-center gap-1"><i className="ph ph-hash text-slate-500"></i> {num}</span>
+                                                 {note && <span className="text-xs text-slate-400 border-t border-slate-800 pt-1.5 mt-0.5"><i className="ph ph-text-aa text-slate-500 ml-1"></i>{note}</span>}
+                                             </div>
+                                         )
+                                     }) : <span className="font-black text-blue-300 bg-blue-950/50 px-3 py-1.5 rounded-lg border border-blue-900/50 text-center" dir="ltr">{txn.photoNo}</span>}
+                                  </div>
                               </div>
                           )}
 
                           {displayReqs && displayReqs !== 'لا يوجد تفاصيل' && (
-                              <div className="bg-slate-950/80 p-3.5 rounded-xl mb-4 border border-slate-800 flex flex-col gap-2 text-sm shadow-inner">
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col gap-2 text-sm shadow-inner mb-2">
                                   <span className="text-slate-300 font-bold flex items-center gap-1.5">
                                       <i className={`ph-fill ph-list-dashes text-lg ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
                                       الخدمات والتفاصيل المطلوبة:
@@ -3275,16 +3374,24 @@
                               </div>
                           )}
 
-                          <div className="flex justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800 text-sm">
-                               <div className="flex flex-col items-center gap-1">
-                                   <span className="text-slate-500 text-xs">المدفوع</span>
-                                   <span className="text-green-400 font-bold">{txn.paid} ج.م</span>
-                               </div>
-                               <div className="w-px bg-slate-800"></div>
-                               <div className="flex flex-col items-center gap-1">
-                                   <span className="text-slate-500 text-xs">الباقي الدفع</span>
-                                   <span className="text-red-400 font-bold">{txn.remaining} ج.م</span>
-                               </div>
+                          <div className="mt-5">
+                              <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
+                                  <span className="text-slate-300 font-bold flex items-center gap-2">
+                                      <i className="ph-fill ph-coins text-yellow-500 text-2xl"></i> إجمالي الحساب
+                                  </span>
+                                  <span className="text-2xl sm:text-3xl font-black text-yellow-400">{txn.total} <span className="text-sm font-bold">ج.م</span></span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                   <div className="bg-green-950/20 p-3 sm:p-4 rounded-xl border border-green-900/30 flex flex-col items-center justify-center gap-1 shadow-sm">
+                                       <span className="text-slate-400 text-xs font-bold">المدفوع</span>
+                                       <span className="text-green-400 font-black text-lg sm:text-xl">{txn.paid} <span className="text-[10px]">ج.م</span></span>
+                                   </div>
+                                   <div className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center justify-center gap-1 shadow-sm ${txn.remaining > 0 ? 'bg-red-950/20 border-red-900/30' : 'bg-slate-950/50 border-slate-800'}`}>
+                                       <span className="text-slate-400 text-xs font-bold">الباقي الدفع</span>
+                                       <span className={`${txn.remaining > 0 ? 'text-red-400' : 'text-slate-300'} font-black text-lg sm:text-xl`}>{txn.remaining} <span className="text-[10px]">ج.م</span></span>
+                                   </div>
+                              </div>
                           </div>
                       </div>
 
