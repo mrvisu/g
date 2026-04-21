@@ -446,71 +446,6 @@
 
         // --- UI Components ---
         
-        // --- New Public Promotions Section Component ---
-        const PublicPromotionsSection = ({ promotions, studioPhone, studioName }) => {
-            if (!promotions || promotions.length === 0) return null;
-
-            const handleBooking = (promo) => {
-                const phone = studioPhone || '01201260040';
-                const msg = `مرحباً ${studioName} 👋\nلقد رأيت العرض الخاص بكم المتاح في بوابة العملاء وأود الحجز أو الاستفسار عنه:\n🎁 *${promo.title}*\nبرجاء إفادتي بالتفاصيل وكيفية إتمام الحجز. شكراً لكم.`;
-                let formattedPhone = phone.trim();
-                if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
-                else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
-                const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
-                window.open(url, '_blank');
-            };
-
-            return (
-                <div className="w-full max-w-md mt-10 mb-8 animate-fadeIn">
-                    <div className="flex flex-col items-center gap-2 mb-6 text-center">
-                        <span className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-slate-900 px-4 py-1 rounded-full text-xs font-black shadow-lg shadow-yellow-500/30">جديدنا للعملاء</span>
-                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                            <i className="ph-fill ph-fire text-yellow-500 animate-pulse"></i> عروض الاستوديو الحصرية
-                        </h2>
-                        <p className="text-slate-400 text-sm">استفد من أقوى العروض لفترة محدودة، تواصل معنا الآن!</p>
-                    </div>
-
-                    <div className="space-y-4">
-                        {promotions.map(promo => {
-                            const colorStyles = {
-                                yellow: 'from-yellow-900/40 to-slate-900 border-yellow-500/50 text-yellow-400',
-                                pink: 'from-pink-900/40 to-slate-900 border-pink-500/50 text-pink-400',
-                                blue: 'from-blue-900/40 to-slate-900 border-blue-500/50 text-blue-400',
-                                amber: 'from-amber-900/40 to-slate-900 border-amber-500/50 text-amber-400'
-                            };
-                            const curColor = colorStyles[promo.color || 'yellow'] || colorStyles.yellow;
-
-                            return (
-                                <div key={promo.id} className={`bg-gradient-to-r p-5 rounded-3xl border shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-300 ${curColor}`}>
-                                    <div className="absolute -left-6 -top-6 opacity-10 transform -rotate-12 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500">
-                                        <i className={`ph-fill ${promo.icon || 'ph-gift'} text-[120px]`}></i>
-                                    </div>
-                                    <div className="relative z-10">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-black text-lg text-white flex items-center gap-2">
-                                                <i className={`ph-fill ${promo.icon || 'ph-gift'} text-2xl`}></i> {promo.title}
-                                            </h3>
-                                            {promo.discount && <span className="bg-white/20 px-2 py-1 rounded-lg text-xs font-black text-white backdrop-blur-md border border-white/30 shadow-sm">{promo.discount}</span>}
-                                        </div>
-                                        <p className="text-sm font-bold text-slate-200 mb-2 leading-relaxed">{promo.shortDesc}</p>
-                                        {promo.fullDesc && <p className="text-xs text-slate-300 mb-5 line-clamp-2 leading-relaxed">{promo.fullDesc}</p>}
-
-                                        <button
-                                            onClick={() => handleBooking(promo)}
-                                            className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/40 transition-all border border-green-400/50"
-                                        >
-                                            <i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز هذا العرض
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-        // ----------------------------------------------------
-
         const LoginScreen = ({ validPassword, onLogin }) => {
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
@@ -564,17 +499,32 @@
 
         const ClientPortalScreen = ({ settings, transactions, weddings }) => {
             const [phone, setPhone] = useState('');
+            const [receipt, setReceipt] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
+            const [errorMsg, setErrorMsg] = useState('');
 
             const handleSearch = (e) => {
                 e.preventDefault();
                 const cleanPhone = phone.trim();
-                if (!cleanPhone) return;
+                const cleanReceipt = receipt.trim();
+                if (!cleanPhone || !cleanReceipt) {
+                    setErrorMsg('يرجى إدخال رقم الهاتف ورقم الإيصال معاً');
+                    return;
+                }
                 
-                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone);
+                setErrorMsg('');
+                
+                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone && t.receiptNo.toString() === cleanReceipt);
                 all.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
                 
+                if (all.length > 0) {
+                    const target = all[0];
+                    const isWed = target.type === 'wedding';
+                    window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(cleanReceipt)}&type=${isWed ? 'w' : 't'}`;
+                    return;
+                }
+
                 setResults(all);
                 setHasSearched(true);
             };
@@ -588,20 +538,31 @@
                                 {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph-fill ph-camera text-4xl text-white"></i>}
                             </div>
                             <h1 className="text-2xl font-black text-white tracking-wide">{settings.studioName}</h1>
-                            <p className="text-slate-400 text-sm mt-2">بوابة العملاء للاستعلام عن الطلبات والعروض</p>
                         </div>
 
-                        {/* Search Box */}
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 mb-6">
+                        {/* Search Box - Chic and Professional */}
+                        <div className="bg-slate-900 p-8 rounded-3xl shadow-2xl border border-slate-700 mb-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-black text-white mb-3">بوابة الاستعلامات</h2>
+                                <div className="bg-blue-950/40 p-4 rounded-2xl border border-blue-900/50 shadow-inner">
+                                    <i className="ph-fill ph-info text-blue-400 text-2xl mb-2"></i>
+                                    <p className="text-slate-300 text-sm leading-relaxed font-bold">
+                                        يرجى إدخال رقم الهاتف المسجل به الطلب ورقم الإيصال المرسل لك عبر الواتساب، لتأكيد هويتك والوصول لطلباتك وعروضك الخاصة.
+                                    </p>
+                                </div>
+                            </div>
+
                             <form onSubmit={handleSearch} className="flex flex-col gap-4">
+                                {errorMsg && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded-xl text-center font-bold border border-red-900/50">{errorMsg}</div>}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">أدخل رقم الهاتف المسجل به الطلب:</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">رقم الهاتف:</label>
                                     <div className="relative">
                                         <input 
                                             type="tel" 
                                             value={phone} 
                                             onChange={(e) => setPhone(e.target.value)}
-                                            placeholder="رقم الهاتف..." 
+                                            placeholder="أدخل رقم الهاتف هنا..." 
                                             className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors"
                                             required
                                             autoFocus
@@ -609,55 +570,34 @@
                                         <i className="ph-fill ph-phone absolute right-4 top-4 text-slate-500 text-xl"></i>
                                     </div>
                                 </div>
-                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-all text-lg flex items-center justify-center gap-2">
-                                    <i className="ph-bold ph-magnifying-glass text-xl"></i> بحث عن طلباتي
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">رقم الإيصال:</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            value={receipt} 
+                                            onChange={(e) => setReceipt(e.target.value)}
+                                            placeholder="أدخل رقم الإيصال هنا..." 
+                                            className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors"
+                                            required
+                                        />
+                                        <i className="ph-fill ph-receipt absolute right-4 top-4 text-slate-500 text-xl"></i>
+                                    </div>
+                                </div>
+                                <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 mt-4 border border-blue-500/50">
+                                    <i className="ph-bold ph-magnifying-glass text-xl"></i> استعلام وتتبع الطلب
                                 </button>
                             </form>
                         </div>
 
-                        {/* Results */}
-                        {hasSearched && (
-                            <div className="space-y-3 animate-fadeIn mb-8">
-                                <h3 className="font-bold text-slate-300 mb-4 px-2 flex items-center gap-2">
-                                    <i className="ph-fill ph-folder-open text-xl text-blue-400"></i> الأرشيف والطلبات ({results.length})
-                                </h3>
-                                {results.length === 0 ? (
-                                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center">
-                                        <i className="ph-fill ph-warning-circle text-4xl text-slate-500 mb-3"></i>
-                                        <p className="text-slate-400 font-bold">عذراً، لم نجد أي طلبات مسجلة بهذا الرقم.</p>
-                                        <p className="text-xs text-slate-500 mt-2">تأكد من كتابة الرقم بشكل صحيح.</p>
-                                    </div>
-                                ) : (
-                                    results.map(rec => {
-                                        const isWed = rec.type === 'wedding';
-                                        return (
-                                            <a key={rec.id} href={`?phone=${encodeURIComponent(rec.phone)}&receipt=${encodeURIComponent(rec.receiptNo)}&type=${isWed ? 'w' : 't'}`} className="block bg-slate-900 p-4 rounded-2xl border border-slate-800 hover:border-blue-500/50 transition-all shadow-sm group">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <i className={`text-xl ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
-                                                        <span className="font-bold text-sm text-slate-200">إيصال #{rec.receiptNo}</span>
-                                                    </div>
-                                                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${isWed ? 'bg-pink-950/50 text-pink-400' : 'bg-blue-950/50 text-blue-400'}`}>{isWed ? 'زفاف' : 'استوديو'}</span>
-                                                </div>
-                                                <div className="flex justify-between items-end mt-3 pt-3 border-t border-slate-800/50">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-xs text-slate-500 font-mono">📅 {formatDateOnly(rec.dateTime)}</span>
-                                                        <span className="text-xs text-slate-400 font-bold">{isWed ? (rec.groomName + ' و ' + rec.brideName) : rec.clientName}</span>
-                                                    </div>
-                                                    <span className="text-xs font-bold text-blue-400 flex items-center gap-1 group-hover:translate-x-[-5px] transition-transform">
-                                                        عرض التفاصيل <i className="ph-bold ph-arrow-left"></i>
-                                                    </span>
-                                                </div>
-                                            </a>
-                                        );
-                                    })
-                                )}
+                        {/* Results / Error */}
+                        {hasSearched && results.length === 0 && (
+                            <div className="bg-slate-900 p-6 rounded-3xl border border-red-900/50 text-center animate-fadeIn shadow-lg shadow-red-900/10">
+                                <i className="ph-fill ph-warning-circle text-5xl text-red-500 mb-3"></i>
+                                <p className="text-white font-black text-lg">الطلب غير موجود</p>
+                                <p className="text-sm text-slate-400 mt-2">عذراً، لم نتمكن من العثور على طلب يطابق رقم الهاتف والإيصال المدخلين معاً.</p>
                             </div>
                         )}
-
-                        {/* General Promotions Section visible to everyone in the portal */}
-                        <PublicPromotionsSection promotions={settings.promotions} studioPhone={settings.studioPhone} studioName={settings.studioName} />
-
                     </div>
                 </div>
             );
