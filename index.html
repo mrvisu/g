@@ -65,11 +65,11 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
+            from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out forwards;
+            animation: fadeIn 0.4s ease-out forwards;
         }
         
         @keyframes bounce-slow {
@@ -157,7 +157,7 @@
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً أو متابعة تفاصيل وفاتورة طلبك عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك، رؤية الفاتورة، وتتبع حالته من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود، وشكراً لاختيارك لنا! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!",
-          tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك (إيصال #{receipt}) لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨"
+          tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨"
         };
 
         const defaultFirebaseConfig = {
@@ -253,6 +253,27 @@
                 return updatedTxn;
             }
             return txn;
+        };
+
+        const processImage = (file, maxWidth = 800) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let scaleSize = 1;
+                        if (img.width > maxWidth) scaleSize = maxWidth / img.width;
+                        canvas.width = img.width * scaleSize;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                };
+            });
         };
 
         const generateWA_Message = (templateKey, txn, settings, isWedding = false) => {
@@ -499,29 +520,31 @@
 
         const ClientPortalScreen = ({ settings, transactions, weddings }) => {
             const [phone, setPhone] = useState('');
-            const [receipt, setReceipt] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
             const [errorMsg, setErrorMsg] = useState('');
+            const [showPhoneInput, setShowPhoneInput] = useState(false);
+            const [selectedPromoModal, setSelectedPromoModal] = useState(null);
 
             const handleSearch = (e) => {
                 e.preventDefault();
                 const cleanPhone = phone.trim();
-                const cleanReceipt = receipt.trim();
-                if (!cleanPhone || !cleanReceipt) {
-                    setErrorMsg('يرجى إدخال رقم الهاتف ورقم الإيصال معاً');
+                if (!cleanPhone) {
+                    setErrorMsg('يرجى إدخال رقم الهاتف');
                     return;
                 }
                 
                 setErrorMsg('');
                 
-                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone && t.receiptNo.toString() === cleanReceipt);
+                // البحث برقم الهاتف فقط وجلب أحدث عملية للعميل
+                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone);
                 all.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
                 
                 if (all.length > 0) {
                     const target = all[0];
                     const isWed = target.type === 'wedding';
-                    window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(cleanReceipt)}&type=${isWed ? 'w' : 't'}`;
+                    // الدخول لأحدث إيصال مباشرة ومنها يستطيع رؤية أرشيفه بالكامل
+                    window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=${isWed ? 'w' : 't'}`;
                     return;
                 }
 
@@ -529,73 +552,165 @@
                 setHasSearched(true);
             };
 
+            const promoColors = {
+                yellow: 'from-yellow-900/40 to-slate-900 border-yellow-500/30 text-yellow-400 bg-yellow-500/20',
+                pink: 'from-pink-900/40 to-slate-900 border-pink-500/30 text-pink-400 bg-pink-500/20',
+                blue: 'from-blue-900/40 to-slate-900 border-blue-500/30 text-blue-400 bg-blue-500/20',
+                amber: 'from-amber-900/40 to-slate-900 border-amber-500/30 text-amber-400 bg-amber-500/20'
+            };
+
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center py-10 px-4 text-slate-100">
-                    <div className="w-full max-w-md">
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg shadow-blue-900/20 flex items-center justify-center mb-4 overflow-hidden border border-slate-700">
-                                {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph-fill ph-camera text-4xl text-white"></i>}
+                    <div className="w-full max-w-md animate-fadeIn">
+                        
+                        {/* بطاقة الترحيب والهوية */}
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden flex flex-col items-center text-center group">
+                            <div className="absolute top-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-800 shadow-lg mb-5 bg-slate-900 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500">
+                                {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" alt="Studio Logo" /> : <i className="ph-fill ph-camera text-5xl text-yellow-500"></i>}
                             </div>
-                            <h1 className="text-2xl font-black text-white tracking-wide">{settings.studioName}</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-3 tracking-wide">{settings.studioName}</h1>
+                            <p className="text-slate-400 text-sm leading-relaxed max-w-sm font-bold">
+                                أهلاً بك في مساحتك الخاصة ✨ نحن هنا لتوثيق أجمل لحظاتك وتحويلها إلى ذكريات لا تُنسى.
+                            </p>
                         </div>
 
-                        {/* Search Box - Chic and Professional */}
-                        <div className="bg-slate-900 p-8 rounded-3xl shadow-2xl border border-slate-700 mb-6 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                            <div className="text-center mb-8">
-                                <h2 className="text-2xl font-black text-white mb-3">بوابة الاستعلامات</h2>
-                                <div className="bg-blue-950/40 p-4 rounded-2xl border border-blue-900/50 shadow-inner">
-                                    <i className="ph-fill ph-info text-blue-400 text-2xl mb-2"></i>
-                                    <p className="text-slate-300 text-sm leading-relaxed font-bold">
-                                        يرجى إدخال رقم الهاتف المسجل به الطلب ورقم الإيصال المرسل لك عبر الواتساب، لتأكيد هويتك والوصول لطلباتك وعروضك الخاصة.
-                                    </p>
+                        {/* قسم العروض (إذا وجدت) */}
+                        {settings.promotions && settings.promotions.length > 0 && !showPhoneInput && (
+                            <div className="w-full mb-8 animate-fadeIn" style={{animationDelay: '0.2s'}}>
+                                <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2">
+                                    <i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك
+                                </h3>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {settings.promotions.map(promo => {
+                                        const colorSet = promoColors[promo.color || 'yellow'] || promoColors.yellow;
+                                        const bgClass = colorSet.split(' ')[0] + ' ' + colorSet.split(' ')[1];
+                                        const borderClass = colorSet.split(' ')[2];
+                                        const textClass = colorSet.split(' ')[3];
+                                        const iconBgClass = colorSet.split(' ')[4];
+                                        
+                                        return (
+                                            <div key={promo.id} onClick={() => setSelectedPromoModal(promo)} className={`bg-gradient-to-l ${bgClass} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col gap-4 transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden`}>
+                                                {promo.images && promo.images.length > 0 && (
+                                                    <div className="w-full h-32 -mt-4 -mx-4 mb-1 relative border-b border-slate-700/50">
+                                                        <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60"></div>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-start gap-4 z-10">
+                                                     <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0`}>
+                                                         <i className={`ph-fill ${promo.icon} text-2xl`}></i>
+                                                     </div>
+                                                     <div className="flex-1">
+                                                         <h4 className="font-bold text-slate-100">{promo.title}</h4>
+                                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-2">{promo.shortDesc}</p>
+                                                         {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded`}>{promo.discount}</span>}
+                                                     </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
+                        )}
 
-                            <form onSubmit={handleSearch} className="flex flex-col gap-4">
-                                {errorMsg && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded-xl text-center font-bold border border-red-900/50">{errorMsg}</div>}
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">رقم الهاتف:</label>
+                        {/* بوابة الاستعلامات (زر أو حقل بحث) */}
+                        {!showPhoneInput ? (
+                             <button onClick={() => setShowPhoneInput(true)} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 border border-blue-500/50 animate-fadeIn" style={{animationDelay: '0.4s'}}>
+                                  <i className="ph-fill ph-sign-in text-2xl"></i> الدخول لأرشيفك وطلباتك
+                             </button>
+                        ) : (
+                             <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl animate-fadeIn w-full relative">
+                                  <button onClick={() => {setShowPhoneInput(false); setHasSearched(false); setResults([]);}} className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors">
+                                      <i className="ph ph-arrow-right text-xl"></i> رجوع
+                                  </button>
+                                  
+                                  <div className="text-center mb-6 mt-4">
+                                      <div className="bg-blue-950/30 p-4 rounded-2xl border border-blue-900/40 shadow-inner inline-block w-full">
+                                          <i className="ph-fill ph-shield-check text-blue-400 text-3xl mb-2"></i>
+                                          <p className="text-slate-300 text-sm leading-relaxed font-bold">
+                                              مرحباً بك مجدداً 👋 يرجى إدخال رقم هاتفك للوصول الآمن إلى أرشيف صورك ومتابعة طلباتك الحالية.
+                                          </p>
+                                      </div>
+                                  </div>
+                                  
+                                  <form onSubmit={handleSearch} className="flex flex-col gap-4">
+                                      {errorMsg && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded-xl text-center font-bold border border-red-900/50 animate-fadeIn">{errorMsg}</div>}
+                                      
+                                      <div>
+                                          <label className="block text-sm font-bold text-slate-400 mb-2">رقم الهاتف المسجل لدينا:</label>
+                                          <div className="relative">
+                                              <input 
+                                                  type="tel" 
+                                                  value={phone} 
+                                                  onChange={(e) => setPhone(e.target.value)}
+                                                  placeholder="أدخل رقم الهاتف هنا..." 
+                                                  className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors shadow-inner"
+                                                  required
+                                                  autoFocus
+                                              />
+                                              <i className="ph-fill ph-phone absolute right-4 top-4 text-slate-500 text-xl"></i>
+                                          </div>
+                                      </div>
+                                      
+                                      <button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 mt-2">
+                                          <i className="ph-bold ph-magnifying-glass text-xl"></i> بحث ودخول
+                                      </button>
+                                  </form>
+
+                                  {hasSearched && results.length === 0 && (
+                                      <div className="mt-6 bg-slate-950 p-5 rounded-2xl border border-red-900/40 text-center animate-fadeIn">
+                                          <i className="ph-fill ph-warning-circle text-4xl text-red-500 mb-2"></i>
+                                          <p className="text-white font-black text-base">لا يوجد طلب مسجل</p>
+                                          <p className="text-xs text-slate-400 mt-2 leading-relaxed">عذراً، لم نتمكن من العثور على أي طلب يطابق رقم الهاتف المدخل. تأكد من إدخال الرقم الصحيح المستخدم أثناء الحجز.</p>
+                                      </div>
+                                  )}
+                             </div>
+                        )}
+                        
+                        {/* نافذة العرض التفصيلية */}
+                        {selectedPromoModal && (
+                            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
+                                <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                                     <div className="relative">
-                                        <input 
-                                            type="tel" 
-                                            value={phone} 
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            placeholder="أدخل رقم الهاتف هنا..." 
-                                            className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors"
-                                            required
-                                            autoFocus
-                                        />
-                                        <i className="ph-fill ph-phone absolute right-4 top-4 text-slate-500 text-xl"></i>
+                                        {selectedPromoModal.images && selectedPromoModal.images.length > 0 ? (
+                                            <div className="w-full h-48 sm:h-64 flex overflow-x-auto custom-scrollbar snap-x snap-mandatory">
+                                                {selectedPromoModal.images.map((img, i) => (
+                                                    <img key={i} src={img} className="w-full h-full object-cover shrink-0 snap-center" alt={`صورة ${i+1}`} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className={`w-full h-32 bg-gradient-to-r ${promoColors[selectedPromoModal.color || 'yellow'].split(' ').slice(0,2).join(' ')} flex items-center justify-center`}>
+                                                <i className={`ph-fill ${selectedPromoModal.icon} text-6xl opacity-50`}></i>
+                                            </div>
+                                        )}
+                                        <button onClick={() => setSelectedPromoModal(null)} className="absolute top-4 left-4 bg-slate-900/50 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/10 shadow-lg"><i className="ph ph-x text-lg"></i></button>
+                                    </div>
+                                    
+                                    <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                                                <i className={`ph-fill ${selectedPromoModal.icon} text-yellow-500`}></i> {selectedPromoModal.title}
+                                            </h2>
+                                            {selectedPromoModal.discount && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap">{selectedPromoModal.discount}</span>}
+                                        </div>
+                                        
+                                        <p className="text-slate-300 font-bold mb-3">{selectedPromoModal.shortDesc}</p>
+                                        
+                                        {selectedPromoModal.fullDesc && (
+                                            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6">
+                                                <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p>
+                                            </div>
+                                        )}
+                                        
+                                        <button 
+                                            onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص العرض: *${selectedPromoModal.title}*`)}
+                                            className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50 mt-auto"
+                                        >
+                                            <i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز العرض الآن
+                                        </button>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">رقم الإيصال:</label>
-                                    <div className="relative">
-                                        <input 
-                                            type="number" 
-                                            value={receipt} 
-                                            onChange={(e) => setReceipt(e.target.value)}
-                                            placeholder="أدخل رقم الإيصال هنا..." 
-                                            className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors"
-                                            required
-                                        />
-                                        <i className="ph-fill ph-receipt absolute right-4 top-4 text-slate-500 text-xl"></i>
-                                    </div>
-                                </div>
-                                <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 mt-4 border border-blue-500/50">
-                                    <i className="ph-bold ph-magnifying-glass text-xl"></i> استعلام وتتبع الطلب
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Results / Error */}
-                        {hasSearched && results.length === 0 && (
-                            <div className="bg-slate-900 p-6 rounded-3xl border border-red-900/50 text-center animate-fadeIn shadow-lg shadow-red-900/10">
-                                <i className="ph-fill ph-warning-circle text-5xl text-red-500 mb-3"></i>
-                                <p className="text-white font-black text-lg">الطلب غير موجود</p>
-                                <p className="text-sm text-slate-400 mt-2">عذراً، لم نتمكن من العثور على طلب يطابق رقم الهاتف والإيصال المدخلين معاً.</p>
                             </div>
                         )}
                     </div>
@@ -863,15 +978,30 @@
             const [newDiscount, setNewDiscount] = useState('');
             const [newIcon, setNewIcon] = useState('ph-gift');
             const [newColor, setNewColor] = useState('yellow');
+            const [newImages, setNewImages] = useState([]);
+            const [isUploadingPromoImg, setIsUploadingPromoImg] = useState(false);
+
+            const handleImageUpload = async (e) => {
+                const files = Array.from(e.target.files).slice(0, 3 - newImages.length);
+                if (files.length === 0) return;
+                setIsUploadingPromoImg(true);
+                const processed = await Promise.all(files.map(f => processImage(f, 800)));
+                setNewImages(prev => [...prev, ...processed]);
+                setIsUploadingPromoImg(false);
+            };
+
+            const handleRemoveNewImage = (index) => {
+                setNewImages(prev => prev.filter((_, i) => i !== index));
+            };
 
             const handleEditClick = (item, idx) => {
-                setNewTitle(item.title); setNewShortDesc(item.shortDesc); setNewFullDesc(item.fullDesc); setNewDiscount(item.discount); setNewIcon(item.icon); setNewColor(item.color); onRemove(idx);
+                setNewTitle(item.title); setNewShortDesc(item.shortDesc); setNewFullDesc(item.fullDesc); setNewDiscount(item.discount); setNewIcon(item.icon); setNewColor(item.color); setNewImages(item.images || []); onRemove(idx);
             };
 
             const handleSave = () => {
                 if(newTitle && newShortDesc){
-                    onAdd({ id: Date.now().toString(), title: newTitle, shortDesc: newShortDesc, fullDesc: newFullDesc, discount: newDiscount, icon: newIcon, color: newColor });
-                    setNewTitle(''); setNewShortDesc(''); setNewFullDesc(''); setNewDiscount(''); setNewIcon('ph-gift'); setNewColor('yellow');
+                    onAdd({ id: Date.now().toString(), title: newTitle, shortDesc: newShortDesc, fullDesc: newFullDesc, discount: newDiscount, icon: newIcon, color: newColor, images: newImages });
+                    setNewTitle(''); setNewShortDesc(''); setNewFullDesc(''); setNewDiscount(''); setNewIcon('ph-gift'); setNewColor('yellow'); setNewImages([]);
                 }
             };
 
@@ -884,6 +1014,29 @@
                     <input type="text" value={newShortDesc} onChange={e=>setNewShortDesc(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 placeholder-slate-500 text-sm" placeholder="وصف قصير (مثال: خصم 20% على الألبومات الميني)..."/>
                   </div>
                   <textarea value={newFullDesc} onChange={e=>setNewFullDesc(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 placeholder-slate-500 text-sm resize-none" rows="2" placeholder="وصف تفصيلي يظهر عند الضغط (اختياري)..."></textarea>
+                  
+                  {/* قسم إضافة صور للعرض */}
+                  <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                      <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-bold text-slate-400">صور العرض (اختياري - حتى 3 صور)</label>
+                          <span className="text-xs text-slate-500">{newImages.length}/3 صور</span>
+                      </div>
+                      <div className="flex gap-2 items-center flex-wrap">
+                          {newImages.map((img, i) => (
+                              <div key={i} className="relative w-16 h-16 rounded-lg border border-slate-600 overflow-hidden group">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                  <button onClick={() => handleRemoveNewImage(i)} className="absolute inset-0 bg-red-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i className="ph ph-trash"></i></button>
+                              </div>
+                          ))}
+                          {newImages.length < 3 && (
+                              <label className="w-16 h-16 flex items-center justify-center rounded-lg border border-dashed border-slate-600 hover:border-yellow-500 hover:text-yellow-500 text-slate-500 cursor-pointer transition-colors bg-slate-950">
+                                  {isUploadingPromoImg ? <i className="ph ph-spinner animate-spin text-xl"></i> : <i className="ph ph-plus text-xl"></i>}
+                                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={isUploadingPromoImg} />
+                              </label>
+                          )}
+                      </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                      <input type="text" value={newDiscount} onChange={e=>setNewDiscount(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 placeholder-slate-500 text-sm" placeholder="قيمة الخصم (مثال: 15%)..."/>
                      <select value={newIcon} onChange={e=>setNewIcon(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm font-mono">
@@ -913,6 +1066,13 @@
                     const curColor = colorStyles[item.color || 'yellow'];
                     return (
                     <div key={idx} className={`p-4 rounded-xl flex flex-col gap-2 border relative group hover:opacity-90 transition-opacity ${curColor}`}>
+                      {item.images && item.images.length > 0 && (
+                          <div className="flex gap-1 mb-2 h-16">
+                              {item.images.map((img, i) => (
+                                  <img key={i} src={img} className="w-16 h-16 object-cover rounded border border-slate-700" alt={`صورة ${i+1}`} />
+                              ))}
+                          </div>
+                      )}
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2 font-black text-base">
                             <i className={`ph-fill ${item.icon || 'ph-gift'} text-xl`}></i> {item.title}
@@ -3808,26 +3968,26 @@
                               <div className="mb-5 text-right bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
                                   <label className="block text-sm font-bold text-indigo-300 mb-3"><i className="ph ph-upload-simple text-lg align-middle ml-1"></i> إرفاق صورة التحويل أولاً لتأكيد السداد:</label>
                                   <input type="file" accept="image/*" onChange={(e) => {
-                                          const file = e.target.files[0];
-                                          if (!file) return;
-                                          const reader = new FileReader();
-                                          reader.readAsDataURL(file);
-                                          reader.onload = (event) => {
-                                              const img = new Image();
-                                              img.src = event.target.result;
-                                              img.onload = () => {
-                                                  const canvas = document.createElement('canvas');
-                                                  const MAX_WIDTH = 800;
-                                                  let scaleSize = 1;
-                                                  if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                                                  canvas.width = img.width * scaleSize;
-                                                  canvas.height = img.height * scaleSize;
-                                                  const ctx = canvas.getContext('2d');
-                                                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                                  setTransferReceipt(canvas.toDataURL('image/jpeg', 0.6));
-                                                  setClientViewError('');
-                                              };
-                                          };
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.readAsDataURL(file);
+                                        reader.onload = (event) => {
+                                            const img = new Image();
+                                            img.src = event.target.result;
+                                            img.onload = () => {
+                                                const canvas = document.createElement('canvas');
+                                                const MAX_WIDTH = 800;
+                                                let scaleSize = 1;
+                                                if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                                                canvas.width = img.width * scaleSize;
+                                                canvas.height = img.height * scaleSize;
+                                                const ctx = canvas.getContext('2d');
+                                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                setTransferReceipt(canvas.toDataURL('image/jpeg', 0.6));
+                                                setClientViewError('');
+                                            };
+                                        };
                                       }} className="block w-full text-sm text-slate-400 file:ml-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 transition-colors bg-slate-950 rounded-xl"
                                   />
                                   {clientViewError && <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1"><i className="ph ph-warning text-base"></i> {clientViewError}</p>}
