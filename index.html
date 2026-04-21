@@ -1721,8 +1721,10 @@
                 });
             }
 
-            const todayRevenue = calculatePeriodRevenue(transactions, new Date(), 'day');
-            const currentTotalCollected = todayRevenue.total;
+            const targetRevenueDate = filterDate ? new Date(filterDate) : new Date();
+            const dayRevenue = calculatePeriodRevenue(transactions, targetRevenueDate, 'day');
+            const currentTotalCollected = dayRevenue.total;
+            const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
 
             const totalDebts = useMemo(() => transactions?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [transactions]);
             
@@ -1782,8 +1784,8 @@
                         <i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها اليوم (حتى لو لإيصالات قديمة)">
-                            <i className="ph-fill ph-money text-base sm:text-lg"></i> يومية اليوم: {formatCurrency(currentTotalCollected)}
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها في اليوم المحدد (حتى لو لإيصالات قديمة)">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}
                         </span>
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm">
                             <i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية
@@ -2194,8 +2196,10 @@
                 });
             }
 
-            const todayRevenue = calculatePeriodRevenue(weddings, new Date(), 'day');
-            const currentTotalCollected = todayRevenue.total;
+            const targetRevenueDate = filterDate ? new Date(filterDate) : new Date();
+            const dayRevenue = calculatePeriodRevenue(weddings, targetRevenueDate, 'day');
+            const currentTotalCollected = dayRevenue.total;
+            const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
 
             const totalDebts = useMemo(() => weddings?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [weddings]);
             
@@ -2258,8 +2262,8 @@
                         <i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها اليوم (حتى لو لإيصالات قديمة)">
-                            <i className="ph-fill ph-money text-base sm:text-lg"></i> يومية اليوم: {formatCurrency(currentTotalCollected)}
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm" title="التحصيل يشمل أي مبالغ تم سدادها في اليوم المحدد (حتى لو لإيصالات قديمة)">
+                            <i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}
                         </span>
                         <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm">
                             <i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز
