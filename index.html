@@ -3,32 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mrakby Studio - الإدارة والتتبع</title>
+    <title>Mrakby Studio - ستوديو المراكبى</title>
     
-    <!-- معلومات المشاركة على وسائل التواصل الاجتماعي (Open Graph & Twitter Cards) -->
     <meta property="og:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta property="og:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية. ذكرياتك بأمان معنا.">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiGz9iKT4WdocPL9Unp9Cq6zsSspk2KnQoBYgvXeN7WI1iTcHwGfjJg2fskTB84ABtx5-Ui1izCDxnAXRHDnJsjiSYBeK0GeQMmu7UiMrf4CA8vQoUI3f-YRFJfnT3rfRImF-CAU9E8MPO2BElRYW-jIL7oePl8AcVDu3HiHBMh_A-jNKPFYPcZfHTlG6k/s16000/1.jpg">
     <meta property="og:type" content="website">
     
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="ستوديو المراكبي - بوابة العملاء">
-    <meta name="twitter:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية.">
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1200&auto=format&fit=crop">
-
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23eab308'%3E%3Cpath d='M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z'/%3E%3C/svg%3E">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
@@ -47,17 +37,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         
-        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{
-            -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
-            -webkit-text-fill-color: white !important;
-        }
-
+        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{ -webkit-box-shadow: 0 0 0 30px #020617 inset !important; -webkit-text-fill-color: white !important; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-        
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
     </style>
@@ -91,45 +76,20 @@
           { id: 6, label: 'تم التسليم', icon: 'ph-package', activeClass: 'bg-purple-900/40 text-purple-400 border-purple-500/50 shadow-lg shadow-purple-900/20', inactiveClass: 'bg-slate-900 text-slate-500 border-slate-800 hover:bg-slate-800', clientIconCompleted: 'bg-purple-500 text-white shadow-lg shadow-purple-500/40 border-purple-900', clientCardCurrent: 'bg-purple-900/20 border-purple-500/50 shadow-lg shadow-purple-900/20', clientTextCurrent: 'text-purple-400' }
         ];
 
-        const DEFAULT_SERVICES = [
-          { name: "صورة شخصية", price: 70, desc: "مقاس 4x6 استلام بعد يوم من تاريخ التصوير" },
-          { name: "صورة شخصية فورى", price: 90, desc: "استلام فورى بعد 10 دقائق" },
-          { name: "صورة شخصية كارت", price: 70, desc: "مقاس الكارت 15x20 تسليم بعد يومين" },
-          { name: "صور فون مقاس 10x15", price: 10, desc: "طباعه من الموبايل السعر لعدد اكتر من 10 صور" },
-          { name: "صورة شخصيه", price: 45, desc: "تسليم موبايل فقط" }
-        ];
-
-        const DEFAULT_PRODUCTS = [
-          { name: "طابلوه خشب مقاس 20x30", price: 130, wholesalePrice: 90, totalQty: 10, desc: "" },
-          { name: "طابلوه خشب مقاس 30x40", price: 180, wholesalePrice: 130, totalQty: 10, desc: "" },
-          { name: "طابلوه خشب مقاس 40x50", price: 280, wholesalePrice: 200, totalQty: 10, desc: "" },
-          { name: "طابلوه خشب مقاس 50x70", price: 400, wholesalePrice: 300, totalQty: 5, desc: "" },
-          { name: "برواز مقاس A4", price: 100, wholesalePrice: 60, totalQty: 20, desc: "برواز جاهز" },
-          { name: "ألبوم صور 100 صورة", price: 150, wholesalePrice: 100, totalQty: 15, desc: "ألبوم جيوب" }
-        ];
-
-        const DEFAULT_WEDDING_PACKAGES = [
-          { name: "باقة فضية", price: 4000, desc: "فوتوسيشن قاعة + البوم ديجيتال" },
-          { name: "باقة ذهبية", price: 7000, desc: "تغطية كاملة + فيديو + ألبوم ديجيتال كبير + تابلوه" },
-          { name: "باقة ماسية", price: 12000, desc: "كاميرتين + فيديو درون + 2 ألبوم + 2 تابلوه خشب" }
-        ];
-
-        const DEFAULT_ADDON_TEMPLATES = [
-          { name: "تصوير حنة", price: 1500, desc: "" },
-          { name: "فيديو كتب كتاب", price: 2000, desc: "" },
-          { name: "ألبوم ميني إضافي", price: 500, desc: "مقاس صغير" }
-        ];
-
-        const DEFAULT_EXPENSE_CATEGORIES = [
-          "أحبار وطباعة", "ورق صور", "صيانة كاميرات/معدات", "إيجار الاستوديو", "كهرباء ومرافق", "رواتب مساعدين", "ألبومات زفاف", "براويز وتابلوهات", "هدايا للعملاء", "مصاريف زفاف أخرى", "نثريات"
-        ];
-
+        const DEFAULT_SERVICES = [{ name: "صورة شخصية", price: 70, desc: "مقاس 4x6 استلام بعد يوم من تاريخ التصوير" }, { name: "صورة شخصية فورى", price: 90, desc: "استلام فورى بعد 10 دقائق" }, { name: "صورة شخصية كارت", price: 70, desc: "مقاس الكارت 15x20 تسليم بعد يومين" }, { name: "صور فون مقاس 10x15", price: 10, desc: "طباعه من الموبايل السعر لعدد اكتر من 10 صور" }, { name: "صورة شخصيه", price: 45, desc: "تسليم موبايل فقط" }];
+        const DEFAULT_PRODUCTS = [{ name: "طابلوه خشب مقاس 20x30", price: 130, wholesalePrice: 90, totalQty: 10, desc: "" }, { name: "طابلوه خشب مقاس 30x40", price: 180, wholesalePrice: 130, totalQty: 10, desc: "" }, { name: "طابلوه خشب مقاس 40x50", price: 280, wholesalePrice: 200, totalQty: 10, desc: "" }, { name: "طابلوه خشب مقاس 50x70", price: 400, wholesalePrice: 300, totalQty: 5, desc: "" }, { name: "برواز مقاس A4", price: 100, wholesalePrice: 60, totalQty: 20, desc: "برواز جاهز" }, { name: "ألبوم صور 100 صورة", price: 150, wholesalePrice: 100, totalQty: 15, desc: "ألبوم جيوب" }];
+        const DEFAULT_WEDDING_PACKAGES = [{ name: "باقة فضية", price: 4000, desc: "فوتوسيشن قاعة + البوم ديجيتال" }, { name: "باقة ذهبية", price: 7000, desc: "تغطية كاملة + فيديو + ألبوم ديجيتال كبير + تابلوه" }, { name: "باقة ماسية", price: 12000, desc: "كاميرتين + فيديو درون + 2 ألبوم + 2 تابلوه خشب" }];
+        const DEFAULT_ADDON_TEMPLATES = [{ name: "تصوير حنة", price: 1500, desc: "" }, { name: "فيديو كتب كتاب", price: 2000, desc: "" }, { name: "ألبوم ميني إضافي", price: 500, desc: "مقاس صغير" }];
+        const DEFAULT_EXPENSE_CATEGORIES = ["أحبار وطباعة", "ورق صور", "صيانة كاميرات/معدات", "إيجار الاستوديو", "كهرباء ومرافق", "رواتب مساعدين", "ألبومات زفاف", "براويز وتابلوهات", "هدايا للعملاء", "مصاريف زفاف أخرى", "نثريات"];
         const DEFAULT_PROMOTIONS = [
           { id: '1', title: 'خصم التابلوهات', shortDesc: 'خصم 15% على جميع التابلوهات الخشب', fullDesc: 'استمتع بخصم 15% عند طلب أي تابلوه خشب مقاس 30x40 أو أكبر. زيّن جدرانك بأجمل ذكرياتك.', discount: 'خصم 15%', icon: 'ph-image', color: 'amber', images: [] },
-          { id: '2', title: 'عرض ألبومات الزفاف', shortDesc: 'خصم 20% على الألبومات الميني', fullDesc: 'لأن ذكرياتك تهمنا، احصل على ألبوم ميني إضافي بخصم 20% عند استلام صور زفافك لتشاركه مع عائلتك.', discount: 'خصم 20%', icon: 'ph-book-open', color: 'pink', images: [] },
-          { id: '3', title: 'جلسات التصوير', shortDesc: 'صورة كارت هدية', fullDesc: 'عند حجز جلسة تصوير كاجوال، احصل على صورة كارت 15x20 مطبوعة مجاناً كهدية من الاستوديو.', discount: 'هدية مجانية', icon: 'ph-camera', color: 'blue', images: [] }
+          { id: '2', title: 'عرض ألبومات الزفاف', shortDesc: 'خصم 20% على الألبومات الميني', fullDesc: 'لأن ذكرياتك تهمنا، احصل على ألبوم ميني إضافي بخصم 20% عند استلام صور زفافك لتشاركه مع عائلتك.', discount: 'خصم 20%', icon: 'ph-book-open', color: 'pink', images: [] }
         ];
-
+        const DEFAULT_PORTAL_CARDS = [
+            { id: 'p1', title: "براويز خشبية", desc: "أضف لمسة جمالية لصورك", price: "يبدأ من 100 ج.م", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400&auto=format&fit=crop" },
+            { id: 'p2', title: "مجات حرارية", desc: "هدية مميزة لمن تحب", price: "يبدأ من 80 ج.م", image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop" },
+            { id: 'p3', title: "ألبومات ديجيتال", desc: "احفظ ذكرياتك بأناقة", price: "يبدأ من 150 ج.م", image: "https://images.unsplash.com/photo-1544665431-7b0b6e9b46ec?q=80&w=400&auto=format&fit=crop" }
+        ];
         const DEFAULT_WA_TEMPLATES = {
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م",
@@ -141,17 +101,8 @@
           tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨"
         };
 
-        const defaultFirebaseConfig = {
-          apiKey: "AIzaSyCI0L2fO4_bdltYF7Hddjcxa6seSDbrMwc",
-          authDomain: "st.elmrakby@gmail.com",
-          projectId: "studio-noot",
-          storageBucket: "studio-noot.firebasestorage.app",
-          messagingSenderId: "376391287753",
-          appId: "1:376391287753:web:58219ac850bde7e2a79e18"
-        };
-        
+        const defaultFirebaseConfig = { apiKey: "AIzaSyCI0L2fO4_bdltYF7Hddjcxa6seSDbrMwc", authDomain: "st.elmrakby@gmail.com", projectId: "studio-noot", storageBucket: "studio-noot.firebasestorage.app", messagingSenderId: "376391287753", appId: "1:376391287753:web:58219ac850bde7e2a79e18" };
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -161,22 +112,9 @@
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
         const formatDateOnly = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('ar-EG') : '';
         const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : '';
-        const formatTimeOnly = (dateStr) => {
-             if(!dateStr) return '';
-             const d = new Date(dateStr);
-             if(isNaN(d.getTime())) return dateStr; 
-             return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-        };
-
-        const getDiffDays = (dateStr) => {
-            if (!dateStr) return null;
-            const target = new Date(dateStr);
-            const today = new Date();
-            target.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-            return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
-        };
-
+        const formatTimeOnly = (dateStr) => { if(!dateStr) return ''; const d = new Date(dateStr); if(isNaN(d.getTime())) return dateStr; return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); };
+        const getDiffDays = (dateStr) => { if (!dateStr) return null; const target = new Date(dateStr); const today = new Date(); target.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0); return Math.ceil((target - today) / (1000 * 60 * 60 * 24)); };
+        
         const getReqsText = (txn) => {
             if (txn.type === 'wedding') {
                 const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : 'بدون باقة محددة');
@@ -189,24 +127,13 @@
 
         const checkAndCleanExpiredPhotos = async (txn, db, storage) => {
             if (!txn || !txn.uploadedPhotos || txn.uploadedPhotos.length === 0) return txn;
-            let hasExpired = false;
-            const validPhotos = [];
-            const now = Date.now();
-
+            let hasExpired = false; const validPhotos = []; const now = Date.now();
             for (const photo of txn.uploadedPhotos) {
                 if (photo.expiryTimestamp && now > photo.expiryTimestamp) {
                     hasExpired = true;
-                    if (photo.path) {
-                        try {
-                            const storageRef = ref(storage, photo.path);
-                            await deleteObject(storageRef);
-                        } catch (e) {}
-                    }
-                } else {
-                    validPhotos.push(photo);
-                }
+                    if (photo.path) { try { await deleteObject(ref(storage, photo.path)); } catch (e) {} }
+                } else { validPhotos.push(photo); }
             }
-
             if (hasExpired) {
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                 const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
@@ -219,19 +146,14 @@
 
         const processImage = (file, maxWidth = 800) => {
             return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
+                    const img = new Image(); img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let scaleSize = 1;
-                        if (img.width > maxWidth) scaleSize = maxWidth / img.width;
-                        canvas.width = img.width * scaleSize;
-                        canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        let scaleSize = 1; if (img.width > maxWidth) scaleSize = maxWidth / img.width;
+                        canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
                     };
                 };
@@ -241,33 +163,14 @@
         const generateWA_Message = (templateKey, txn, settings, isWedding = false) => {
             let msg = settings.waTemplates[templateKey] || "";
             const clientName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
-            
             let reqs = '';
             if (isWedding) {
                 const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : '');
                 if (pkgs) reqs += `الباقات: ${pkgs}\n`;
                 if (txn.weddingDate) reqs += `موعد الزفاف: ${formatDateOnly(txn.weddingDate)}\n`;
-                if (txn.location) reqs += `مكان التصوير: ${txn.location}\n`;
-                if (txn.makeupArtist) reqs += `الميك أب: ${txn.makeupArtist}\n`;
-                if (txn.leaveTime) reqs += `وقت الخروج: ${txn.leaveTime}\n`;
-                if (txn.sessionType) reqs += `نوع السيشن: ${txn.sessionType}\n`;
-                if (txn.casualShootDate) reqs += `تصوير الكاجوال: ${formatDateOnly(txn.casualShootDate)}\n`;
-                if (txn.groomAddress) reqs += `عنوان العريس: ${txn.groomAddress}\n`;
                 if (txn.addons?.length > 0) reqs += `إضافات أخرى: ${txn.addons.map(a => `${a.name}${a.notes ? ' ('+a.notes+')' : ''}`).join(' + ')}\n`;
-            } else {
-                reqs = txn.requirements || 'خدمات تصوير';
-            }
-
-            msg = msg.replace(/{name}/g, clientName || 'العميل');
-            msg = msg.replace(/{receipt}/g, txn.receiptNo || '');
-            msg = msg.replace(/{total}/g, txn.total || 0);
-            msg = msg.replace(/{paid}/g, txn.paid || 0);
-            msg = msg.replace(/{remaining}/g, txn.remaining || 0);
-            msg = msg.replace(/{services}/g, reqs);
-            msg = msg.replace(/{studio}/g, settings.studioName || 'الاستوديو');
-            msg = msg.replace(/{date}/g, formatDateOnly(txn.dateTime));
-            msg = msg.replace(/{time}/g, formatTimeOnly(txn.dateTime));
-            
+            } else { reqs = txn.requirements || 'خدمات تصوير'; }
+            msg = msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime));
             const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
             msg = msg.replace(/{track_url}/g, trackUrl);
             return msg;
@@ -283,43 +186,12 @@
 
         const addToCalendar = (txn) => {
             if (!txn.weddingDate) return false;
-            let description = `✨ تفاصيل حجز الزفاف ✨\n──────────────────\n`;
-            if (txn.groomName || txn.brideName) description += `🤵👰 العروسين: ${txn.groomName || ''} و ${txn.brideName || ''}\n`.trim();
-            if (txn.phone) description += `📱 الهاتف: ${txn.phone}\n`;
-            if (txn.location) description += `📍 اللوكيشن/القاعة: ${txn.location}\n`;
-            if (txn.groomAddress) description += `🏠 عنوان العريس: ${txn.groomAddress}\n\n⏰ المواعيد والترتيبات\n──────────────────\n`;
-            if (txn.makeupArtist) description += `💄 الميك أب: ${txn.makeupArtist}\n`;
-            if (txn.leaveTime) description += `🚗 وقت الخروج: ${txn.leaveTime}\n`;
-            if (txn.sessionType) description += `📸 نوع السيشن: ${txn.sessionType}\n`;
-            if (txn.casualShootDate) description += `👕 تصوير الكاجوال: ${txn.casualShootDate}\n`;
-
-            let pkgs = txn.packages?.length > 0 ? txn.packages.map(p => p.name).join(' + ') : (txn.package ? txn.package.name : '');
-            let addonsText = txn.addons?.length > 0 ? txn.addons.map(a => a.name).join(' + ') : '';
-
-            if (pkgs || addonsText) {
-                description += `\n💼 الباقات والإضافات\n──────────────────\n`;
-                if (pkgs) description += `📦 الباقات: ${pkgs}\n`;
-                if (addonsText) description += `➕ إضافات: ${addonsText}\n`;
-            }
-            
-            description += `\n💰 الحسابات\n──────────────────\n💵 الإجمالي: ${txn.total} ج.م\n✅ المدفوع: ${txn.paid} ج.م\n🔴 الباقي: ${txn.remaining} ج.م\n`;
-            description += `\n🔗 رابط تتبع العميل:\n${window.location.href.split('?')[0]}?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=w`;
-
-            let startStr = '', endStr = '';
-            if (txn.leaveTime) {
-                const startDate = new Date(`${txn.weddingDate}T${txn.leaveTime}`);
-                const endDate = new Date(startDate.getTime() + 5 * 60 * 60 * 1000); 
-                const f = (date) => date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0') + 'T' + String(date.getHours()).padStart(2, '0') + String(date.getMinutes()).padStart(2, '0') + '00';
-                startStr = f(startDate); endStr = f(endDate);
-            } else {
-                startStr = txn.weddingDate.replace(/-/g, '');
-                const nextDay = new Date(txn.weddingDate); nextDay.setDate(nextDay.getDate() + 1);
-                endStr = nextDay.getFullYear() + String(nextDay.getMonth() + 1).padStart(2, '0') + String(nextDay.getDate()).padStart(2, '0');
-            }
-
-            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`حجز زفاف: ${txn.groomName || ''} و ${txn.brideName || ''}`.trim() || 'حجز زفاف جديد')}&dates=${startStr}/${endStr}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(txn.location || '')}`;
-            window.open(url, '_blank');
-            return true;
+            let description = `✨ تفاصيل حجز الزفاف ✨\n──────────────────\n🤵👰 العروسين: ${txn.groomName || ''} و ${txn.brideName || ''}\n📱 الهاتف: ${txn.phone}\n`;
+            let startStr = txn.weddingDate.replace(/-/g, '');
+            const nextDay = new Date(txn.weddingDate); nextDay.setDate(nextDay.getDate() + 1);
+            let endStr = nextDay.getFullYear() + String(nextDay.getMonth() + 1).padStart(2, '0') + String(nextDay.getDate()).padStart(2, '0');
+            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`حجز زفاف: ${txn.groomName || ''} و ${txn.brideName || ''}`)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(description)}`;
+            window.open(url, '_blank'); return true;
         };
 
         const getTransactionStatuses = (txn) => {
@@ -338,15 +210,13 @@
                     rec.payments.forEach(p => {
                         const pDate = new Date(p.date);
                         if ((period === 'day' && pDate.toDateString() === targetDateObj.toDateString()) || (period === 'month' && pDate.getMonth() === targetDateObj.getMonth() && pDate.getFullYear() === targetDateObj.getFullYear())) {
-                            total += p.amount;
-                            if (p.method === 'electronic') electronic += p.amount; else cash += p.amount;
+                            total += p.amount; if (p.method === 'electronic') electronic += p.amount; else cash += p.amount;
                         }
                     });
                 } else {
                     const rDate = new Date(rec.dateTime);
                     if ((period === 'day' && rDate.toDateString() === targetDateObj.toDateString()) || (period === 'month' && rDate.getMonth() === targetDateObj.getMonth() && rDate.getFullYear() === targetDateObj.getFullYear())) {
-                        const recTotalPaid = parseFloat(rec.paid) || 0;
-                        const recElecPaid = parseFloat(rec.electronicPaid) || 0;
+                        const recTotalPaid = parseFloat(rec.paid) || 0; const recElecPaid = parseFloat(rec.electronicPaid) || 0;
                         total += recTotalPaid; electronic += recElecPaid; cash += (recTotalPaid - recElecPaid);
                     }
                 }
@@ -355,18 +225,12 @@
         };
 
         const requestNotificationPermission = () => { if (Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission(); };
-        const showBrowserNotification = (title, body) => {
-            if (Notification.permission === "granted") new Notification(title, { body: body, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23eab308"%3E%3Cpath d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/%3E%3C/svg%3E' });
-        };
+        const showBrowserNotification = (title, body) => { if (Notification.permission === "granted") new Notification(title, { body: body, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23eab308"%3E%3Cpath d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/%3E%3C/svg%3E' }); };
 
         // --- UI Components ---
         const LoginScreen = ({ validPassword, onLogin }) => {
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (password === validPassword) onLogin(); else setError('كلمة المرور غير صحيحة');
-            };
+            const [password, setPassword] = useState(''); const [error, setError] = useState('');
+            const handleSubmit = (e) => { e.preventDefault(); if (password === validPassword) onLogin(); else setError('كلمة المرور غير صحيحة'); };
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-4">
                     <div className="bg-slate-900 p-8 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-sm text-center relative overflow-hidden">
@@ -375,10 +239,7 @@
                         <h2 className="text-2xl font-black mb-2 text-white">نظام الإدارة والتتبع</h2>
                         <p className="text-slate-400 text-sm mb-8">الرجاء إدخال كلمة المرور للمتابعة</p>
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div>
-                                <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(''); }} placeholder="كلمة المرور..." className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-yellow-500 outline-none text-center font-black tracking-widest text-xl shadow-inner transition-colors" autoFocus />
-                                {error && <p className="text-red-400 text-xs font-bold mt-3 bg-red-950/40 p-2 rounded-lg border border-red-900/50 flex items-center justify-center gap-1"><i className="ph ph-warning-circle text-base"></i> {error}</p>}
-                            </div>
+                            <div><input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(''); }} placeholder="كلمة المرور..." className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-yellow-500 outline-none text-center font-black tracking-widest text-xl shadow-inner transition-colors" autoFocus />{error && <p className="text-red-400 text-xs font-bold mt-3 bg-red-950/40 p-2 rounded-lg border border-red-900/50 flex items-center justify-center gap-1"><i className="ph ph-warning-circle text-base"></i> {error}</p>}</div>
                             <button type="submit" className="w-full bg-gradient-to-l from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-slate-900 font-black py-4 rounded-xl shadow-lg shadow-yellow-900/20 transition-all text-lg flex justify-center items-center gap-2"><i className="ph-bold ph-sign-in text-xl"></i> تسجيل الدخول</button>
                         </form>
                         <div className="mt-6 pt-6 border-t border-slate-800">
@@ -392,78 +253,36 @@
 
         const RetargetingModal = ({ allRecords, settings, onClose }) => {
             const [message, setMessage] = useState(`أهلاً بك 🌟\nبمناسبة مرور فترة على زيارتكم لـ ${settings.studioName}، يسعدنا أن نقدم لكم خصم حصري على جلسات التصوير والمطبوعات.\nننتظركم لتوثيق لحظاتكم السعيدة! 📸`);
-            
             const uniqueCustomers = useMemo(() => {
                 const map = new Map();
                 allRecords.forEach(t => {
                     if (!t.phone) return;
-                    if (!map.has(t.phone)) {
-                        map.set(t.phone, {
-                            phone: t.phone,
-                            name: t.clientName || t.groomName || 'عميل',
-                            visits: 1,
-                            lastVisit: t.dateTime
-                        });
-                    } else {
-                        const existing = map.get(t.phone);
-                        existing.visits += 1;
-                        if (new Date(t.dateTime) > new Date(existing.lastVisit)) existing.lastVisit = t.dateTime;
-                    }
+                    if (!map.has(t.phone)) map.set(t.phone, { phone: t.phone, name: t.clientName || t.groomName || 'عميل', visits: 1, lastVisit: t.dateTime });
+                    else { const existing = map.get(t.phone); existing.visits += 1; if (new Date(t.dateTime) > new Date(existing.lastVisit)) existing.lastVisit = t.dateTime; }
                 });
                 return Array.from(map.values()).sort((a,b) => new Date(b.lastVisit) - new Date(a.lastVisit));
             }, [allRecords]);
-
-            const copyAllNumbers = () => {
-                const numbers = uniqueCustomers.map(c => c.phone).join(',');
-                navigator.clipboard.writeText(numbers).then(() => {
-                    alert("تم نسخ جميع الأرقام بنجاح! يمكنك لصقها في قائمة رسائل جماعية (Broadcast) على واتساب.");
-                });
-            };
-
+            const copyAllNumbers = () => { navigator.clipboard.writeText(uniqueCustomers.map(c => c.phone).join(',')).then(() => alert("تم نسخ جميع الأرقام بنجاح! يمكنك لصقها في قائمة رسائل جماعية (Broadcast) على واتساب.")); };
             return (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
                     <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
-                            <h2 className="text-xl font-black text-yellow-400 flex items-center gap-2">
-                                <i className="ph-fill ph-megaphone text-2xl"></i> إعادة استهداف العملاء ({uniqueCustomers.length})
-                            </h2>
+                            <h2 className="text-xl font-black text-yellow-400 flex items-center gap-2"><i className="ph-fill ph-megaphone text-2xl"></i> إعادة استهداف العملاء ({uniqueCustomers.length})</h2>
                             <button onClick={onClose} className="text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
                         </div>
-                        
                         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
                             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner">
                                 <label className="block text-sm font-bold text-slate-300 mb-2">الرسالة التسويقية الموحدة:</label>
-                                <textarea 
-                                    rows="4" 
-                                    value={message} 
-                                    onChange={(e) => setMessage(e.target.value)} 
-                                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-yellow-500 transition-colors resize-y custom-scrollbar"
-                                />
-                                <button onClick={copyAllNumbers} className="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
-                                    <i className="ph-fill ph-copy text-lg"></i> نسخ جميع الأرقام (لرسائل الـ Broadcast)
-                                </button>
+                                <textarea rows="4" value={message} onChange={(e) => setMessage(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-yellow-500 transition-colors resize-y custom-scrollbar" />
+                                <button onClick={copyAllNumbers} className="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"><i className="ph-fill ph-copy text-lg"></i> نسخ جميع الأرقام (لرسائل الـ Broadcast)</button>
                             </div>
-
                             <div>
                                 <h3 className="font-bold text-slate-300 mb-3 text-sm border-b border-slate-800 pb-2">أو الإرسال الفردي السريع:</h3>
                                 <div className="space-y-2">
                                     {uniqueCustomers.map((cust, idx) => (
                                         <div key={idx} className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-colors">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-sm text-slate-200">{cust.name}</span>
-                                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-mono">
-                                                    <span>📞 {cust.phone}</span>
-                                                    <span>•</span>
-                                                    <span className="text-yellow-500">{cust.visits} زيارات</span>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => openWhatsApp(cust.phone, message)}
-                                                className="bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0"
-                                                title="إرسال رسالة واتساب"
-                                            >
-                                                <i className="ph-fill ph-paper-plane-right text-lg"></i>
-                                            </button>
+                                            <div className="flex flex-col"><span className="font-bold text-sm text-slate-200">{cust.name}</span><div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-mono"><span>📞 {cust.phone}</span><span>•</span><span className="text-yellow-500">{cust.visits} زيارات</span></div></div>
+                                            <button onClick={() => openWhatsApp(cust.phone, message)} className="bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0" title="إرسال رسالة واتساب"><i className="ph-fill ph-paper-plane-right text-lg"></i></button>
                                         </div>
                                     ))}
                                 </div>
@@ -474,175 +293,181 @@
             );
         };
 
+        const PortalCardsSettingsList = ({title, items, onAdd, onRemove}) => {
+            const [newTitle, setNewTitle] = useState(''); const [newDesc, setNewDesc] = useState(''); const [newPrice, setNewPrice] = useState(''); const [newImage, setNewImage] = useState(''); const [isUploading, setIsUploading] = useState(false);
+            const handleImageUpload = async (e) => { const file = e.target.files[0]; if (!file) return; setIsUploading(true); const processed = await processImage(file, 600); setNewImage(processed); setIsUploading(false); };
+            const handleSave = () => { if(newTitle && newImage){ onAdd({ id: Date.now().toString(), title: newTitle, desc: newDesc, price: newPrice, image: newImage }); setNewTitle(''); setNewDesc(''); setNewPrice(''); setNewImage(''); } };
+
+            return (
+              <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
+                <h3 className="font-bold text-slate-100 mb-4 border-b border-slate-800 pb-2">{title}</h3>
+                <div className="flex flex-col gap-3 mb-5 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <div className="flex gap-3">
+                      <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center bg-slate-900 shrink-0 overflow-hidden group">
+                          {newImage ? <><img src={newImage} className="w-full h-full object-cover" /><button onClick={()=>setNewImage('')} className="absolute inset-0 bg-red-900/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-white"><i className="ph ph-trash text-xl"></i></button></> : (
+                              <label className="cursor-pointer flex items-center justify-center w-full h-full text-slate-500 hover:text-blue-400 transition-colors">
+                                  {isUploading ? <i className="ph ph-spinner animate-spin text-2xl"></i> : <i className="ph ph-image text-2xl"></i>}
+                                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                              </label>
+                          )}
+                      </div>
+                      <div className="flex-1 flex flex-col gap-2">
+                          <input type="text" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className="p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-sm" placeholder="اسم المنتج/الخدمة (مثل: مج سحري)"/>
+                          <input type="text" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-sm" placeholder="السعر (مثل: يبدأ من 80 ج.م)"/>
+                      </div>
+                  </div>
+                  <input type="text" value={newDesc} onChange={e=>setNewDesc(e.target.value)} className="p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-sm" placeholder="وصف قصير وجذاب..."/>
+                  <button onClick={handleSave} disabled={!newTitle || !newImage} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-2"><i className="ph-bold ph-plus"></i> إضافة البطاقة</button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1 pb-1">
+                  {items.map((item, idx) => (
+                    <div key={item.id || idx} className="relative h-32 rounded-xl overflow-hidden border border-slate-700 shadow-md group">
+                      <img src={item.image} className="w-full h-full object-cover opacity-60" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent flex flex-col justify-end p-2">
+                          <span className="text-white text-xs font-black truncate">{item.title}</span>
+                          <span className="text-yellow-400 text-[10px] font-bold mt-0.5">{item.price}</span>
+                      </div>
+                      <button onClick={()=>onRemove(idx)} className="absolute top-1 right-1 bg-red-600/80 text-white w-6 h-6 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"><i className="ph ph-trash"></i></button>
+                    </div>
+                  ))}
+                  {items.length === 0 && <p className="col-span-full text-center text-slate-500 py-4 text-sm">لا توجد بطاقات مضافة. ستظهر البطاقات الافتراضية للعملاء.</p>}
+                </div>
+              </div>
+            );
+        };
+
         const ClientPortalScreen = ({ settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio }) => {
-            const [phone, setPhone] = useState('');
-            const [hasSearched, setHasSearched] = useState(false);
-            const [results, setResults] = useState([]);
-            const [errorMsg, setErrorMsg] = useState('');
-            const [showPhoneInput, setShowPhoneInput] = useState(false);
-            const [selectedPromoModal, setSelectedPromoModal] = useState(null);
-            const [promoImgIndex, setPromoImgIndex] = useState(0);
-            const [fullscreenPromoImg, setFullscreenPromoImg] = useState(null);
-            
+            const [phone, setPhone] = useState(''); const [hasSearched, setHasSearched] = useState(false); const [results, setResults] = useState([]); const [errorMsg, setErrorMsg] = useState(''); const [showPhoneInput, setShowPhoneInput] = useState(false);
+            const [selectedPromoModal, setSelectedPromoModal] = useState(null); const [selectedPortalCard, setSelectedPortalCard] = useState(null);
             const [hasLiked, setHasLiked] = useState(localStorage.getItem('studio_liked') === 'true');
 
-            const handleLike = () => {
-                if(hasLiked) return;
-                setHasLiked(true);
-                localStorage.setItem('studio_liked', 'true');
-                onLikeStudio();
-            };
+            const handleLike = () => { if(hasLiked) return; setHasLiked(true); localStorage.setItem('studio_liked', 'true'); onLikeStudio(); };
 
             const handleSearch = (e) => {
-                e.preventDefault();
-                const cleanPhone = phone.trim();
+                e.preventDefault(); const cleanPhone = phone.trim();
                 if (!cleanPhone) { setErrorMsg('يرجى إدخال رقم الهاتف'); return; }
                 setErrorMsg('');
-                
-                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone);
-                all.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
-                
-                if (all.length > 0) {
-                    const target = all[0];
-                    window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=${target.type === 'wedding' ? 'w' : 't'}`;
-                    return;
-                }
+                const all = [...transactions, ...weddings].filter(t => t.phone === cleanPhone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
+                if (all.length > 0) { window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(all[0].receiptNo)}&type=${all[0].type === 'wedding' ? 'w' : 't'}`; return; }
                 setResults(all); setHasSearched(true);
             };
 
-            const promoColors = {
-                yellow: 'from-yellow-900/40 to-slate-900 border-yellow-500/30 text-yellow-400 bg-yellow-500/20',
-                pink: 'from-pink-900/40 to-slate-900 border-pink-500/30 text-pink-400 bg-pink-500/20',
-                blue: 'from-blue-900/40 to-slate-900 border-blue-500/30 text-blue-400 bg-blue-500/20',
-                amber: 'from-amber-900/40 to-slate-900 border-amber-500/30 text-amber-400 bg-amber-500/20'
-            };
+            const promoColors = { yellow: 'from-yellow-900/40 to-slate-900 border-yellow-500/30 text-yellow-400 bg-yellow-500/20', pink: 'from-pink-900/40 to-slate-900 border-pink-500/30 text-pink-400 bg-pink-500/20', blue: 'from-blue-900/40 to-slate-900 border-blue-500/30 text-blue-400 bg-blue-500/20', amber: 'from-amber-900/40 to-slate-900 border-amber-500/30 text-amber-400 bg-amber-500/20' };
+            const portalCardsToDisplay = settings.portalCards && settings.portalCards.length > 0 ? settings.portalCards : DEFAULT_PORTAL_CARDS;
 
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center py-10 px-4 text-slate-100">
                     <div className="w-full max-w-md animate-fadeIn">
-                        <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden flex flex-col items-center text-center group">
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden flex flex-col items-center text-center group">
                             <div className="absolute top-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-800 shadow-lg mb-5 bg-slate-900 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500">
-                                {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" alt="Studio Logo" /> : <i className="ph-fill ph-camera text-5xl text-yellow-500"></i>}
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-3 tracking-wide">{settings.studioName}</h1>
-                            <p className="text-slate-400 text-sm leading-relaxed max-w-sm font-bold mb-4">
-                                أهلاً بك في مساحتك الخاصة ✨ نحن هنا لتوثيق أجمل لحظاتك وتحويلها إلى ذكريات لا تُنسى.
-                            </p>
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-800 shadow-lg mb-4 bg-slate-900 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500">{settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" alt="Studio Logo" /> : <i className="ph-fill ph-camera text-5xl text-yellow-500"></i>}</div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-wide">{settings.studioName}</h1>
+                            <p className="text-slate-400 text-sm leading-relaxed max-w-sm font-bold mb-6">أهلاً بك في مساحتك الخاصة ✨ نحن هنا لتوثيق أجمل لحظاتك وتحويلها إلى ذكريات لا تُنسى.</p>
                             
-                            <div className="flex flex-col items-center gap-3 w-full border-t border-slate-800 pt-4 mt-2">
-                                {uniqueCustomersCount > 0 && (
-                                    <div className="flex items-center justify-center gap-2 bg-slate-950 border border-slate-800 px-4 py-2 rounded-full shadow-inner animate-fadeIn w-full" style={{animationDelay: '0.1s'}}>
-                                        <div className="flex -space-x-2 space-x-reverse shrink-0">
-                                            <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-user"></i></div>
-                                            <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-heart"></i></div>
-                                            <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-star"></i></div>
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-300 truncate">
-                                            انضم إلى أكثر من <span className="text-yellow-400 text-sm">{uniqueCustomersCount}</span> عميل وثقوا بنا 📸
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                <button onClick={handleLike} className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border transition-all shadow-lg w-full ${hasLiked ? 'bg-pink-950/50 border-pink-500/50 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-pink-400 hover:border-pink-500/50'}`}>
-                                    <i className={`${hasLiked ? 'ph-fill text-pink-500 scale-110' : 'ph'} ph-heart text-xl transition-transform ${!hasLiked && 'animate-bounce-slow'}`}></i>
-                                    <span className="font-bold text-sm">أعجبني ({studioLikes})</span>
-                                </button>
+                            <div className="flex justify-center items-center gap-4 sm:gap-6 w-full border-t border-slate-800/80 pt-5 mt-2 bg-slate-950/30 rounded-2xl p-4 shadow-inner">
+                                <div className="flex flex-col items-center"><span className="text-xl sm:text-2xl font-black text-white mb-1">{uniqueCustomersCount}</span><span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-users"></i> عميل</span></div>
+                                <div className="w-px h-8 bg-slate-800"></div>
+                                <div className="flex flex-col items-center"><span className="text-xl sm:text-2xl font-black text-yellow-400 mb-1">{settings.portalVisits || 1}</span><span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-eye"></i> زيارة</span></div>
+                                <div className="w-px h-8 bg-slate-800"></div>
+                                <div className="flex flex-col items-center"><span className="text-xl sm:text-2xl font-black text-pink-400 mb-1">{studioLikes}</span><span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-heart"></i> إعجاب</span></div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 w-full mt-5">
+                                <button onClick={handleLike} className={`flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border transition-all shadow-md text-[11px] sm:text-base font-bold ${hasLiked ? 'bg-pink-950/50 border-pink-500/50 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-pink-400 hover:border-pink-500/50 hover:bg-slate-800'}`}><i className={`${hasLiked ? 'ph-fill text-pink-500 scale-110' : 'ph'} ph-heart text-lg sm:text-xl transition-transform ${!hasLiked && 'animate-bounce-slow'}`}></i> أعجبني</button>
+                                <a href="https://www.facebook.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-blue-500/30 bg-blue-900/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-md text-[11px] sm:text-base font-bold"><i className="ph-fill ph-facebook-logo text-lg sm:text-xl"></i> فيسبوك</a>
+                                <a href="https://www.instagram.com/mrakbyph" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-pink-500/30 bg-pink-900/20 text-pink-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white hover:border-transparent transition-all shadow-md text-[11px] sm:text-base font-bold"><i className="ph-fill ph-instagram-logo text-lg sm:text-xl"></i> إنستجرام</a>
                             </div>
                         </div>
 
-                        {settings.promotions?.length > 0 && !showPhoneInput && (
-                            <div className="w-full mb-8 animate-fadeIn" style={{animationDelay: '0.2s'}}>
-                                <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2">
-                                    <i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك
-                                </h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {settings.promotions.map(promo => {
-                                        const colorSet = promoColors[promo.color || 'yellow'] || promoColors.yellow;
-                                        const [bg1, bg2, borderClass, textClass, iconBgClass] = colorSet.split(' ');
-                                        return (
-                                            <div key={promo.id} onClick={() => { setSelectedPromoModal(promo); setPromoImgIndex(0); }} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden pb-4`}>
-                                                {promo.images?.length > 0 && (
-                                                    <div className="-mx-4 -mt-4 mb-3 h-40 relative border-b border-slate-700/50 shrink-0">
-                                                        <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                                                    </div>
-                                                )}
-                                                <div className={`flex items-start gap-4 z-10 ${promo.images?.length > 0 ? '-mt-8' : ''}`}>
-                                                     <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0 shadow-lg border border-white/10 bg-slate-900`}>
-                                                         <i className={`ph-fill ${promo.icon} text-2xl`}></i>
-                                                     </div>
-                                                     <div className="flex-1 pt-1">
-                                                         <h4 className="font-bold text-slate-100">{promo.title}</h4>
-                                                         <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2 drop-shadow-md">{promo.shortDesc}</p>
-                                                         {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded border border-current/20`}>{promo.discount}</span>}
-                                                     </div>
-                                                </div>
+                        {!showPhoneInput && (
+                            <div className="w-full mb-8 animate-fadeIn" style={{animationDelay: '0.15s'}}>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                                    {portalCardsToDisplay.map(card => (
+                                        <div key={card.id} onClick={() => setSelectedPortalCard(card)} className="relative h-40 sm:h-44 rounded-2xl overflow-hidden border border-slate-700 shadow-lg group cursor-pointer bg-slate-900 flex flex-col justify-end hover:border-blue-500/50 transition-colors">
+                                            <img src={card.image} alt={card.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none"></div>
+                                            <div className="relative z-10 p-2 sm:p-3 flex flex-col items-center text-center">
+                                                <span className="text-white text-xs sm:text-sm font-black drop-shadow-md leading-tight">{card.title}</span>
+                                                <span className="text-slate-300 text-[9px] sm:text-[10px] font-bold mt-1 line-clamp-1">{card.desc}</span>
+                                                {card.price && <span className="text-yellow-400 text-[10px] sm:text-xs font-black mt-1.5 bg-slate-900/80 px-2 py-0.5 rounded backdrop-blur-sm border border-yellow-500/30">{card.price}</span>}
                                             </div>
-                                        )
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
+
+                                {settings.promotions?.length > 0 && (
+                                    <>
+                                        <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2"><i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك</h3>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {settings.promotions.map(promo => {
+                                                const colorSet = promoColors[promo.color || 'yellow'] || promoColors.yellow;
+                                                const [bg1, bg2, borderClass, textClass, iconBgClass] = colorSet.split(' ');
+                                                return (
+                                                    <div key={promo.id} onClick={() => setSelectedPromoModal(promo)} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden pb-4`}>
+                                                        {promo.images?.length > 0 && (
+                                                            <div className="-mx-4 -mt-4 mb-3 h-40 relative border-b border-slate-700/50 shrink-0 pointer-events-none">
+                                                                <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+                                                            </div>
+                                                        )}
+                                                        <div className={`flex items-start gap-4 z-10 ${promo.images?.length > 0 ? '-mt-8' : ''}`}>
+                                                             <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0 shadow-lg border border-white/10 bg-slate-900`}><i className={`ph-fill ${promo.icon} text-2xl`}></i></div>
+                                                             <div className="flex-1 pt-1"><h4 className="font-bold text-slate-100">{promo.title}</h4><p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2 drop-shadow-md">{promo.shortDesc}</p>{promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded border border-current/20`}>{promo.discount}</span>}</div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
 
                         {!showPhoneInput ? (
-                             <button onClick={() => setShowPhoneInput(true)} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 border border-blue-500/50 animate-fadeIn" style={{animationDelay: '0.4s'}}>
-                                  <i className="ph-fill ph-sign-in text-2xl"></i> الدخول لأرشيفك وطلباتك
-                             </button>
+                             <button onClick={() => setShowPhoneInput(true)} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 border border-blue-500/50 animate-fadeIn" style={{animationDelay: '0.4s'}}><i className="ph-fill ph-sign-in text-2xl"></i> الدخول لأرشيفك وطلباتك</button>
                         ) : (
                              <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl animate-fadeIn w-full relative">
                                   <button onClick={() => {setShowPhoneInput(false); setHasSearched(false); setResults([]);}} className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors"><i className="ph ph-arrow-right text-xl"></i> رجوع</button>
                                   <div className="text-center mb-6 mt-4">
-                                      <div className="bg-blue-950/30 p-4 rounded-2xl border border-blue-900/40 shadow-inner inline-block w-full">
-                                          <i className="ph-fill ph-shield-check text-blue-400 text-3xl mb-2"></i>
-                                          <p className="text-slate-300 text-sm leading-relaxed font-bold">مرحباً بك مجدداً 👋 يرجى إدخال رقم هاتفك للوصول الآمن إلى أرشيف صورك ومتابعة طلباتك الحالية.</p>
-                                      </div>
+                                      <div className="bg-blue-950/30 p-4 rounded-2xl border border-blue-900/40 shadow-inner inline-block w-full"><i className="ph-fill ph-shield-check text-blue-400 text-3xl mb-2"></i><p className="text-slate-300 text-sm leading-relaxed font-bold">مرحباً بك مجدداً 👋 يرجى إدخال رقم هاتفك للوصول الآمن إلى أرشيف صورك ومتابعة طلباتك الحالية.</p></div>
                                   </div>
                                   <form onSubmit={handleSearch} className="flex flex-col gap-4">
                                       {errorMsg && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded-xl text-center font-bold border border-red-900/50 animate-fadeIn">{errorMsg}</div>}
-                                      <div>
-                                          <label className="block text-sm font-bold text-slate-400 mb-2">رقم الهاتف المسجل لدينا:</label>
-                                          <div className="relative">
-                                              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="أدخل رقم الهاتف هنا..." className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors shadow-inner" required autoFocus />
-                                              <i className="ph-fill ph-phone absolute right-4 top-4 text-slate-500 text-xl"></i>
-                                          </div>
-                                      </div>
+                                      <div><label className="block text-sm font-bold text-slate-400 mb-2">رقم الهاتف المسجل لدينا:</label><div className="relative"><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="أدخل رقم الهاتف هنا..." className="w-full p-4 pr-12 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg font-mono transition-colors shadow-inner" required autoFocus /><i className="ph-fill ph-phone absolute right-4 top-4 text-slate-500 text-xl"></i></div></div>
                                       <button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 mt-2"><i className="ph-bold ph-magnifying-glass text-xl"></i> بحث ودخول</button>
                                   </form>
                                   {hasSearched && results.length === 0 && (
-                                      <div className="mt-6 bg-slate-950 p-5 rounded-2xl border border-red-900/40 text-center animate-fadeIn">
-                                          <i className="ph-fill ph-warning-circle text-4xl text-red-500 mb-2"></i>
-                                          <p className="text-white font-black text-base">لا يوجد طلب مسجل</p>
-                                          <p className="text-xs text-slate-400 mt-2 leading-relaxed">عذراً، لم نتمكن من العثور على أي طلب يطابق رقم الهاتف المدخل. تأكد من إدخال الرقم الصحيح المستخدم أثناء الحجز.</p>
-                                      </div>
+                                      <div className="mt-6 bg-slate-950 p-5 rounded-2xl border border-red-900/40 text-center animate-fadeIn"><i className="ph-fill ph-warning-circle text-4xl text-red-500 mb-2"></i><p className="text-white font-black text-base">لا يوجد طلب مسجل</p><p className="text-xs text-slate-400 mt-2 leading-relaxed">عذراً، لم نتمكن من العثور على أي طلب يطابق رقم الهاتف المدخل. تأكد من إدخال الرقم الصحيح المستخدم أثناء الحجز.</p></div>
                                   )}
                              </div>
                         )}
                         
+                        {/* Selected Portal Card Modal */}
+                        {selectedPortalCard && (
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPortalCard(null)}>
+                                <div className="bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                                    <div className="relative h-64 shrink-0">
+                                        <img src={selectedPortalCard.image} className="w-full h-full object-cover" alt={selectedPortalCard.title} />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+                                        <button onClick={() => setSelectedPortalCard(null)} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
+                                    </div>
+                                    <div className="p-6 flex flex-col gap-4">
+                                        <div className="flex justify-between items-start"><h2 className="text-2xl font-black text-white leading-tight">{selectedPortalCard.title}</h2>{selectedPortalCard.price && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap shrink-0">{selectedPortalCard.price}</span>}</div>
+                                        {selectedPortalCard.desc && <p className="text-slate-300 font-bold leading-relaxed">{selectedPortalCard.desc}</p>}
+                                        <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nمهتم جداً بتفاصيل/حجز: *${selectedPortalCard.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50 mt-2"><i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز/استفسر الآن</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Selected Promo Modal */}
                         {selectedPromoModal && (
                             <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
                                 <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                                     <div className="relative">
                                         {selectedPromoModal.images?.length > 0 ? (
-                                            <div className="w-full h-56 sm:h-72 relative group bg-slate-950">
-                                                <img 
-                                                    src={selectedPromoModal.images[promoImgIndex]} 
-                                                    className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-all" 
-                                                    alt={`صورة ${promoImgIndex + 1}`} 
-                                                    onClick={() => setFullscreenPromoImg(selectedPromoModal.images[promoImgIndex])}
-                                                    title="اضغط للتكبير"
-                                                />
-                                                {selectedPromoModal.images.length > 1 && (
-                                                    <>
-                                                        <button onClick={(e) => { e.stopPropagation(); setPromoImgIndex(prev => prev === 0 ? selectedPromoModal.images.length - 1 : prev - 1) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/90 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 border border-white/20 shadow-lg"><i className="ph-bold ph-caret-right text-lg"></i></button>
-                                                        <button onClick={(e) => { e.stopPropagation(); setPromoImgIndex(prev => prev === selectedPromoModal.images.length - 1 ? 0 : prev + 1) }} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/90 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 border border-white/20 shadow-lg"><i className="ph-bold ph-caret-left text-lg"></i></button>
-                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/40 px-2.5 py-1.5 rounded-full backdrop-blur-md">
-                                                            {selectedPromoModal.images.map((_, i) => (
-                                                                <button key={i} onClick={(e) => { e.stopPropagation(); setPromoImgIndex(i); }} className={`h-2 rounded-full transition-all ${i === promoImgIndex ? 'bg-yellow-400 w-4' : 'bg-white/60 hover:bg-white w-2'}`}></button>
-                                                            ))}
-                                                        </div>
-                                                    </>
-                                                )}
+                                            <div className="w-full h-56 sm:h-72 relative group bg-slate-950 pointer-events-none">
+                                                <img src={selectedPromoModal.images[0]} className="w-full h-full object-contain sm:object-cover transition-all" alt="Promo" />
                                             </div>
                                         ) : (
                                             <div className={`w-full h-32 bg-gradient-to-r ${promoColors[selectedPromoModal.color || 'yellow'].split(' ').slice(0,2).join(' ')} flex items-center justify-center`}><i className={`ph-fill ${selectedPromoModal.icon} text-6xl opacity-50`}></i></div>
@@ -650,10 +475,7 @@
                                         <button onClick={() => setSelectedPromoModal(null)} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
                                     </div>
                                     <div className="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 leading-tight"><i className={`ph-fill ${selectedPromoModal.icon} text-yellow-500 shrink-0`}></i> {selectedPromoModal.title}</h2>
-                                            {selectedPromoModal.discount && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap shrink-0">{selectedPromoModal.discount}</span>}
-                                        </div>
+                                        <div className="flex justify-between items-start mb-4"><h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 leading-tight"><i className={`ph-fill ${selectedPromoModal.icon} text-yellow-500 shrink-0`}></i> {selectedPromoModal.title}</h2>{selectedPromoModal.discount && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap shrink-0">{selectedPromoModal.discount}</span>}</div>
                                         <p className="text-slate-300 font-bold mb-4">{selectedPromoModal.shortDesc}</p>
                                         {selectedPromoModal.fullDesc && <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner"><p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p></div>}
                                         <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص العرض: *${selectedPromoModal.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50 mt-auto"><i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز العرض الآن</button>
@@ -661,7 +483,6 @@
                                 </div>
                             </div>
                         )}
-                        <ReceiptModal imageUrl={fullscreenPromoImg} onClose={() => setFullscreenPromoImg(null)} />
                     </div>
                 </div>
             );
@@ -682,36 +503,22 @@
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between items-center h-20">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">
-                        {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}
-                      </div>
-                      <div className="flex flex-col">
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1>
-                        <span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span>
-                      </div>
+                      <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">{settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}</div>
+                      <div className="flex flex-col"><h1 className="text-xl sm:text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1><span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span></div>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-4">
                         <div className="relative">
-                            <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-300 hover:text-yellow-400 transition-colors bg-slate-900 rounded-full border border-slate-800">
-                                <i className="ph-fill ph-bell text-xl"></i>
-                                {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg">{unreadCount}</span>}
-                            </button>
+                            <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-300 hover:text-yellow-400 transition-colors bg-slate-900 rounded-full border border-slate-800"><i className="ph-fill ph-bell text-xl"></i>{unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg">{unreadCount}</span>}</button>
                             {showNotif && (
                                 <div className="absolute left-0 lg:left-auto lg:right-0 mt-3 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col max-h-[400px]">
-                                    <div className="flex justify-between items-center mb-2 px-2 pb-2 border-b border-slate-700">
-                                        <span className="font-bold text-slate-200">التقييمات والآراء ({feedbacks.length})</span>
-                                        <button onClick={() => setShowNotif(false)} className="text-slate-400 hover:text-white"><i className="ph ph-x"></i></button>
-                                    </div>
+                                    <div className="flex justify-between items-center mb-2 px-2 pb-2 border-b border-slate-700"><span className="font-bold text-slate-200">التقييمات والآراء ({feedbacks.length})</span><button onClick={() => setShowNotif(false)} className="text-slate-400 hover:text-white"><i className="ph ph-x"></i></button></div>
                                     <div className="overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
                                         {feedbacks.length === 0 ? <p className="text-center text-slate-500 text-sm py-4">لا توجد تقييمات بعد.</p> : feedbacks.map(fb => (
                                                 <div key={fb.id} onClick={() => { onViewFeedback(fb); setShowNotif(false); }} className={`p-3 rounded-lg border cursor-pointer transition-colors ${!fb.adminReadFeedback ? 'bg-slate-700/50 border-yellow-500/50' : 'bg-slate-900 border-slate-700 hover:border-slate-500'}`}>
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <span className="font-bold text-sm text-slate-200">{fb.type === 'wedding' ? (fb.groomName + ' و ' + fb.brideName) : fb.clientName}</span>
-                                                        <div className="flex gap-0.5 text-yellow-500 text-xs" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < fb.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</div>
-                                                    </div>
+                                                    <div className="flex justify-between items-start mb-1"><span className="font-bold text-sm text-slate-200">{fb.type === 'wedding' ? (fb.groomName + ' و ' + fb.brideName) : fb.clientName}</span><div className="flex gap-0.5 text-yellow-500 text-xs" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < fb.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</div></div>
                                                     {fb.clientFeedback && <p className="text-xs text-slate-400 line-clamp-2">{fb.clientFeedback}</p>}
                                                 </div>
-                                            ))}
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -773,9 +580,7 @@
         };
 
         const ServicesSettingsList = ({title, items, onAdd, onRemove, colorTheme = 'blue'}) => {
-            const [newName, setNewName] = useState('');
-            const [newPrice, setNewPrice] = useState('');
-            const [newDesc, setNewDesc] = useState('');
+            const [newName, setNewName] = useState(''); const [newPrice, setNewPrice] = useState(''); const [newDesc, setNewDesc] = useState('');
             const handleEditClick = (item, idx) => { const obj = typeof item === 'string' ? {name: item, price: 0, desc: ''} : item; setNewName(obj.name); setNewPrice(obj.price); setNewDesc(obj.desc); onRemove(idx); };
             const isBlue = colorTheme === 'blue'; const isPink = colorTheme === 'pink';
             const colorClass = isBlue ? 'focus:border-blue-500' : isPink ? 'focus:border-pink-500' : 'focus:border-purple-500';
@@ -785,28 +590,16 @@
               <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                 <h3 className="font-bold text-slate-100 mb-4 border-b border-slate-800 pb-2">{title}</h3>
                 <div className="flex flex-col gap-3 mb-5">
-                  <div className="flex gap-2">
-                    <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="الاسم..."/>
-                    <input type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className={`w-24 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="السعر..."/>
-                  </div>
-                  <div className="flex gap-2">
-                    <input type="text" value={newDesc} onChange={e=>setNewDesc(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="تفاصيل صغيرة (اختياري)..."/>
-                    <button onClick={()=>{if(newName){onAdd({name:newName, price:parseFloat(newPrice)||0, desc:newDesc});setNewName('');setNewPrice('');setNewDesc('');}}} className={`${btnClass} text-white px-5 rounded-lg transition-colors flex items-center justify-center`}><i className="ph ph-plus text-xl"></i></button>
-                  </div>
+                  <div className="flex gap-2"><input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="الاسم..."/><input type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className={`w-24 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="السعر..."/></div>
+                  <div className="flex gap-2"><input type="text" value={newDesc} onChange={e=>setNewDesc(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="تفاصيل صغيرة (اختياري)..."/><button onClick={()=>{if(newName){onAdd({name:newName, price:parseFloat(newPrice)||0, desc:newDesc});setNewName('');setNewPrice('');setNewDesc('');}}} className={`${btnClass} text-white px-5 rounded-lg transition-colors flex items-center justify-center`}><i className="ph ph-plus text-xl"></i></button></div>
                 </div>
                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] custom-scrollbar pr-2">
                   {items.map((item, idx) => {
                     const srv = typeof item === 'string' ? {name: item, price: 0, desc: ''} : item;
                     return (
                     <div key={idx} className="bg-slate-800 p-3 rounded-xl flex justify-between items-start border border-slate-700">
-                      <div className="flex flex-col">
-                        <span className="text-slate-300 text-sm font-bold flex items-center gap-2">{srv.name} {srv.price > 0 && <span className={`text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ${textClass}`}>{srv.price} ج.م</span>}</span>
-                        {srv.desc && <span className="text-xs text-slate-500 mt-1">{srv.desc}</span>}
-                      </div>
-                      <div className="flex items-center">
-                          <button onClick={()=>handleEditClick(item, idx)} className="text-blue-400 hover:text-blue-300 bg-transparent rounded-full mr-2"><i className="ph ph-pencil-simple text-base"></i></button>
-                          <button onClick={()=>onRemove(idx)} className="text-red-400 hover:text-red-300 bg-transparent rounded-full mr-2"><i className="ph ph-x text-base"></i></button>
-                      </div>
+                      <div className="flex flex-col"><span className="text-slate-300 text-sm font-bold flex items-center gap-2">{srv.name} {srv.price > 0 && <span className={`text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ${textClass}`}>{srv.price} ج.م</span>}</span>{srv.desc && <span className="text-xs text-slate-500 mt-1">{srv.desc}</span>}</div>
+                      <div className="flex items-center"><button onClick={()=>handleEditClick(item, idx)} className="text-blue-400 hover:text-blue-300 bg-transparent rounded-full mr-2"><i className="ph ph-pencil-simple text-base"></i></button><button onClick={()=>onRemove(idx)} className="text-red-400 hover:text-red-300 bg-transparent rounded-full mr-2"><i className="ph ph-x text-base"></i></button></div>
                     </div>
                   )})}
                 </div>
@@ -1015,7 +808,6 @@
                         </div>
                     )}
                     
-                    {/* زر فك حماية الجهاز للإدارة */}
                     {txnDetailsModal.boundDeviceId && (
                          <div className="bg-orange-950/30 border border-orange-900/50 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                              <div>
@@ -1491,19 +1283,26 @@
                 
                 {/* الإحصائيات العامة */}
                 {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                         <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">إجمالي العملاء (بدون تكرار)</p>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
                             </div>
                         </div>
                         <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات المسجلة</p>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
+                            </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-default group relative overflow-hidden">
+                            <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-eye text-2xl"></i></div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-green-300 transition-colors">إجمالي زيارات البوابة</p>
+                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{settings.portalVisits || 0}</p>
                             </div>
                         </div>
                     </div>
@@ -1679,19 +1478,26 @@
             return (
               <div className="space-y-6">
                 {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                         <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">إجمالي العملاء (بدون تكرار)</p>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
                             </div>
                         </div>
                         <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات المسجلة</p>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
+                            </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-default group relative overflow-hidden">
+                            <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-eye text-2xl"></i></div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-green-300 transition-colors">إجمالي زيارات البوابة</p>
+                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{settings.portalVisits || 0}</p>
                             </div>
                         </div>
                     </div>
@@ -1838,13 +1644,13 @@
                            )}
                            <div className="flex flex-col gap-2 mb-3">
                               <div className="flex flex-col sm:flex-row gap-2"><input type="text" placeholder="اسم الإضافة" value={newAddon.name} onChange={e=>setNewAddon({...newAddon, name: e.target.value})} className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" /><input type="date" value={newAddon.date} onChange={e=>setNewAddon({...newAddon, date: e.target.value})} className="w-full sm:w-36 p-2.5 border border-slate-700 bg-slate-900 text-slate-400 rounded-lg outline-none text-sm" /></div>
-                              <div className="flex flex-col sm:flex-row gap-2"><input type="text" placeholder="ملاحظات" value={newAddon.notes} onChange={e=>setNewAddon({...newAddon, notes: e.target.value})} className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" /><input type="number" placeholder="السعر" value={newAddon.price} onChange={e=>setNewAddon({...newAddon, price: e.target.value})} className="w-full sm:w-28 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" /><button type="button" onClick={handleAddAddon} className="bg-slate-700 text-white px-4 py-2.5 rounded-lg"><i className="ph ph-plus font-bold"></i></button></div>
+                              <div className="flex flex-col sm:flex-row gap-2"><input type="text" placeholder="ملاحظات" value={newAddon.notes} onChange={e=>setNewAddon({...newAddon, notes: e.target.value})} className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" /><input type="number" placeholder="السعر" value={newAddon.price} onChange={e=>setNewAddon({...newAddon, price: e.target.value})} className="w-full sm:w-28 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm" /><button type="button" onClick={handleAddAddon} className="bg-slate-700 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg transition-colors"><i className="ph ph-plus font-bold"></i></button></div>
                            </div>
                            <div className="space-y-2">
                               {formData.addons.map((addon, idx) => (
                                  <div key={idx} className="flex justify-between items-center bg-slate-900 p-2.5 rounded-lg border border-slate-700">
                                     <div className="flex flex-col gap-1"><div className="flex items-center gap-3 text-sm"><span className="font-bold text-slate-200">{addon.name}</span>{addon.date && <span className="text-xs text-slate-500">({formatDateOnly(addon.date)})</span>}</div>{addon.notes && <span className="text-xs text-slate-400">{addon.notes}</span>}</div>
-                                    <div className="flex items-center gap-3"><span className="font-bold text-pink-400 text-sm">{addon.price} ج.م</span><button type="button" onClick={()=>handleRemoveAddon(idx)} className="text-red-400"><i className="ph ph-x"></i></button></div>
+                                    <div className="flex items-center gap-3"><span className="font-bold text-pink-400 text-sm">{addon.price} ج.م</span><button type="button" onClick={()=>handleRemoveAddon(idx)} className="text-red-400 hover:text-red-300"><i className="ph ph-x"></i></button></div>
                                  </div>
                               ))}
                            </div>
@@ -1856,7 +1662,7 @@
                           {!isEditing && <select className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-indigo-500 col-span-2 md:col-span-1 text-sm font-bold" value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})}><option value="cash">دفع نقدي</option><option value="electronic">دفع إلكتروني (محافظ)</option></select>}
                         </div>
                         <div className={`p-3 rounded-xl text-center font-black text-lg border mt-4 ${(parseFloat(formData.total)||0 - parseFloat(formData.paid)||0) > 0 ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-green-950/40 text-green-400 border-green-900/50'}`}>الباقي: {formatCurrency((parseFloat(formData.total) || 0) - (parseFloat(formData.paid) || 0))}</div>
-                        <button type="submit" className="w-full bg-pink-600 text-white hover:bg-pink-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4"><i className="ph ph-check-circle text-lg ml-2 align-middle"></i>حفظ بيانات الزفاف</button>
+                        <button type="submit" className="w-full bg-pink-600 text-white hover:bg-pink-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4 transition-colors"><i className="ph ph-check-circle text-lg ml-2 align-middle"></i>حفظ بيانات الزفاف</button>
                       </form>
                     </div>
                   </div>
@@ -2032,22 +1838,16 @@
                 <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-wrap gap-3 items-center justify-between">
                   <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-slate-100"><i className="ph ph-calendar-blank text-blue-400 text-xl sm:text-2xl"></i> تقارير شهرية شاملة ومفصلة</h2>
                   <div className="flex gap-2">
-                    <button onClick={() => setShowAmounts(!showAmounts)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors" title={showAmounts ? "إخفاء المبالغ" : "إظهار المبالغ"}>
-                        <i className={`ph ${showAmounts ? 'ph-eye-slash' : 'ph-eye'} text-lg`}></i>
-                    </button>
+                    <button onClick={() => setShowAmounts(!showAmounts)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors" title={showAmounts ? "إخفاء المبالغ" : "إظهار المبالغ"}><i className={`ph ${showAmounts ? 'ph-eye-slash' : 'ph-eye'} text-lg`}></i></button>
                     <select value={filter.month} onChange={e => setFilter({...filter, month: e.target.value})} className="py-1.5 px-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none text-sm font-bold">{Array.from({length: 12}, (_, i) => i + 1).map(m => <option key={m} value={m}>شهر {m}</option>)}</select>
                     <select value={filter.year} onChange={e => setFilter({...filter, year: e.target.value})} className="py-1.5 px-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none text-sm font-bold">{[currentYear-1, currentYear, currentYear+1].map(y => <option key={y} value={y}>{y}</option>)}</select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                  
-                  {/* قسم تقرير الاستوديو */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
-                    <h3 className="text-lg font-bold text-blue-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
-                        <span className="flex items-center gap-2"><i className="ph-fill ph-camera"></i> تقرير الاستوديو (تفصيلي)</span>
-                    </h3>
+                    <h3 className="text-lg font-bold text-blue-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-camera"></i> تقرير الاستوديو (تفصيلي)</span></h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                       <StatCard hideValue={!showAmounts} title="إجمالي الشغل المطلوب (هذا الشهر)" value={studioStats.expected} color="blue" />
                       <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={studioStats.collected} color="green" />
@@ -2061,12 +1861,9 @@
                     </div>
                   </div>
 
-                  {/* قسم تقرير حجوزات الزفاف */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-pink-500"></div>
-                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
-                        <span className="flex items-center gap-2"><i className="ph-fill ph-heart"></i> تقرير حجوزات الزفاف (تفصيلي)</span>
-                    </h3>
+                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-heart"></i> تقرير حجوزات الزفاف (تفصيلي)</span></h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                       <StatCard hideValue={!showAmounts} title="إجمالي الحجوزات (المسجلة هذا الشهر)" value={wedStats.expected} color="pink" />
                       <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={wedStats.collected} color="green" />
@@ -2079,15 +1876,12 @@
                         <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: weddings.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
                     </div>
                   </div>
-
                 </div>
 
                 <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col mt-4">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 mb-4 gap-4">
                         <div>
-                            <h3 className="text-lg sm:text-xl font-bold text-yellow-400 flex items-center gap-2">
-                                <i className="ph-fill ph-archive-box text-2xl"></i> أرشيف العملاء (إعادة الاستهداف والتقييم)
-                            </h3>
+                            <h3 className="text-lg sm:text-xl font-bold text-yellow-400 flex items-center gap-2"><i className="ph-fill ph-archive-box text-2xl"></i> أرشيف العملاء (إعادة الاستهداف والتقييم)</h3>
                             <p className="text-xs text-slate-400 mt-1">قائمة بالعملاء الذين استلموا أعمالهم، لطلب التقييم أو إرسال عروض ترويجية.</p>
                         </div>
                         <div className="bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-xl text-yellow-400 flex flex-col items-center">
@@ -2098,13 +1892,7 @@
 
                     <div className="relative w-full mb-4">
                         <i className="ph ph-magnifying-glass absolute right-4 top-3.5 text-slate-500 text-lg"></i>
-                        <input 
-                            type="text" 
-                            placeholder="ابحث في الأرشيف بالاسم، رقم الهاتف، أو رقم الإيصال..." 
-                            className="w-full p-3 pr-11 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm transition-colors" 
-                            value={archiveQuery} 
-                            onChange={(e) => setArchiveQuery(e.target.value)} 
-                        />
+                        <input type="text" placeholder="ابحث في الأرشيف بالاسم، رقم الهاتف، أو رقم الإيصال..." className="w-full p-3 pr-11 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm transition-colors" value={archiveQuery} onChange={(e) => setArchiveQuery(e.target.value)} />
                     </div>
 
                     <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
@@ -2141,26 +1929,11 @@
                                                     <i className="ph-fill ph-star text-yellow-500 text-sm"></i>
                                                 </div>
                                             ) : (
-                                                <button 
-                                                    onClick={() => {
-                                                        const typeParam = isWed ? 'w' : 't';
-                                                        const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${typeParam}`;
-                                                        const msg = `أهلاً بك أ. ${name || ''} 🌟\nبما إنك استلمت شغلك من ${settings.studioName}، يهمنا جداً نعرف رأيك وتقييمك للتجربة عبر هذا الرابط:\n${trackUrl}`;
-                                                        openWhatsApp(txn.phone, msg);
-                                                    }}
-                                                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                                                >
+                                                <button onClick={() => { const typeParam = isWed ? 'w' : 't'; const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${typeParam}`; const msg = `أهلاً بك أ. ${name || ''} 🌟\nبما إنك استلمت شغلك من ${settings.studioName}، يهمنا جداً نعرف رأيك وتقييمك للتجربة عبر هذا الرابط:\n${trackUrl}`; openWhatsApp(txn.phone, msg); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
                                                     <i className="ph ph-star text-base"></i> طلب تقييم
                                                 </button>
                                             )}
-
-                                            <button 
-                                                onClick={() => {
-                                                    const msg = `أهلاً أ. ${name || ''}، نتمنى تكون الصور عجبتكم! 🌟\nبمناسبة مرور فترة على تصويركم في ${settings.studioName}، بنقدملك خصم 15% لو حابب تطبع الصور على تابلوه خشب أو تعمل ألبوم ميني لحفظ ذكرياتك. للطلب استفسر مننا هنا! 🎁`;
-                                                    openWhatsApp(txn.phone, msg);
-                                                }}
-                                                className="bg-gradient-to-l from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-2 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50"
-                                            >
+                                            <button onClick={() => { const msg = `أهلاً أ. ${name || ''}، نتمنى تكون الصور عجبتكم! 🌟\nبمناسبة مرور فترة على تصويركم في ${settings.studioName}، بنقدملك خصم 15% لو حابب تطبع الصور على تابلوه خشب أو تعمل ألبوم ميني لحفظ ذكرياتك. للطلب استفسر مننا هنا! 🎁`; openWhatsApp(txn.phone, msg); }} className="bg-gradient-to-l from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-2 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50 px-3">
                                                 <i className="ph-fill ph-whatsapp-logo text-xl"></i> عرض إعادة استهداف
                                             </button>
                                         </div>
@@ -2175,11 +1948,7 @@
                     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setElectronicDetails(null)}>
                         <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setElectronicDetails(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
-                            
-                            <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-indigo-400 flex items-center gap-2 shrink-0">
-                                <i className="ph-fill ph-wallet text-2xl"></i> {electronicDetails.title}
-                            </h3>
-                            
+                            <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-indigo-400 flex items-center gap-2 shrink-0"><i className="ph-fill ph-wallet text-2xl"></i> {electronicDetails.title}</h3>
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                                 {electronicDetails.data.length === 0 ? (
                                     <p className="text-slate-500 text-center py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد عمليات دفع إلكتروني في هذه الفترة.</p>
@@ -2191,10 +1960,7 @@
                                             <div key={txn.id} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/20 flex flex-col gap-3 hover:border-indigo-500/50 transition-colors">
                                                 <div className="flex justify-between items-center">
                                                     <div>
-                                                        <div className="font-bold text-slate-200 flex items-center gap-2">
-                                                            <i className={`text-lg ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
-                                                            {name || 'بدون اسم'}
-                                                        </div>
+                                                        <div className="font-bold text-slate-200 flex items-center gap-2"><i className={`text-lg ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>{name || 'بدون اسم'}</div>
                                                         <div className="text-xs text-slate-500 font-mono mt-1">📞 {txn.phone} | #{txn.receiptNo}</div>
                                                         <div className="text-[10px] text-slate-400 mt-1">📅 {formatDateOnly(txn.dateTime)}</div>
                                                     </div>
@@ -2230,9 +1996,7 @@
             
             const handleSaveClick = async () => {
                 setIsSaving(true);
-                if (settings.enableNotifications) {
-                    requestNotificationPermission();
-                }
+                if (settings.enableNotifications) requestNotificationPermission();
                 await saveSettingsToDB(settings);
                 setTimeout(() => setIsSaving(false), 1000);
             };
@@ -2242,41 +2006,19 @@
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو وإعدادات النظام</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label>
-                      <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-sm text-slate-400 mb-2">رقم هاتف الاستوديو (للرد على العروض):</label>
-                      <input type="text" value={settings.studioPhone || ''} onChange={e => setSettings({...settings, studioPhone: e.target.value})} placeholder="مثال: 01201260040" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none dir-ltr" />
-                    </div>
+                    <div><label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label><input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" /></div>
+                    <div><label className="block font-bold text-sm text-slate-400 mb-2">رقم هاتف الاستوديو (للرد على العروض):</label><input type="text" value={settings.studioPhone || ''} onChange={e => setSettings({...settings, studioPhone: e.target.value})} placeholder="مثال: 01201260040" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none dir-ltr" /></div>
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">الشعار (Logo):</label>
-                      <input type="file" accept="image/*" onChange={e => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => setSettings({...settings, studioLogo: reader.result});
-                          reader.readAsDataURL(file);
-                        }
-                      }} className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-purple-400 hover:file:bg-slate-700 transition-colors" />
+                      <input type="file" accept="image/*" onChange={e => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setSettings({...settings, studioLogo: reader.result}); reader.readAsDataURL(file); } }} className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-purple-400 hover:file:bg-slate-700 transition-colors" />
                     </div>
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">كلمة المرور للنظام (الإدارة):</label>
-                      <div className="relative w-full">
-                          <input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 1234" />
-                          <i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i>
-                      </div>
+                      <div className="relative w-full"><input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 1234" /><i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i></div>
                     </div>
                     <div className="md:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-sm text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
-                            <p className="text-xs text-slate-500 mt-1">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" checked={settings.enableNotifications || false} onChange={e => setSettings({...settings, enableNotifications: e.target.checked})} />
-                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
-                        </label>
+                        <div><p className="font-bold text-sm text-slate-200">تفعيل إشعارات المتصفح للإدارة</p><p className="text-xs text-slate-500 mt-1">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p></div>
+                        <label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={settings.enableNotifications || false} onChange={e => setSettings({...settings, enableNotifications: e.target.checked})} /><div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div></label>
                     </div>
                   </div>
                 </div>
@@ -2292,6 +2034,7 @@
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
+                    <PortalCardsSettingsList title="بطاقات المنتجات التسويقية للعملاء" items={settings.portalCards || []} onAdd={v => handleAddList('portalCards', v)} onRemove={i => handleRemoveList('portalCards', i)} />
                     <PromotionsSettingsList title="قوالب العروض الترويجية المخصصة (للعملاء)" items={settings.promotions || []} onAdd={v => handleAddList('promotions', v)} onRemove={i => handleRemoveList('promotions', i)} />
                 </div>
                 
@@ -2313,9 +2056,7 @@
                 </div>
 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                  <h2 className="text-xl font-bold mb-4 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2">
-                      <i className="ph ph-whatsapp-logo text-green-400 text-2xl"></i> قوالب رسائل الواتساب
-                  </h2>
+                  <h2 className="text-xl font-bold mb-4 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2"><i className="ph ph-whatsapp-logo text-green-400 text-2xl"></i> قوالب رسائل الواتساب</h2>
                   <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-inner">
                      <p className="text-sm text-slate-400 leading-relaxed flex-1">
                         <strong className="text-slate-300 block mb-2">المتغيرات المتاحة للنسخ والإضافة التلقائية:</strong>
@@ -2347,17 +2088,9 @@
                       return (
                       <div key={key} className="bg-slate-950 p-5 rounded-lg border border-slate-700 hover:border-green-500/50 transition-all group shadow-sm flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-1 h-full bg-slate-800 group-hover:bg-green-500 transition-colors"></div>
-                        <label className="block text-sm font-bold mb-3 text-slate-300 group-hover:text-green-400 transition-colors pr-2">
-                            {getLabel(key)}
-                        </label>
+                        <label className="block text-sm font-bold mb-3 text-slate-300 group-hover:text-green-400 transition-colors pr-2">{getLabel(key)}</label>
                         <div className="relative flex-1 flex flex-col">
-                            <textarea 
-                                rows="5" 
-                                value={settings.waTemplates[key]} 
-                                onChange={e => setSettings({...settings, waTemplates: {...settings.waTemplates, [key]: e.target.value}})} 
-                                className="w-full flex-1 p-4 border border-slate-700 bg-slate-900 text-green-50 rounded-md focus:border-green-500 focus:bg-slate-950 focus:ring-1 focus:ring-green-500/30 outline-none text-sm font-mono custom-scrollbar transition-all leading-relaxed shadow-inner resize-y" 
-                                placeholder="اكتب قالب الرسالة هنا..."
-                            />
+                            <textarea rows="5" value={settings.waTemplates[key]} onChange={e => setSettings({...settings, waTemplates: {...settings.waTemplates, [key]: e.target.value}})} className="w-full flex-1 p-4 border border-slate-700 bg-slate-900 text-green-50 rounded-md focus:border-green-500 focus:bg-slate-950 focus:ring-1 focus:ring-green-500/30 outline-none text-sm font-mono custom-scrollbar transition-all leading-relaxed shadow-inner resize-y" placeholder="اكتب قالب الرسالة هنا..."/>
                         </div>
                       </div>
                     )})}
@@ -2398,17 +2131,13 @@
           
           const [receiptImageModal, setReceiptImageModal] = useState(null);
           const [txnDetailsModal, setTxnDetailsModal] = useState(null);
-          
-          // Promotional details state
-          const [showPromoDetails, setShowPromoDetails] = useState(false);
-          const [showStages, setShowStages] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0
+            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, portalCards: DEFAULT_PORTAL_CARDS, studioLikes: 0, portalVisits: 0
           });
 
           const urlParams = new URLSearchParams(window.location.search);
@@ -2418,7 +2147,6 @@
           const isClientPortal = urlParams.get('client') === 'true';
           const isTracking = trackPhone && trackReceipt;
 
-          // Desktop notifications logic
           const [previousFeedbackCount, setPreviousFeedbackCount] = useState(0);
 
           useEffect(() => {
@@ -2464,23 +2192,28 @@
                     if (!data.addonTemplates) data.addonTemplates = DEFAULT_ADDON_TEMPLATES;
                     if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
                     if (!data.promotions) data.promotions = DEFAULT_PROMOTIONS;
+                    if (!data.portalCards) data.portalCards = DEFAULT_PORTAL_CARDS;
                     if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
                     else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
                     if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
+                    if (!data.portalVisits) data.portalVisits = 0;
                     setSettings(data);
                   }
               } catch(e) { console.error("Error fetching settings", e); }
             };
             fetchSettings();
 
-            // Real-time listener for likes and settings
             const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
                 if (docSnap.exists()) {
                     const currentData = docSnap.data();
-                    setSettings(prev => ({...prev, studioLikes: currentData.studioLikes || 0}));
+                    setSettings(prev => ({
+                        ...prev, 
+                        studioLikes: currentData.studioLikes || 0,
+                        portalVisits: currentData.portalVisits || 0
+                    }));
                 }
             });
 
@@ -2519,6 +2252,21 @@
 
             return () => { unsubTxns(); unsubWeds(); unsubInv(); unsubSettings(); };
           }, [user, isTracking, isClientPortal]);
+
+          // سجل زيارة البوابة
+          useEffect(() => {
+              if (user && isClientPortal && !isTracking) {
+                  const hasVisited = sessionStorage.getItem('studio_portal_visited');
+                  if (!hasVisited) {
+                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                      updateDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), {
+                          portalVisits: increment(1)
+                      }).then(() => {
+                          sessionStorage.setItem('studio_portal_visited', 'true');
+                      }).catch(e => console.error("Error logging visit:", e));
+                  }
+              }
+          }, [user, isClientPortal, isTracking]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
           const uniqueCustomersCount = useMemo(() => new Set(allRecords.map(t => t.phone).filter(Boolean)).size, [allRecords]);
@@ -2577,17 +2325,14 @@
                   const currentTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
                   
                   if (currentTxn) {
-                      // نظام حماية الجهاز: ربط رابط التتبع بمتصفح العميل لأول مرة فقط
                       const currentDeviceId = localStorage.getItem('studio_client_device_id') || Math.random().toString(36).substring(2, 15);
                       
                       if (!currentTxn.boundDeviceId) {
-                          // لم يتم ربط الجهاز من قبل، نربطه الآن
                           localStorage.setItem('studio_client_device_id', currentDeviceId);
                           const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                           const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
                           setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, currentTxn.id), { boundDeviceId: currentDeviceId }, { merge: true }).catch(console.error);
                       } else if (currentTxn.boundDeviceId !== currentDeviceId) {
-                          // الجهاز الحالي لا يطابق الجهاز المرتبط
                           setClientViewError('access_denied');
                           return;
                       }
