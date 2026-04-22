@@ -8,13 +8,13 @@
     <!-- معلومات المشاركة على وسائل التواصل الاجتماعي (Open Graph & Twitter Cards) -->
     <meta property="og:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta property="og:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية. ذكرياتك بأمان معنا.">
-    <meta property="og:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiGz9iKT4WdocPL9Unp9Cq6zsSspk2KnQoBYgvXeN7WI1iTcHwGfjJg2fskTB84ABtx5-Ui1izCDxnAXRHDnJsjiSYBeK0GeQMmu7UiMrf4CA8vQoUI3f-YRFJfnT3rfRImF-CAU9E8MPO2BElRYW-jIL7oePl8AcVDu3HiHBMh_A-jNKPFYPcZfHTlG6k/s16000/1.jpg">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1200&auto=format&fit=crop">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta name="twitter:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية.">
-    <meta name="twitter:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiGz9iKT4WdocPL9Unp9Cq6zsSspk2KnQoBYgvXeN7WI1iTcHwGfjJg2fskTB84ABtx5-Ui1izCDxnAXRHDnJsjiSYBeK0GeQMmu7UiMrf4CA8vQoUI3f-YRFJfnT3rfRImF-CAU9E8MPO2BElRYW-jIL7oePl8AcVDu3HiHBMh_A-jNKPFYPcZfHTlG6k/s16000/1.jpg">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1200&auto=format&fit=crop">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23eab308'%3E%3Cpath d='M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z'/%3E%3C/svg%3E">
@@ -36,7 +36,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
         
         * { font-family: 'Cairo', sans-serif !important; }
-        body { font-weight: 400; background-color: #020617; color: #f1f5f9; margin: 0; padding: 0; color-scheme: dark; }
+        body { font-weight: 400; background-color: #020617; color: #f1f5f9; margin: 0; padding: 0; color-scheme: dark; overflow-x: hidden; }
         main .font-bold { font-weight: 500 !important; }
         main .font-black { font-weight: 600 !important; }
         main b, main strong { font-weight: 500 !important; }
@@ -58,7 +58,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
         
-        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
     </style>
 </head>
@@ -68,7 +68,7 @@
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
         import { getStorage, ref, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         const { useState, useEffect, useMemo, useCallback } = React;
@@ -474,13 +474,24 @@
             );
         };
 
-        const ClientPortalScreen = ({ settings, transactions, weddings, uniqueCustomersCount }) => {
+        const ClientPortalScreen = ({ settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio }) => {
             const [phone, setPhone] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
             const [errorMsg, setErrorMsg] = useState('');
             const [showPhoneInput, setShowPhoneInput] = useState(false);
             const [selectedPromoModal, setSelectedPromoModal] = useState(null);
+            const [promoImgIndex, setPromoImgIndex] = useState(0);
+            const [fullscreenPromoImg, setFullscreenPromoImg] = useState(null);
+            
+            const [hasLiked, setHasLiked] = useState(localStorage.getItem('studio_liked') === 'true');
+
+            const handleLike = () => {
+                if(hasLiked) return;
+                setHasLiked(true);
+                localStorage.setItem('studio_liked', 'true');
+                onLikeStudio();
+            };
 
             const handleSearch = (e) => {
                 e.preventDefault();
@@ -518,18 +529,26 @@
                             <p className="text-slate-400 text-sm leading-relaxed max-w-sm font-bold mb-4">
                                 أهلاً بك في مساحتك الخاصة ✨ نحن هنا لتوثيق أجمل لحظاتك وتحويلها إلى ذكريات لا تُنسى.
                             </p>
-                            {uniqueCustomersCount > 0 && (
-                                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-4 py-2 rounded-full shadow-inner mt-1 animate-fadeIn" style={{animationDelay: '0.1s'}}>
-                                    <div className="flex -space-x-2 space-x-reverse">
-                                        <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-user"></i></div>
-                                        <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-heart"></i></div>
-                                        <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-star"></i></div>
+                            
+                            <div className="flex flex-col items-center gap-3 w-full border-t border-slate-800 pt-4 mt-2">
+                                {uniqueCustomersCount > 0 && (
+                                    <div className="flex items-center justify-center gap-2 bg-slate-950 border border-slate-800 px-4 py-2 rounded-full shadow-inner animate-fadeIn w-full" style={{animationDelay: '0.1s'}}>
+                                        <div className="flex -space-x-2 space-x-reverse shrink-0">
+                                            <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-user"></i></div>
+                                            <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-heart"></i></div>
+                                            <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white"><i className="ph-fill ph-star"></i></div>
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-300 truncate">
+                                            انضم إلى أكثر من <span className="text-yellow-400 text-sm">{uniqueCustomersCount}</span> عميل وثقوا بنا 📸
+                                        </span>
                                     </div>
-                                    <span className="text-xs font-bold text-slate-300">
-                                        انضم إلى أكثر من <span className="text-yellow-400 text-sm">{uniqueCustomersCount}</span> عميل وثقوا بنا 📸
-                                    </span>
-                                </div>
-                            )}
+                                )}
+                                
+                                <button onClick={handleLike} className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border transition-all shadow-lg w-full ${hasLiked ? 'bg-pink-950/50 border-pink-500/50 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-pink-400 hover:border-pink-500/50'}`}>
+                                    <i className={`${hasLiked ? 'ph-fill text-pink-500 scale-110' : 'ph'} ph-heart text-xl transition-transform ${!hasLiked && 'animate-bounce-slow'}`}></i>
+                                    <span className="font-bold text-sm">أعجبني ({studioLikes})</span>
+                                </button>
+                            </div>
                         </div>
 
                         {settings.promotions?.length > 0 && !showPhoneInput && (
@@ -537,24 +556,26 @@
                                 <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2">
                                     <i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك
                                 </h3>
-                                <div className="grid grid-cols-1 gap-3">
+                                <div className="grid grid-cols-1 gap-4">
                                     {settings.promotions.map(promo => {
                                         const colorSet = promoColors[promo.color || 'yellow'] || promoColors.yellow;
                                         const [bg1, bg2, borderClass, textClass, iconBgClass] = colorSet.split(' ');
                                         return (
-                                            <div key={promo.id} onClick={() => setSelectedPromoModal(promo)} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col gap-4 transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden`}>
+                                            <div key={promo.id} onClick={() => { setSelectedPromoModal(promo); setPromoImgIndex(0); }} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden pb-4`}>
                                                 {promo.images?.length > 0 && (
-                                                    <div className="w-full h-32 -mt-4 -mx-4 mb-1 relative border-b border-slate-700/50">
+                                                    <div className="-mx-4 -mt-4 mb-3 h-40 relative border-b border-slate-700/50 shrink-0">
                                                         <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60"></div>
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
                                                     </div>
                                                 )}
-                                                <div className="flex items-start gap-4 z-10">
-                                                     <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0`}><i className={`ph-fill ${promo.icon} text-2xl`}></i></div>
-                                                     <div className="flex-1">
+                                                <div className={`flex items-start gap-4 z-10 ${promo.images?.length > 0 ? '-mt-8' : ''}`}>
+                                                     <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0 shadow-lg border border-white/10 bg-slate-900`}>
+                                                         <i className={`ph-fill ${promo.icon} text-2xl`}></i>
+                                                     </div>
+                                                     <div className="flex-1 pt-1">
                                                          <h4 className="font-bold text-slate-100">{promo.title}</h4>
-                                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-2">{promo.shortDesc}</p>
-                                                         {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded`}>{promo.discount}</span>}
+                                                         <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2 drop-shadow-md">{promo.shortDesc}</p>
+                                                         {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded border border-current/20`}>{promo.discount}</span>}
                                                      </div>
                                                 </div>
                                             </div>
@@ -599,30 +620,48 @@
                         )}
                         
                         {selectedPromoModal && (
-                            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
                                 <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                                     <div className="relative">
                                         {selectedPromoModal.images?.length > 0 ? (
-                                            <div className="w-full h-48 sm:h-64 flex overflow-x-auto custom-scrollbar snap-x snap-mandatory">
-                                                {selectedPromoModal.images.map((img, i) => <img key={i} src={img} className="w-full h-full object-cover shrink-0 snap-center" alt={`صورة ${i+1}`} />)}
+                                            <div className="w-full h-56 sm:h-72 relative group bg-slate-950">
+                                                <img 
+                                                    src={selectedPromoModal.images[promoImgIndex]} 
+                                                    className="w-full h-full object-contain sm:object-cover cursor-zoom-in transition-all" 
+                                                    alt={`صورة ${promoImgIndex + 1}`} 
+                                                    onClick={() => setFullscreenPromoImg(selectedPromoModal.images[promoImgIndex])}
+                                                    title="اضغط للتكبير"
+                                                />
+                                                {selectedPromoModal.images.length > 1 && (
+                                                    <>
+                                                        <button onClick={(e) => { e.stopPropagation(); setPromoImgIndex(prev => prev === 0 ? selectedPromoModal.images.length - 1 : prev - 1) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/90 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 border border-white/20 shadow-lg"><i className="ph-bold ph-caret-right text-lg"></i></button>
+                                                        <button onClick={(e) => { e.stopPropagation(); setPromoImgIndex(prev => prev === selectedPromoModal.images.length - 1 ? 0 : prev + 1) }} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/90 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 border border-white/20 shadow-lg"><i className="ph-bold ph-caret-left text-lg"></i></button>
+                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/40 px-2.5 py-1.5 rounded-full backdrop-blur-md">
+                                                            {selectedPromoModal.images.map((_, i) => (
+                                                                <button key={i} onClick={(e) => { e.stopPropagation(); setPromoImgIndex(i); }} className={`h-2 rounded-full transition-all ${i === promoImgIndex ? 'bg-yellow-400 w-4' : 'bg-white/60 hover:bg-white w-2'}`}></button>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className={`w-full h-32 bg-gradient-to-r ${promoColors[selectedPromoModal.color || 'yellow'].split(' ').slice(0,2).join(' ')} flex items-center justify-center`}><i className={`ph-fill ${selectedPromoModal.icon} text-6xl opacity-50`}></i></div>
                                         )}
-                                        <button onClick={() => setSelectedPromoModal(null)} className="absolute top-4 left-4 bg-slate-900/50 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/10 shadow-lg"><i className="ph ph-x text-lg"></i></button>
+                                        <button onClick={() => setSelectedPromoModal(null)} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
                                     </div>
-                                    <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                    <div className="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-4">
-                                            <h2 className="text-2xl font-black text-white flex items-center gap-2"><i className={`ph-fill ${selectedPromoModal.icon} text-yellow-500`}></i> {selectedPromoModal.title}</h2>
-                                            {selectedPromoModal.discount && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap">{selectedPromoModal.discount}</span>}
+                                            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 leading-tight"><i className={`ph-fill ${selectedPromoModal.icon} text-yellow-500 shrink-0`}></i> {selectedPromoModal.title}</h2>
+                                            {selectedPromoModal.discount && <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg font-black text-sm whitespace-nowrap shrink-0">{selectedPromoModal.discount}</span>}
                                         </div>
-                                        <p className="text-slate-300 font-bold mb-3">{selectedPromoModal.shortDesc}</p>
-                                        {selectedPromoModal.fullDesc && <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6"><p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p></div>}
+                                        <p className="text-slate-300 font-bold mb-4">{selectedPromoModal.shortDesc}</p>
+                                        {selectedPromoModal.fullDesc && <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner"><p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p></div>}
                                         <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص العرض: *${selectedPromoModal.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50 mt-auto"><i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز العرض الآن</button>
                                     </div>
                                 </div>
                             </div>
                         )}
+                        <ReceiptModal imageUrl={fullscreenPromoImg} onClose={() => setFullscreenPromoImg(null)} />
                     </div>
                 </div>
             );
@@ -810,6 +849,7 @@
                       </div>
                     </div>
                   )})}
+                  {items.length === 0 && <p className="text-center text-slate-500 py-4 text-sm">لا توجد منتجات مضافة بعد.</p>}
                 </div>
               </div>
             );
@@ -857,8 +897,9 @@
                 <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] custom-scrollbar pr-2">
                   {items.map((item, idx) => {
                     const colorStyles = { yellow: 'border-yellow-500/30 bg-yellow-950/20 text-yellow-400', pink: 'border-pink-500/30 bg-pink-950/20 text-pink-400', blue: 'border-blue-500/30 bg-blue-950/20 text-blue-400', amber: 'border-amber-500/30 bg-amber-950/20 text-amber-400' };
+                    const curColor = colorStyles[item.color || 'yellow'];
                     return (
-                    <div key={idx} className={`p-4 rounded-xl flex flex-col gap-2 border relative group hover:opacity-90 transition-opacity ${colorStyles[item.color || 'yellow']}`}>
+                    <div key={idx} className={`p-4 rounded-xl flex flex-col gap-2 border relative group hover:opacity-90 transition-opacity ${curColor}`}>
                       {item.images?.length > 0 && <div className="flex gap-1 mb-2 h-16">{item.images.map((img, i) => <img key={i} src={img} className="w-16 h-16 object-cover rounded border border-slate-700" alt={`صورة`} />)}</div>}
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2 font-black text-base"><i className={`ph-fill ${item.icon || 'ph-gift'} text-xl`}></i> {item.title}</div>
@@ -869,6 +910,7 @@
                       {item.discount && <span className="mt-2 self-start bg-slate-900 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">{item.discount}</span>}
                     </div>
                   )})}
+                  {items.length === 0 && <p className="text-center text-slate-500 py-4 text-sm">لا توجد عروض مضافة بعد.</p>}
                 </div>
               </div>
             );
@@ -1436,8 +1478,13 @@
             if (!isFiltering) displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString() || (t.payments && t.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString())));
 
             const dayRevenue = calculatePeriodRevenue(transactions, filterDate ? new Date(filterDate) : new Date(), 'day');
+            const currentTotalCollected = dayRevenue.total;
+            const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
+            
             const totalDebts = useMemo(() => transactions?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [transactions]);
             const filteredDebts = useMemo(() => { if (!transactions) return []; let debts = transactions.filter(t => t.remaining > 0); if (debtSearch) debts = debts.filter(t => (t.clientName || '').includes(debtSearch) || (t.phone || '').includes(debtSearch) || (t.receiptNo?.toString() || '').includes(debtSearch)); return debts.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); }, [transactions, debtSearch]);
+
+            const uniqueDebtorsCount = useMemo(() => new Set(filteredDebts.map(t => t.phone)).size, [filteredDebts]);
 
             return (
               <div className="space-y-6">
@@ -1464,7 +1511,7 @@
 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
                   <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [] }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
-                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>الديون ({new Set(filteredDebts.map(t => t.phone)).size}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
+                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>الديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
                   <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث بالاسم، هاتف، إيصال..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
                   <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
                       <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
@@ -1478,7 +1525,7 @@
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
                     <div className="flex items-center gap-2"><i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}</div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم'}: {formatCurrency(dayRevenue.total)}</span>
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}</span>
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية</span>
                     </div>
                   </h2>
@@ -1619,8 +1666,13 @@
             if (!isFiltering) filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString() || (t.payments && t.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString())));
 
             const dayRevenue = calculatePeriodRevenue(weddings, filterDate ? new Date(filterDate) : new Date(), 'day');
+            const currentTotalCollected = dayRevenue.total;
+            const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
+            
             const totalDebts = useMemo(() => weddings?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [weddings]);
             const filteredDebts = useMemo(() => { if (!weddings) return []; let debts = weddings.filter(t => t.remaining > 0); if (debtSearch) debts = debts.filter(t => (`${t.groomName || ''} ${t.brideName || ''}`).includes(debtSearch) || (t.phone || '').includes(debtSearch) || (t.receiptNo?.toString() || '').includes(debtSearch)); return debts.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); }, [weddings, debtSearch]);
+
+            const uniqueDebtorsCount = useMemo(() => new Set(filteredDebts.map(t => t.phone)).size, [filteredDebts]);
 
             const handleDayClick = (dateStr) => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate: dateStr, location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], selectedPromos:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); };
 
@@ -1649,7 +1701,7 @@
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
                   <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], selectedPromos:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'' }); setShowAddModal(true); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base"><i className="ph ph-heart text-xl sm:text-2xl"></i> حجز زفاف جديد</button>
-                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>ديون ({new Set(filteredDebts.map(t => t.phone)).size}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
+                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>ديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
                   <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث باسم العريس، العروسة، الهاتف..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
                   <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
                       <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
@@ -1661,7 +1713,7 @@
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
                     <div className="flex items-center gap-2"><i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}</div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم'}: {formatCurrency(dayRevenue.total)}</span>
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}</span>
                         <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm"><i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز</span>
                     </div>
                   </h2>
@@ -1968,8 +2020,7 @@
 
             const wedStats = useMemo(() => {
               const expected = filteredWeds.reduce((sum, t) => sum + (parseFloat(t.total)||0), 0);
-              return { expected, collected: wedCollectedStats.total, cash: wedCollectedStats.cash, electronic: wedCollectedStats.electronic, debts: filteredWeds.reduce((sum, t) => sum + (parseFloat(t.remaining)||0), 0), expenses: weddingExpTotal,
-              netProfit: wedCollectedStats.total - weddingExpTotal };
+              return { expected, collected: wedCollectedStats.total, cash: wedCollectedStats.cash, electronic: wedCollectedStats.electronic, debts: filteredWeds.reduce((sum, t) => sum + (parseFloat(t.remaining)||0), 0), expenses: weddingExpTotal, netProfit: wedCollectedStats.total - weddingExpTotal };
             }, [filteredWeds, wedCollectedStats, weddingExpTotal]);
 
             const allCompleted = useMemo(() => [...filteredTxns.filter(t => t.status === 3), ...filteredWeds.filter(t => t.status === 6)].sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)), [filteredTxns, filteredWeds]);
@@ -1991,6 +2042,7 @@
 
                 <div className="grid grid-cols-1 gap-6">
                   
+                  {/* قسم تقرير الاستوديو */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
                     <h3 className="text-lg font-bold text-blue-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -2009,6 +2061,7 @@
                     </div>
                   </div>
 
+                  {/* قسم تقرير حجوزات الزفاف */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-pink-500"></div>
                     <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -2075,7 +2128,7 @@
                                                 <div className="flex items-center gap-2 mt-3">
                                                     <span className="text-xs text-slate-500"><i className="ph ph-check-circle text-green-500"></i> إيصالات السداد:</span>
                                                     {txn.confirmedReceipts.map((imgUrl, idx) => (
-                                                        <img key={idx} src={imgUrl} alt="إيصال" className="w-8 h-8 object-cover rounded border border-slate-700 cursor-pointer hover:opacity-80 transition-all" onClick={() => setReceiptImageModal(imgUrl)} title="تكبير الإيصال" />
+                                                        <img key={idx} src={imgUrl} alt="إيصال" className="w-8 h-8 object-cover rounded border border-slate-700 cursor-pointer hover:opacity-80 transition-all shadow-sm" onClick={() => setReceiptImageModal(imgUrl)} title="تكبير الإيصال" />
                                                     ))}
                                                 </div>
                                             )}
@@ -2194,7 +2247,7 @@
                       <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block font-bold text-sm text-slate-400 mb-2">رقم هاتف الاستوديو (للرد على حجوزات العملاء):</label>
+                      <label className="block font-bold text-sm text-slate-400 mb-2">رقم هاتف الاستوديو (للرد على العروض):</label>
                       <input type="text" value={settings.studioPhone || ''} onChange={e => setSettings({...settings, studioPhone: e.target.value})} placeholder="مثال: 01201260040" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none dir-ltr" />
                     </div>
                     <div>
@@ -2355,7 +2408,7 @@
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS
+            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0
           });
 
           const urlParams = new URLSearchParams(window.location.search);
@@ -2416,11 +2469,20 @@
                     if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
+                    if (!data.studioLikes) data.studioLikes = 0;
                     setSettings(data);
                   }
               } catch(e) { console.error("Error fetching settings", e); }
             };
             fetchSettings();
+
+            // Real-time listener for likes and settings
+            const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
+                if (docSnap.exists()) {
+                    const currentData = docSnap.data();
+                    setSettings(prev => ({...prev, studioLikes: currentData.studioLikes || 0}));
+                }
+            });
 
             const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
               if (docSnap.exists()) setInventory(docSnap.data());
@@ -2452,14 +2514,26 @@
                   data.sort((a, b) => new Date(b.date) - new Date(a.date));
                   setExpenses(data);
                 }, (err) => console.error("Expenses error", err));
-                return () => { unsubTxns(); unsubWeds(); unsubExps(); unsubInv(); };
+                return () => { unsubTxns(); unsubWeds(); unsubExps(); unsubInv(); unsubSettings(); };
             }
 
-            return () => { unsubTxns(); unsubWeds(); unsubInv(); };
+            return () => { unsubTxns(); unsubWeds(); unsubInv(); unsubSettings(); };
           }, [user, isTracking, isClientPortal]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
           const uniqueCustomersCount = useMemo(() => new Set(allRecords.map(t => t.phone).filter(Boolean)).size, [allRecords]);
+
+          const handleLikeStudio = async () => {
+              if (!user) return;
+              try {
+                  const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                  await updateDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), {
+                      studioLikes: increment(1)
+                  });
+              } catch (e) {
+                  console.error("Error liking studio", e);
+              }
+          };
 
           const feedbacks = useMemo(() => {
               return allRecords.filter(r => r.clientRating > 0 || r.clientFeedback).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
@@ -2561,7 +2635,7 @@
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} />;
+              return <ClientPortalScreen settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} />;
           }
 
           if (isTracking) {
@@ -2627,7 +2701,7 @@
                               
                               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                               const targetCol = isWedding ? 'weddings' : 'transactions';
-                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, clientProfilePic: dataUrl });
+                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, clientProfilePic: dataUrl }, { merge: true });
                               setIsUploadingProfilePic(false);
                           };
                       };
