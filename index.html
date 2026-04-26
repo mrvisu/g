@@ -129,9 +129,9 @@
         ];
 
         const DEFAULT_MINI_PRODUCTS = [
-            { id: '1', title: "براويز خشبية", desc: "أضف لمسة جمالية لصورك", price: "يبدأ من 100 ج.م", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400&auto=format&fit=crop" },
-            { id: '2', title: "مجات حرارية", desc: "هدية مميزة لمن تحب", price: "يبدأ من 80 ج.م", img: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop" },
-            { id: '3', title: "ألبومات ديجيتال", desc: "احفظ ذكرياتك بأناقة", price: "يبدأ من 150 ج.م", img: "https://images.unsplash.com/photo-1544665431-7b0b6e9b46ec?q=80&w=400&auto=format&fit=crop" }
+            { id: '1', title: "براويز خشبية", desc: "أضف لمسة جمالية لصورك", price: "100 ج.م", originalPrice: "150 ج.م", images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400&auto=format&fit=crop"] },
+            { id: '2', title: "مجات حرارية", desc: "هدية مميزة لمن تحب", price: "80 ج.م", originalPrice: "120 ج.م", images: ["https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400&auto=format&fit=crop"] },
+            { id: '3', title: "ألبومات ديجيتال", desc: "احفظ ذكرياتك بأناقة", price: "150 ج.م", originalPrice: "200 ج.م", images: ["https://images.unsplash.com/photo-1544665431-7b0b6e9b46ec?q=80&w=400&auto=format&fit=crop"] }
         ];
 
         const DEFAULT_WA_TEMPLATES = {
@@ -364,6 +364,37 @@
         };
 
         // --- UI Components ---
+        
+        const MiniProductCard = ({ prod, onClick }) => {
+            const [imgIdx, setImgIdx] = useState(0);
+            const images = prod.images?.length > 0 ? prod.images : (prod.img ? [prod.img] : []);
+            
+            useEffect(() => {
+                if (images.length <= 1) return;
+                const timer = setInterval(() => {
+                    setImgIdx(prev => (prev + 1) % images.length);
+                }, 7000);
+                return () => clearInterval(timer);
+            }, [images.length]);
+
+            return (
+                <div onClick={() => onClick(prod)} className="relative h-36 sm:h-44 rounded-2xl overflow-hidden border border-slate-700 shadow-lg group cursor-pointer bg-slate-900 flex flex-col justify-end">
+                    {images.map((img, i) => (
+                        <img key={i} src={img} className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 ${i === imgIdx ? 'opacity-60 group-hover:opacity-80' : 'opacity-0'}`} alt={prod.title} />
+                    ))}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none"></div>
+                    <div className="relative z-10 p-2 sm:p-3 flex flex-col items-center text-center">
+                        <span className="text-white text-xs sm:text-sm font-black drop-shadow-md leading-tight">{prod.title}</span>
+                        <span className="text-slate-300 text-[8px] sm:text-[10px] font-bold mt-0.5 sm:mt-1 line-clamp-1">{prod.desc}</span>
+                        <div className="flex items-center gap-1.5 mt-1 bg-slate-900/80 px-2 py-0.5 rounded-full backdrop-blur-sm border border-yellow-500/30">
+                            <span className="text-yellow-400 text-[10px] sm:text-xs font-black">{prod.price}</span>
+                            {prod.originalPrice && <span className="text-slate-400 line-through text-[8px] sm:text-[9px] font-bold">{prod.originalPrice}</span>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const LoginScreen = ({ validPassword, onLogin }) => {
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
@@ -425,7 +456,7 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClose={onClose}>
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
                     <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
                             <h2 className="text-xl font-black text-yellow-400 flex items-center gap-2">
@@ -489,6 +520,17 @@
             
             const [hasLiked, setHasLiked] = useState(localStorage.getItem('studio_liked') === 'true');
             const [selectedMiniProd, setSelectedMiniProd] = useState(null);
+            const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
+
+            useEffect(() => {
+                if(selectedMiniProd) {
+                     const imgs = selectedMiniProd.images?.length > 0 ? selectedMiniProd.images : (selectedMiniProd.img ? [selectedMiniProd.img] : []);
+                     if(imgs.length > 1) {
+                         const t = setInterval(() => setMiniProdImgIndex(prev => (prev + 1) % imgs.length), 7000);
+                         return () => clearInterval(t);
+                     }
+                }
+            }, [selectedMiniProd]);
 
             const handleLike = () => {
                 if(hasLiked) return;
@@ -581,15 +623,7 @@
                                 {/* Miniature Products Grid (3 Cards) */}
                                 <div className="grid grid-cols-3 gap-2 mb-6">
                                     {displayMiniProducts.map(prod => (
-                                        <div key={prod.id} onClick={() => setSelectedMiniProd(prod)} className="relative h-36 sm:h-44 rounded-2xl overflow-hidden border border-slate-700 shadow-lg group cursor-pointer bg-slate-900 flex flex-col justify-end">
-                                            <img src={prod.img} alt={prod.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none"></div>
-                                            <div className="relative z-10 p-2 sm:p-3 flex flex-col items-center text-center">
-                                                <span className="text-white text-xs sm:text-sm font-black drop-shadow-md leading-tight">{prod.title}</span>
-                                                <span className="text-slate-300 text-[8px] sm:text-[10px] font-bold mt-0.5 sm:mt-1 line-clamp-1">{prod.desc}</span>
-                                                <span className="text-yellow-400 text-[10px] sm:text-xs font-black mt-1 bg-slate-900/80 px-1.5 py-0.5 rounded backdrop-blur-sm border border-yellow-500/30">{prod.price}</span>
-                                            </div>
-                                        </div>
+                                        <MiniProductCard key={prod.id} prod={prod} onClick={setSelectedMiniProd} />
                                     ))}
                                 </div>
 
@@ -597,7 +631,7 @@
                                 {settings.promotions?.length > 0 && (
                                     <>
                                         <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2">
-                                            <i className="ph-fill ph-sparkle text-yellow-400"></i> باكيدجات 2026 Mrakby Photography
+                                            <i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك
                                         </h3>
                                         <div className="grid grid-cols-1 gap-4">
                                             {settings.promotions.map(promo => {
@@ -665,17 +699,24 @@
                         )}
 
                         {/* Modal for Mini Product Details */}
-                        {selectedMiniProd && (
+                        {selectedMiniProd && (() => {
+                            const imgs = selectedMiniProd.images?.length > 0 ? selectedMiniProd.images : (selectedMiniProd.img ? [selectedMiniProd.img] : []);
+                            return (
                             <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedMiniProd(null)}>
                                 <div className="bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
                                     <div className="relative h-56 sm:h-64 w-full bg-slate-950">
-                                        <img src={selectedMiniProd.img} className="w-full h-full object-cover" alt={selectedMiniProd.title} />
+                                        {imgs.map((img, i) => (
+                                            <img key={i} src={img} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === miniProdImgIndex ? 'opacity-100' : 'opacity-0'}`} alt={selectedMiniProd.title} />
+                                        ))}
                                         <button onClick={() => setSelectedMiniProd(null)} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80 pointer-events-none"></div>
                                     </div>
                                     <div className="p-6 flex flex-col items-center text-center -mt-10 relative z-10">
                                         <h2 className="text-2xl font-black text-white mb-2">{selectedMiniProd.title}</h2>
-                                        <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-4 py-1.5 rounded-xl font-black text-sm mb-4 shadow-sm">{selectedMiniProd.price}</span>
+                                        <div className="flex items-center gap-2 mb-4 bg-yellow-900/30 border border-yellow-500/50 px-4 py-1.5 rounded-xl shadow-sm">
+                                            <span className="text-yellow-400 font-black text-sm">{selectedMiniProd.price}</span>
+                                            {selectedMiniProd.originalPrice && <span className="text-slate-400 line-through text-xs font-bold">{selectedMiniProd.originalPrice}</span>}
+                                        </div>
                                         <p className="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800 shadow-inner w-full">{selectedMiniProd.desc}</p>
                                         
                                         <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedMiniProd.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50">
@@ -684,7 +725,7 @@
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        )})()}
                         
                         {selectedPromoModal && (
                             <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
@@ -882,29 +923,31 @@
             const [newTitle, setNewTitle] = useState('');
             const [newDesc, setNewDesc] = useState('');
             const [newPrice, setNewPrice] = useState('');
-            const [newImg, setNewImg] = useState('');
+            const [newOriginalPrice, setNewOriginalPrice] = useState('');
+            const [newImages, setNewImages] = useState([]);
             const [isUploading, setIsUploading] = useState(false);
 
             const handleImageUpload = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+                const files = Array.from(e.target.files).slice(0, 3 - newImages.length);
+                if (files.length === 0) return;
                 setIsUploading(true);
-                const processed = await processImage(file, 600);
-                setNewImg(processed);
+                const processed = await Promise.all(files.map(f => processImage(f, 600)));
+                setNewImages(prev => [...prev, ...processed]);
                 setIsUploading(false);
             };
 
             const handleEditClick = (item, idx) => {
-                setNewTitle(item.title); setNewDesc(item.desc); setNewPrice(item.price); setNewImg(item.img);
+                setNewTitle(item.title); setNewDesc(item.desc); setNewPrice(item.price); setNewOriginalPrice(item.originalPrice || ''); 
+                setNewImages(item.images?.length > 0 ? item.images : (item.img ? [item.img] : []));
                 onRemove(idx);
             };
 
             const handleSave = () => {
-                if(newTitle && newImg){
-                    onAdd({ id: Date.now().toString(), title: newTitle, desc: newDesc, price: newPrice, img: newImg });
-                    setNewTitle(''); setNewDesc(''); setNewPrice(''); setNewImg('');
+                if(newTitle && newImages.length > 0){
+                    onAdd({ id: Date.now().toString(), title: newTitle, desc: newDesc, price: newPrice, originalPrice: newOriginalPrice, images: newImages });
+                    setNewTitle(''); setNewDesc(''); setNewPrice(''); setNewOriginalPrice(''); setNewImages([]);
                 } else {
-                    alert("يرجى إدخال اسم البطاقة وإرفاق صورة على الأقل.");
+                    alert("يرجى إدخال اسم البطاقة وإرفاق صورة واحدة على الأقل.");
                 }
             };
 
@@ -912,36 +955,49 @@
               <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                 <h3 className="font-bold text-slate-100 mb-4 border-b border-slate-800 pb-2">{title} <span className="text-yellow-400 text-xs bg-yellow-900/30 px-2 py-1 rounded">(يتم عرض أول 3 فقط للعملاء)</span></h3>
                 <div className="flex flex-col gap-3 mb-5 bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input type="text" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="اسم المنتج أو البطاقة..."/>
-                        <input type="text" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="السعر (مثال: يبدأ من 100 ج.م)..."/>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="text" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="اسم البطاقة..."/>
+                        <input type="text" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="السعر (مثال: 100 ج.م)..."/>
+                        <input type="text" value={newOriginalPrice} onChange={e=>setNewOriginalPrice(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="السعر قبل الخصم (اختياري)..."/>
                     </div>
                     <input type="text" value={newDesc} onChange={e=>setNewDesc(e.target.value)} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-yellow-500 text-sm" placeholder="وصف قصير..."/>
-                    <div className="flex items-center gap-4 mt-2">
-                        {newImg && <img src={newImg} className="w-16 h-16 rounded object-cover border border-slate-700" alt="Preview"/>}
-                        <label className="flex-1 border border-dashed border-slate-600 p-3 rounded-lg text-center cursor-pointer hover:border-yellow-500 hover:text-yellow-500 text-slate-500 transition-colors bg-slate-900">
-                            {isUploading ? <i className="ph ph-spinner animate-spin text-xl"></i> : <><i className="ph ph-image text-xl mb-1 block"></i> رفع صورة البطاقة</>}
-                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
-                        </label>
+                    <div className="flex items-center gap-4 mt-2 flex-wrap">
+                        {newImages.map((img, i) => (
+                            <div key={i} className="relative w-16 h-16 rounded border border-slate-600 group">
+                                <img src={img} className="w-full h-full object-cover rounded" />
+                                <button onClick={() => setNewImages(newImages.filter((_, idx) => idx !== i))} className="absolute inset-0 bg-red-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"><i className="ph ph-trash"></i></button>
+                            </div>
+                        ))}
+                        {newImages.length < 3 && (
+                            <label className="w-16 h-16 flex items-center justify-center border border-dashed border-slate-600 rounded-lg cursor-pointer hover:border-yellow-500 hover:text-yellow-500 text-slate-500 transition-colors bg-slate-900 shrink-0" title="إضافة صورة (حتى 3 صور)">
+                                {isUploading ? <i className="ph ph-spinner animate-spin text-xl"></i> : <i className="ph ph-plus text-xl"></i>}
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                            </label>
+                        )}
                     </div>
                     <button onClick={handleSave} className="w-full bg-yellow-600 hover:bg-yellow-500 text-slate-900 font-black py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-2 shadow-lg"><i className="ph-bold ph-plus"></i> إضافة للبطاقات</button>
                 </div>
                 <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px] custom-scrollbar pr-2">
-                    {items.map((item, idx) => (
+                    {items.map((item, idx) => {
+                        const imgs = item.images?.length > 0 ? item.images : (item.img ? [item.img] : []);
+                        return (
                         <div key={idx} className="p-3 bg-slate-800 rounded-xl flex items-center gap-4 border border-slate-700 group hover:border-yellow-500/50 transition-colors">
                             <span className="font-bold text-slate-500 text-xs w-4">{idx + 1}.</span>
-                            <img src={item.img} className="w-16 h-16 rounded-lg object-cover shadow-sm" />
+                            {imgs.length > 0 && <img src={imgs[0]} className="w-16 h-16 rounded-lg object-cover shadow-sm" />}
                             <div className="flex-1">
                                 <div className="font-bold text-slate-200">{item.title}</div>
                                 <div className="text-xs text-slate-400 mt-1">{item.desc}</div>
-                                <div className="text-xs text-yellow-400 mt-1 font-bold bg-yellow-900/20 px-2 py-0.5 rounded inline-block">{item.price}</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-yellow-400 font-bold bg-yellow-900/20 px-2 py-0.5 rounded inline-block">{item.price}</span>
+                                    {item.originalPrice && <span className="text-[10px] text-slate-400 line-through">{item.originalPrice}</span>}
+                                </div>
                             </div>
                             <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={()=>handleEditClick(item, idx)} className="text-blue-400 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors"><i className="ph ph-pencil-simple text-base"></i></button>
                                 <button onClick={()=>onRemove(idx)} className="text-red-400 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors"><i className="ph ph-trash text-base"></i></button>
                             </div>
                         </div>
-                    ))}
+                    )})}
                     {items.length === 0 && <p className="text-center text-slate-500 py-4 text-sm">لا توجد بطاقات مضافة.</p>}
                 </div>
               </div>
@@ -1076,7 +1132,8 @@
             const handleSubmit = async (e) => {
               e.preventDefault();
               const amount = parseFloat(e.target.amount.value);
-              const newPayment = { amount, method: payModal.paymentType, date: new Date().toISOString() };
+              const pDate = e.target.paymentDate.value ? new Date(e.target.paymentDate.value).toISOString() : new Date().toISOString();
+              const newPayment = { amount, method: payModal.paymentType, date: pDate };
               const updated = { ...payModal, paid: payModal.paid + amount, electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0), remaining: payModal.total - (payModal.paid + amount), payments: [...(payModal.payments || []), newPayment] };
               if (updated.pendingReceipt && payModal.paymentType === 'electronic') { updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt]; }
               if (updated.pendingReceipt) delete updated.pendingReceipt;
@@ -1094,8 +1151,15 @@
                   <h3 className="text-xl font-black mb-3 border-b border-slate-800 pb-3 text-center text-slate-100">{payModal.paymentType === 'electronic' ? 'سداد إلكتروني (محافظ)' : 'سداد نقدي'}</h3>
                   <div className="mb-4 bg-slate-950 p-3 rounded-xl text-center border border-slate-800"><p className="text-slate-400 text-sm">العميل: <b className="text-white text-base">{displayName}</b></p><p className="text-red-400 font-bold mt-1 text-sm">الباقي المستحق: {payModal.remaining} ج.م</p></div>
                   <form onSubmit={handleSubmit} className="space-y-3">
-                    <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl text-xl font-black text-center outline-none focus:border-blue-500 shadow-inner"/>
-                    <button type="submit" className={`w-full text-white font-black py-3 rounded-xl shadow-lg transition-all text-base ${payModal.paymentType === 'electronic' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-green-600 hover:bg-green-500'}`}>تأكيد تحصيل المبلغ</button>
+                    <div>
+                        <label className="text-slate-400 text-xs font-bold block mb-1">تاريخ السداد</label>
+                        <input type="date" name="paymentDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-blue-500 shadow-inner"/>
+                    </div>
+                    <div>
+                        <label className="text-slate-400 text-xs font-bold block mb-1">المبلغ المدفوع (ج.م)</label>
+                        <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl text-xl font-black text-center outline-none focus:border-blue-500 shadow-inner"/>
+                    </div>
+                    <button type="submit" className={`w-full text-white font-black py-3 mt-2 rounded-xl shadow-lg transition-all text-base ${payModal.paymentType === 'electronic' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-green-600 hover:bg-green-500'}`}>تأكيد تحصيل المبلغ</button>
                   </form>
                 </div>
               </div>
