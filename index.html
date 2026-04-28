@@ -548,7 +548,7 @@
             );
         };
 
-        const ClientPortalScreen = ({ settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio }) => {
+        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio }) => {
             const [phone, setPhone] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
@@ -560,6 +560,22 @@
             const [hasLiked, setHasLiked] = useState(localStorage.getItem('studio_liked') === 'true');
             const [selectedMiniProd, setSelectedMiniProd] = useState(null);
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
+
+            // تسجيل زيارة جديدة لبوابة العملاء
+            useEffect(() => {
+                const recordVisit = async () => {
+                    if (!db) return;
+                    try {
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), {
+                            portalVisits: increment(1)
+                        });
+                    } catch (e) {
+                        console.error("Error recording visit", e);
+                    }
+                };
+                recordVisit();
+            }, [db]);
 
             useEffect(() => {
                 if(selectedMiniProd) {
@@ -2719,6 +2735,8 @@
           // Promotional details state
           const [showPromoDetails, setShowPromoDetails] = useState(false);
           const [showStages, setShowStages] = useState(false);
+          const [showClientPaymentPopup, setShowClientPaymentPopup] = useState(false);
+          const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
@@ -2895,6 +2913,12 @@
                   const currentTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
                   
                   if (currentTxn) {
+                      // إظهار نافذة الدفع تلقائياً مرة واحدة إذا كان هناك باقي
+                      if (currentTxn.remaining > 0 && !hasAutoShownPayment) {
+                          setShowClientPaymentPopup(true);
+                          setHasAutoShownPayment(true);
+                      }
+
                       // نظام حماية الجهاز: ربط رابط التتبع بمتصفح العميل لأول مرة فقط
                       const currentDeviceId = localStorage.getItem('studio_client_device_id') || Math.random().toString(36).substring(2, 15);
                       
@@ -2953,7 +2977,7 @@
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} />;
+              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} />;
           }
 
           if (isTracking) {
@@ -3180,6 +3204,29 @@
                               </div>
                           </div>
                       </div>
+
+                      {/* بطاقة الدفع المصغرة */}
+                      {txn.remaining > 0 && (
+                          <div 
+                              onClick={() => setShowClientPaymentPopup(true)}
+                              className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
+                          >
+                              <div className="absolute left-0 top-0 w-1 h-full bg-red-500"></div>
+                              <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                      <i className="ph-fill ph-warning-circle text-2xl"></i>
+                                  </div>
+                                  <div>
+                                      <h4 className="font-bold text-red-300 text-sm">مبلغ مستحق للدفع</h4>
+                                      <p className="text-xs text-slate-400 mt-0.5">اضغط هنا لسداد الباقي إلكترونياً</p>
+                                  </div>
+                              </div>
+                              <div className="text-left flex items-center gap-2">
+                                  <span className="block text-xl font-black text-red-400">{txn.remaining} <span className="text-xs">ج.م</span></span>
+                                  <i className="ph-bold ph-caret-left text-slate-500"></i>
+                              </div>
+                          </div>
+                      )}
 
                       {/* 3. البطاقة الإعلانية (Promotional Card) */}
                       {clientPromotions.length > 0 && (
@@ -3500,6 +3547,98 @@
                           )}
                       </div>
                       
+                      {/* رسالة الدفع المنبثقة */}
+                      {showClientPaymentPopup && txn.remaining > 0 && (
+                          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
+                              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-indigo-500/30 relative flex flex-col max-h-[90vh] overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                                  
+                                  <div className="p-6 text-center overflow-y-auto custom-scrollbar">
+                                      <div className="flex justify-center mb-4">
+                                          <div className="bg-indigo-500/20 p-4 rounded-full text-indigo-400 shadow-lg shadow-indigo-900/20">
+                                              <i className="ph ph-wallet text-3xl"></i>
+                                          </div>
+                                      </div>
+                                      <h3 className="text-lg font-bold text-white mb-2">سداد إلكتروني متاح 💳</h3>
+                                      <p className="text-sm text-indigo-200/80 leading-relaxed mb-4">
+                                          لراحتك، يمكنك الآن سداد باقي المبلغ المستحق (<b className="text-white">{txn.remaining} ج.م</b>) بكل سهولة عبر 
+                                          <span className="text-white font-bold mx-1">إنستاباي (InstaPay)</span> أو <span className="text-white font-bold mx-1">المحافظ الإلكترونية</span>.
+                                      </p>
+                                      
+                                      <div className="bg-slate-950/80 py-3 px-4 rounded-2xl border border-indigo-500/20 flex flex-col items-center gap-1 shadow-inner mb-4">
+                                          <span className="text-xs text-indigo-300">رقم التحويل (فودافون كاش / إنستاباي):</span>
+                                          <div className="flex items-center gap-3 mt-1">
+                                              <span className="text-2xl font-black font-mono text-white tracking-widest">{settings.studioPhone || '01201260040'}</span>
+                                              <button onClick={(e) => {
+                                                  const el = document.createElement('textarea');
+                                                  el.value = settings.studioPhone || '01201260040';
+                                                  document.body.appendChild(el);
+                                                  el.select();
+                                                  document.execCommand('copy');
+                                                  document.body.removeChild(el);
+                                                  const originalHTML = e.currentTarget.innerHTML;
+                                                  e.currentTarget.innerHTML = '<i class="ph ph-check text-lg"></i>';
+                                                  setTimeout(() => e.currentTarget.innerHTML = originalHTML, 2000);
+                                              }} className="text-indigo-400 hover:text-indigo-300 bg-indigo-900/30 p-2 rounded-lg transition-colors" title="نسخ الرقم"><i className="ph ph-copy text-lg"></i></button>
+                                          </div>
+                                      </div>
+
+                                      <div className="mb-2 text-right bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
+                                          <label className="block text-sm font-bold text-indigo-300 mb-3"><i className="ph ph-upload-simple text-lg align-middle ml-1"></i> إرفاق صورة التحويل أولاً لتأكيد السداد:</label>
+                                          <input type="file" accept="image/*" onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (!file) return;
+                                                const reader = new FileReader();
+                                                reader.readAsDataURL(file);
+                                                reader.onload = (event) => {
+                                                    const img = new Image();
+                                                    img.src = event.target.result;
+                                                    img.onload = () => {
+                                                        const canvas = document.createElement('canvas');
+                                                        const MAX_WIDTH = 800;
+                                                        let scaleSize = 1;
+                                                        if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                                                        canvas.width = img.width * scaleSize;
+                                                        canvas.height = img.height * scaleSize;
+                                                        const ctx = canvas.getContext('2d');
+                                                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                        setTransferReceipt(canvas.toDataURL('image/jpeg', 0.6));
+                                                        setClientViewError('');
+                                                    };
+                                                };
+                                              }} className="block w-full text-sm text-slate-400 file:ml-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 transition-colors bg-slate-950 rounded-xl"
+                                          />
+                                          {clientViewError && <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1"><i className="ph ph-warning text-base"></i> {clientViewError}</p>}
+                                          {transferReceipt && <p className="text-green-400 text-xs mt-3 font-bold flex items-center gap-1"><i className="ph ph-check-circle text-base"></i> تم إرفاق الصورة بنجاح وجاهز للتأكيد</p>}
+                                      </div>
+
+                                      <button onClick={async () => {
+                                          if (!transferReceipt) { setClientViewError('عذراً، برجاء إرفاق صورة التحويل أولاً لتأكيد السداد.'); return; }
+                                          setIsUploading(true);
+                                          try {
+                                              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                                              const updated = { ...txn, pendingReceipt: transferReceipt };
+                                              const targetCol = isWedding ? 'weddings' : 'transactions';
+                                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated);
+                                              const confirmMsg = `مرحباً، قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد باقي حساب إيصال رقم #${txn.receiptNo} باسم ${displayName}.\n✅ وقمت برفع صورة التحويل في رابط التتبع لتأكيد الدفع.`;
+                                              openWhatsApp(settings.studioPhone || '01201260040', confirmMsg);
+                                              setShowClientPaymentPopup(false);
+                                          } catch (err) { setClientViewError('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.'); }
+                                          setIsUploading(false);
+                                      }} disabled={isUploading} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
+                                          {isUploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><i className="ph ph-whatsapp-logo text-2xl"></i> تأكيد التحويل عبر واتساب</>}
+                                      </button>
+                                  </div>
+
+                                  <div className="p-4 border-t border-slate-800 bg-slate-950/50">
+                                      <button onClick={() => setShowClientPaymentPopup(false)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                          تخطي الآن <i className="ph-bold ph-arrow-left"></i>
+                                      </button>
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+
                       <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
                   </div>
               );
