@@ -557,19 +557,31 @@
             const [selectedPromoModal, setSelectedPromoModal] = useState(null);
             const [promoImgIndex, setPromoImgIndex] = useState(0);
             
-            const [hasLiked, setHasLiked] = useState(localStorage.getItem('studio_liked') === 'true');
+            const [hasLiked, setHasLiked] = useState(getSafeLocal('studio_liked') === 'true');
             const [selectedMiniProd, setSelectedMiniProd] = useState(null);
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
+            const [localVisits, setLocalVisits] = useState(settings.portalVisits || 1);
+
+            const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
+            const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
+            const avgRating = useMemo(() => reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.clientRating, 0) / reviews.length).toFixed(1) : 0, [reviews]);
+
+            useEffect(() => {
+                setLocalVisits(settings.portalVisits || 1);
+            }, [settings.portalVisits]);
 
             // تسجيل زيارة جديدة لبوابة العملاء
             useEffect(() => {
                 const recordVisit = async () => {
                     if (!db) return;
+                    if (sessionStorage.getItem('portal_visited')) return;
+                    sessionStorage.setItem('portal_visited', 'true');
                     try {
                         const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), {
                             portalVisits: increment(1)
                         });
+                        setLocalVisits(prev => prev + 1);
                     } catch (e) {
                         console.error("Error recording visit", e);
                     }
@@ -644,13 +656,18 @@
                                 </div>
                                 <div className="w-px h-8 bg-slate-800"></div>
                                 <div className="flex flex-col items-center">
-                                    <span className="text-xl sm:text-2xl font-black text-yellow-400 mb-1">{settings.portalVisits || 1}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-yellow-400 mb-1">{localVisits}</span>
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-eye"></i> زيارة</span>
                                 </div>
                                 <div className="w-px h-8 bg-slate-800"></div>
                                 <div className="flex flex-col items-center">
                                     <span className="text-xl sm:text-2xl font-black text-pink-400 mb-1">{studioLikes}</span>
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-heart"></i> إعجاب</span>
+                                </div>
+                                <div className="w-px h-8 bg-slate-800"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-xl sm:text-2xl font-black text-amber-400 mb-1 flex items-center gap-1">{avgRating} <i className="ph-fill ph-star text-sm sm:text-base"></i></span>
+                                    <span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1">من {reviews.length} تقييم</span>
                                 </div>
                             </div>
 
@@ -681,6 +698,35 @@
                                         <MiniProductCard key={prod.id} prod={prod} onClick={setSelectedMiniProd} />
                                     ))}
                                 </div>
+
+                                {/* Customer Reviews Section */}
+                                {reviews.length > 0 && (
+                                    <div className="mb-8">
+                                        <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2">
+                                            <i className="ph-fill ph-star text-amber-400"></i> ماذا يقول عملاؤنا عنّا
+                                        </h3>
+                                        <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar snap-x custom-scrollbar">
+                                            {reviews.slice(0, 6).map((rev, i) => (
+                                                <div key={i} className="min-w-[260px] sm:min-w-[300px] bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-5 rounded-2xl shrink-0 snap-center shadow-lg">
+                                                    <div className="flex justify-between items-start mb-3 border-b border-slate-800 pb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                                                <i className="ph-fill ph-user"></i>
+                                                            </div>
+                                                            <span className="font-bold text-sm text-slate-200">{rev.type === 'wedding' ? (rev.groomName + ' و ' + rev.brideName) : rev.clientName}</span>
+                                                        </div>
+                                                        <div className="flex text-amber-400 text-xs" dir="ltr">
+                                                            {[...Array(5)].map((_, j) => <i key={j} className={j < rev.clientRating ? "ph-fill ph-star" : "ph ph-star text-slate-600"}></i>)}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed italic">
+                                                        {rev.clientFeedback ? `"${rev.clientFeedback}"` : "خدمة ممتازة وتجربة رائعة!"}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Promotions Section */}
                                 {settings.promotions?.length > 0 && (
@@ -3016,7 +3062,7 @@
                   .filter(t => t.phone === trackPhone)
                   .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
               
-              const existingProfilePic = clientArchiveRecords.find(t => t.clientProfilePic)?.clientProfilePic || null;
+              const existingProfilePic = txn.clientProfilePic || clientArchiveRecords.find(t => t.clientProfilePic)?.clientProfilePic || null;
               
               const clientPromotions = (!txn.selectedPromos || !settings.promotions) ? [] : settings.promotions.filter(p => txn.selectedPromos.includes(p.id));
 
