@@ -71,7 +71,7 @@
 
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- Safe LocalStorage Wrappers (Fixes iPhone Crashes) ---
+        // --- Safe LocalStorage Wrappers ---
         const getSafeLocal = (key) => { try { return localStorage.getItem(key); } catch(e) { return null; } };
         const setSafeLocal = (key, val) => { try { localStorage.setItem(key, val); } catch(e) {} };
         const removeSafeLocal = (key) => { try { localStorage.removeItem(key); } catch(e) {} };
@@ -180,7 +180,6 @@
              return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         };
 
-        // حساب رصيد المكافآت للعميل مع التقريب لأقرب 5 (1% للزفاف، 10% للعادي)
         const getCustomerRewards = (phone, allRecs) => {
             if (!phone || !allRecs) return { earned: 0, used: 0, balance: 0 };
             const custRecs = allRecs.filter(t => t.phone === phone);
@@ -189,13 +188,12 @@
             custRecs.forEach(t => {
                 const paid = parseFloat(t.paid) || 0;
                 if (t.type === 'wedding') {
-                    rawEarned += paid * 0.01; // 1% لحجوزات الزفاف
+                    rawEarned += paid * 0.01;
                 } else {
-                    rawEarned += paid * 0.10; // 10% للعمليات العادية
+                    rawEarned += paid * 0.10;
                 }
                 totalUsed += (parseFloat(t.rewardDiscount) || 0);
             });
-            // التقريب لأقرب 5 
             const earned = Math.round(rawEarned / 5) * 5;
             const balance = Math.max(0, earned - totalUsed);
             return { earned, used: totalUsed, balance };
@@ -399,7 +397,6 @@
 
         // --- UI Components ---
         
-        // بطاقات المنتجات المصغرة بتصميم أنيق وشريط سعر غير مزعج
         const MiniProductCard = ({ prod, onClick }) => {
             const [imgIdx, setImgIdx] = useState(0);
             const images = prod.images?.length > 0 ? prod.images : (prod.img ? [prod.img] : []);
@@ -419,10 +416,7 @@
                         {images.map((img, i) => (
                             <img key={i} src={img} className={`absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${i === imgIdx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} alt={prod.title} />
                         ))}
-                        {/* Gradient Overlay for better contrast */}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-20"></div>
-                        
-                        {/* Original Price Tag */}
                         {prod.originalPrice && (
                             <div className="absolute top-2 left-2 z-30 bg-rose-500/90 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold line-through shadow-sm border border-rose-400/30">
                                 {prod.originalPrice}
@@ -432,12 +426,10 @@
 
                     {/* Content Section */}
                     <div className="p-3 sm:p-4 flex flex-col relative z-20">
-                        {/* Floating Price Badge */}
                         <div className="absolute -top-4 sm:-top-5 right-3 sm:right-4 z-30 bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl font-black text-xs sm:text-sm shadow-lg border border-yellow-200/50 flex items-center gap-1.5 transition-transform group-hover:scale-105">
                             <i className="ph-fill ph-tag"></i>
                             {prod.price}
                         </div>
-                        
                         <h3 className="text-white text-sm sm:text-base font-black leading-tight mt-1 sm:mt-1 mb-1 line-clamp-1 group-hover:text-yellow-400 transition-colors">{prod.title}</h3>
                         <p className="text-slate-400 text-[10px] sm:text-xs font-bold line-clamp-2 w-full leading-relaxed">{prod.desc}</p>
                     </div>
@@ -445,7 +437,7 @@
             );
         };
 
-        const LoginScreen = ({ validPassword, onLogin }) => {
+        const LoginScreen = ({ validPassword, onLogin, navigateTo }) => {
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
             const handleSubmit = (e) => {
@@ -468,7 +460,7 @@
                         </form>
                         <div className="mt-6 pt-6 border-t border-slate-800">
                             <p className="text-slate-500 text-xs mb-3">هل أنت عميل تبحث عن طلبك أو عروضنا؟</p>
-                            <a href="?client=true" className="w-full bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold py-3 rounded-xl transition-all text-sm flex justify-center items-center gap-2 border border-slate-700"><i className="ph-fill ph-user"></i> دخول بوابة العملاء</a>
+                            <a href="?client=true" onClick={(e) => { e.preventDefault(); navigateTo('?client=true'); }} className="w-full bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold py-3 rounded-xl transition-all text-sm flex justify-center items-center gap-2 border border-slate-700"><i className="ph-fill ph-user"></i> دخول بوابة العملاء</a>
                         </div>
                     </div>
                 </div>
@@ -507,7 +499,7 @@
 
             return (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
-                    <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
                             <h2 className="text-xl font-black text-yellow-400 flex items-center gap-2">
                                 <i className="ph-fill ph-megaphone text-2xl"></i> إعادة استهداف العملاء ({uniqueCustomers.length})
@@ -559,7 +551,153 @@
             );
         };
 
-        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio }) => {
+        const ViewersModal = ({ allRecords, settings, portalVisits, onClose }) => {
+            const [message, setMessage] = useState(`أهلاً بك 🌟\nاكتشف أحدث عروض ${settings.studioName} الحصرية واستفد من خصوماتنا الحالية! 📸`);
+
+            const uniqueCustomers = useMemo(() => {
+                const map = new Map();
+                allRecords.forEach(t => {
+                    if (!t.phone) return;
+                    if (!map.has(t.phone)) {
+                        map.set(t.phone, {
+                            phone: t.phone,
+                            name: t.clientName || t.groomName || 'عميل',
+                            lastVisit: t.dateTime
+                        });
+                    } else {
+                        const existing = map.get(t.phone);
+                        if (new Date(t.dateTime) > new Date(existing.lastVisit)) existing.lastVisit = t.dateTime;
+                    }
+                });
+                return Array.from(map.values()).sort((a,b) => new Date(b.lastVisit) - new Date(a.lastVisit));
+            }, [allRecords]);
+
+            const anonymousCount = Math.max(0, (portalVisits || 0) - uniqueCustomers.length);
+
+            return (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+                    <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                            <h2 className="text-xl font-black text-green-400 flex items-center gap-2">
+                                <i className="ph-fill ph-users-three text-2xl"></i> زوار البوابة (العملاء المسجلين والجدد)
+                            </h2>
+                            <button onClick={onClose} className="text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
+                        </div>
+
+                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-slate-950 p-4 rounded-xl border border-blue-500/20 text-center">
+                                    <p className="text-sm text-slate-400 font-bold mb-1">العملاء المسجلين (لهم أرقام)</p>
+                                    <p className="text-2xl font-black text-blue-400">{uniqueCustomers.length}</p>
+                                </div>
+                                <div className="bg-slate-950 p-4 rounded-xl border border-slate-700 text-center">
+                                    <p className="text-sm text-slate-400 font-bold mb-1">زوار جدد (مجهولين الهوية)</p>
+                                    <p className="text-2xl font-black text-slate-300">{anonymousCount}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                                <label className="block text-sm font-bold text-slate-300 mb-2">إرسال رسالة العروض للعملاء المسجلين:</label>
+                                <textarea
+                                    rows="3"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-green-500 transition-colors resize-y custom-scrollbar"
+                                />
+                            </div>
+
+                            <div>
+                                <h3 className="font-bold text-slate-300 mb-3 text-sm border-b border-slate-800 pb-2">العملاء المسجلين:</h3>
+                                <div className="space-y-2">
+                                    {uniqueCustomers.length === 0 ? <p className="text-center text-slate-500 py-4 text-sm">لا يوجد عملاء مسجلين بعد.</p> : uniqueCustomers.map((cust, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-colors">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm text-slate-200">{cust.name}</span>
+                                                <div className="text-xs text-slate-500 mt-1 font-mono">📞 {cust.phone}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => openWhatsApp(cust.phone, message)}
+                                                className="bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0"
+                                                title="إرسال رسالة واتساب"
+                                            >
+                                                <i className="ph-fill ph-paper-plane-right text-lg"></i>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SharersModal = ({ allRecords, settings, onClose }) => {
+            const sharedRecords = useMemo(() => {
+                const map = new Map();
+                allRecords.filter(r => r.hasSharedLink).forEach(t => {
+                    if (!t.phone) return;
+                    if (!map.has(t.phone)) {
+                        map.set(t.phone, {
+                            phone: t.phone,
+                            name: t.clientName || t.groomName || 'عميل',
+                            date: t.dateTime
+                        });
+                    }
+                });
+                return Array.from(map.values()).sort((a,b) => new Date(b.date) - new Date(a.date));
+            }, [allRecords]);
+
+            const [message, setMessage] = useState(`أهلاً بك 🌟\nشكراً لمشاركتك رابط ${settings.studioName} مع أصدقائك! 🎁\nتقديراً لدعمك، بنقدملك خصم إضافي على زيارتك القادمة أو طباعة صور مجانية.`);
+
+            return (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+                    <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                            <h2 className="text-xl font-black text-emerald-400 flex items-center gap-2">
+                                <i className="ph-fill ph-share-network text-2xl"></i> سفراء الاستوديو (شاركوا الرابط)
+                            </h2>
+                            <button onClick={onClose} className="text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
+                        </div>
+
+                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                                <label className="block text-sm font-bold text-slate-300 mb-2">إرسال مكافأة للعملاء الذين شاركوا الرابط:</label>
+                                <textarea
+                                    rows="3"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-emerald-500 transition-colors resize-y custom-scrollbar"
+                                />
+                            </div>
+
+                            <div>
+                                <h3 className="font-bold text-slate-300 mb-3 text-sm border-b border-slate-800 pb-2">العملاء ({sharedRecords.length}):</h3>
+                                <div className="space-y-2">
+                                    {sharedRecords.length === 0 ? <p className="text-center text-slate-500 py-4 text-sm">لا يوجد عملاء قاموا بالمشاركة بعد.</p> : sharedRecords.map((cust, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition-colors">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm text-slate-200">{cust.name}</span>
+                                                <div className="text-xs text-slate-500 mt-1 font-mono">📞 {cust.phone}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => openWhatsApp(cust.phone, message)}
+                                                className="bg-emerald-600 hover:bg-emerald-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0"
+                                                title="إرسال رسالة واتساب"
+                                            >
+                                                <i className="ph-fill ph-paper-plane-right text-lg"></i>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio, navigateTo }) => {
             const [phone, setPhone] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
@@ -617,6 +755,23 @@
                 onLikeStudio();
             };
 
+            const handleShare = async () => {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: settings.studioName,
+                            text: 'تابع حالة طلبك واكتشف أحدث العروض من الاستوديو!',
+                            url: window.location.href
+                        });
+                    } catch (err) {
+                        console.log('Share canceled or failed', err);
+                    }
+                } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert("تم نسخ رابط البوابة بنجاح! يمكنك الآن مشاركته.");
+                }
+            };
+
             const handleSearch = (e) => {
                 e.preventDefault();
                 const cleanPhone = phone.trim();
@@ -628,7 +783,7 @@
                 
                 if (all.length > 0) {
                     const target = all[0];
-                    window.location.href = `?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=${target.type === 'wedding' ? 'w' : 't'}`;
+                    navigateTo(`?phone=${encodeURIComponent(cleanPhone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=${target.type === 'wedding' ? 'w' : 't'}`);
                     return;
                 }
                 setResults(all); setHasSearched(true);
@@ -683,22 +838,38 @@
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="grid grid-cols-3 gap-2 w-full mt-5">
-                                <button onClick={handleLike} className={`flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border transition-all shadow-md text-[11px] sm:text-base font-bold ${hasLiked ? 'bg-pink-950/50 border-pink-500/50 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-pink-400 hover:border-pink-500/50 hover:bg-slate-800'}`}>
-                                    <i className={`${hasLiked ? 'ph-fill text-pink-500 scale-110' : 'ph'} ph-heart text-lg sm:text-xl transition-transform ${!hasLiked && 'animate-bounce-slow'}`}></i>
-                                    أعجبني
+                            <div className="grid grid-cols-3 gap-2 w-full mt-5 mb-3">
+                                <button onClick={handleLike} className={`flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border transition-all shadow-md text-[10px] sm:text-base font-bold ${hasLiked ? 'bg-pink-950/50 border-pink-500/50 text-pink-400' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-pink-400 hover:border-pink-500/50 hover:bg-slate-800'}`}>
+                                    <i className={`${hasLiked ? 'ph-fill text-pink-500 scale-110' : 'ph'} ph-heart text-base sm:text-xl transition-transform ${!hasLiked ? 'animate-bounce-slow' : ''}`}></i>
+                                    إعجاب
                                 </button>
                                 
-                                <a href="https://www.facebook.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-blue-500/30 bg-blue-900/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-md text-[11px] sm:text-base font-bold">
-                                    <i className="ph-fill ph-facebook-logo text-lg sm:text-xl"></i>
+                                <a href="https://www.facebook.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-blue-500/30 bg-blue-900/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-md text-[10px] sm:text-base font-bold">
+                                    <i className="ph-fill ph-facebook-logo text-base sm:text-xl"></i>
                                     فيسبوك
                                 </a>
 
-                                <a href="https://instagram.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-pink-500/30 bg-pink-900/20 text-pink-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white hover:border-transparent transition-all shadow-md text-[11px] sm:text-base font-bold">
-                                    <i className="ph-fill ph-instagram-logo text-lg sm:text-xl"></i>
+                                <a href="https://instagram.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 sm:gap-2 px-2 py-3 rounded-xl border border-pink-500/30 bg-pink-900/20 text-pink-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white hover:border-transparent transition-all shadow-md text-[10px] sm:text-base font-bold">
+                                    <i className="ph-fill ph-instagram-logo text-base sm:text-xl"></i>
                                     إنستجرام
                                 </a>
                             </div>
+
+                            {/* Share & Earn Feature */}
+                            <button onClick={handleShare} className="w-full relative overflow-hidden group bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white p-3 sm:p-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-between border border-emerald-400/50 text-right">
+                                <div className="flex items-center gap-3 sm:gap-4 relative z-10 w-full">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform border border-white/20">
+                                        <i className="ph-fill ph-share-network text-xl sm:text-2xl text-white animate-pulse"></i>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
+                                        <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط الاستوديو مع أصدقائك، واكسب خصم أو رصيد مكافآت عند زيارتهم لنا!</p>
+                                    </div>
+                                </div>
+                                <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
+                                {/* Animated Shine Effect */}
+                                <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
+                            </button>
                         </div>
 
                         {!showPhoneInput && (
@@ -787,9 +958,9 @@
                         {selectedMiniProd && (() => {
                             const imgs = selectedMiniProd.images?.length > 0 ? selectedMiniProd.images : (selectedMiniProd.img ? [selectedMiniProd.img] : []);
                             return (
-                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedMiniProd(null)}>
-                                <div className="bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-                                    <div className="relative h-56 sm:h-64 w-full bg-slate-950">
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex p-4 animate-fadeIn" onClick={() => setSelectedMiniProd(null)}>
+                                <div className="bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col m-auto max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                    <div className="relative h-56 sm:h-64 w-full bg-slate-950 shrink-0">
                                         {imgs.map((img, i) => (
                                             <img key={i} src={img} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === miniProdImgIndex ? 'opacity-100' : 'opacity-0'}`} alt={selectedMiniProd.title} />
                                         ))}
@@ -812,10 +983,11 @@
                             </div>
                         )})()}
                         
+                        {/* Modal for Promo Details */}
                         {selectedPromoModal && (
-                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
-                                <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                    <div className="relative">
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
+                                <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] m-auto" onClick={e => e.stopPropagation()}>
+                                    <div className="relative shrink-0">
                                         {selectedPromoModal.images?.length > 0 ? (
                                             <div className="w-full h-56 sm:h-72 relative group bg-slate-950">
                                                 <img 
@@ -1230,8 +1402,8 @@
             };
             const displayName = payModal.type === 'wedding' ? `${payModal.groomName || ''} و ${payModal.brideName || ''}`.trim() || 'بدون اسم' : payModal.clientName;
             return (
-              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                <div className="bg-slate-900 p-5 rounded-2xl shadow-xl border border-slate-800 w-full max-w-sm relative">
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 m-auto">
+                <div className="bg-slate-900 p-5 rounded-2xl shadow-xl border border-slate-800 w-full max-w-sm relative m-auto">
                   <button onClick={() => setPayModal(null)} className="absolute top-3 left-3 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                   <h3 className="text-xl font-black mb-3 border-b border-slate-800 pb-3 text-center text-slate-100">{payModal.paymentType === 'electronic' ? 'سداد إلكتروني (محافظ)' : 'سداد نقدي'}</h3>
                   <div className="mb-4 bg-slate-950 p-3 rounded-xl text-center border border-slate-800"><p className="text-slate-400 text-sm">العميل: <b className="text-white text-base">{displayName}</b></p><p className="text-red-400 font-bold mt-1 text-sm">الباقي المستحق: {payModal.remaining} ج.م</p></div>
@@ -1254,9 +1426,9 @@
         const ReceiptModal = ({ imageUrl, onClose }) => {
             if (!imageUrl) return null;
             return (
-                <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[70] p-4 flex-col gap-4" onClick={onClose}>
+                <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[70] p-4 flex-col gap-4 m-auto" onClick={onClose}>
                     <button onClick={onClose} className="absolute top-4 left-4 text-slate-300 hover:text-red-400 bg-slate-800 p-2 rounded-full transition-colors z-10"><i className="ph ph-x text-xl"></i></button>
-                    <img src={imageUrl} alt="Fullscreen Image" className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()} />
+                    <img src={imageUrl} alt="Fullscreen Image" className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-slate-700 m-auto" onClick={e => e.stopPropagation()} />
                     <a href={imageUrl} download="studio_photo.jpg" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all"><i className="ph ph-download-simple text-xl"></i> تحميل الصورة</a>
                 </div>
             );
@@ -1281,7 +1453,7 @@
 
             return (
               <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4" onClick={() => setTxnDetailsModal(null)}>
-                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setTxnDetailsModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
                   <h3 className="text-2xl font-black mb-6 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2">{isWedding ? <i className="ph ph-heart text-pink-500"></i> : <i className="ph ph-files text-blue-500"></i>} تفاصيل {isWedding ? 'حجز زفاف' : 'الإيصال'} #{txnDetailsModal.receiptNo}</h3>
                   <div className="space-y-5">
@@ -1734,12 +1906,13 @@
             );
         };
 
-        const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount }) => {
+        const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [txnDetailsModal, setTxnDetailsModal] = useState(null);
-            const [showRetargeting, setShowRetargeting] = useState(false);
+            const [showViewersModal, setShowViewersModal] = useState(false);
+            const [showSharersModal, setShowSharersModal] = useState(false);
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
 
             const handleAddService = (srv, qty) => {
@@ -1832,28 +2005,41 @@
                 
                 {/* الإحصائيات العامة */}
                 {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
                             </div>
                         </div>
-                        <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
                             </div>
                         </div>
-                        <div className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-default group relative overflow-hidden">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-green-500 hover:bg-green-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-eye text-2xl"></i></div>
                             <div className="flex-1">
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-green-300 transition-colors">إجمالي زيارات البوابة</p>
                                 <div className="flex items-center justify-between mt-1">
                                     <p className="text-xl font-black text-slate-100 flex items-center gap-2">{settings.portalVisits || 0}</p>
-                                    <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> {settings.studioLikes || 0} إعجاب</span>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-star"></i> التقييمات: {avgRating} ({feedbacks.length})</span>
+                                        <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> الإعجابات: {settings.studioLikes || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div onClick={() => setShowSharersModal(true)} className="bg-gradient-to-br from-emerald-900/20 to-slate-900 p-4 rounded-2xl border border-emerald-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-emerald-500 hover:bg-emerald-900/30 transition-all group relative overflow-hidden">
+                            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-share-network text-2xl"></i></div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-emerald-300 transition-colors">سفراء الاستوديو</p>
+                                <div className="flex items-center justify-between mt-1">
+                                    <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords.filter(r => r.hasSharedLink).length}</p>
+                                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">مكافأة</span>
                                 </div>
                             </div>
                         </div>
@@ -1886,8 +2072,8 @@
                 </div>
 
                 {showDebtsModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDebtsModal(false)}>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setShowDebtsModal(false)}>
+                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setShowDebtsModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
                             <h3 className="text-xl font-black mb-6 border-b border-slate-800 pb-4 text-red-400 flex items-center gap-2 shrink-0"><i className="ph-fill ph-warning-circle text-2xl"></i> إدارة الديون المستحقة</h3>
                             <div className="relative mb-6 shrink-0 group"><div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"><i className="ph ph-magnifying-glass text-slate-400 group-focus-within:text-red-400 text-xl transition-colors"></i></div><input type="text" placeholder="ابحث باسم العميل، رقم الهاتف..." className="w-full p-4 pr-12 border-2 border-slate-800 bg-slate-950/50 text-white placeholder-slate-500 rounded-2xl focus:border-red-500/50 focus:bg-slate-900 outline-none text-sm transition-all shadow-inner" value={debtSearch} onChange={(e) => setDebtSearch(e.target.value)} /></div>
@@ -1915,7 +2101,7 @@
 
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto">
                       <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل العملية' : 'إضافة عملية جديدة'}</h2>
                       <form onSubmit={handleSubmit} className="space-y-4">
@@ -1990,16 +2176,18 @@
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
-                {showRetargeting && <RetargetingModal allRecords={allRecords} settings={settings} onClose={() => setShowRetargeting(false)} />}
+                {showViewersModal && <ViewersModal allRecords={allRecords} settings={settings} portalVisits={settings.portalVisits || 0} onClose={() => setShowViewersModal(false)} />}
+                {showSharersModal && <SharersModal allRecords={allRecords} settings={settings} onClose={() => setShowSharersModal(false)} />}
               </div>
             );
         };
 
-        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount }) => {
+        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [txnDetailsModal, setTxnDetailsModal] = useState(null);
-            const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [showRetargeting, setShowRetargeting] = useState(false);
+            const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [showViewersModal, setShowViewersModal] = useState(false);
+            const [showSharersModal, setShowSharersModal] = useState(false);
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
             const [formData, setFormData] = useState({ groomName: '', brideName: '', phone: '', groomAddress: '', weddingDate: '', location: '', makeupArtist: '', leaveTime: '', sessionType: '', casualShootDate: '', packages: [], addons: [], selectedPromos: [], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total: '', paid: '', paymentMethod: 'cash', photosLink: '', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' });
             const [newAddon, setNewAddon] = useState({ name: '', notes: '', date: '', price: '' });
@@ -2099,28 +2287,41 @@
             return (
               <div className="space-y-6">
                 {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
                             </div>
                         </div>
-                        <div onClick={() => setShowRetargeting(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
                                 <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
                             </div>
                         </div>
-                        <div className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-default group relative overflow-hidden">
+                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-green-500 hover:bg-green-900/30 transition-all group relative overflow-hidden">
                             <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-eye text-2xl"></i></div>
                             <div className="flex-1">
                                 <p className="text-xs font-bold text-slate-400 group-hover:text-green-300 transition-colors">إجمالي زيارات البوابة</p>
                                 <div className="flex items-center justify-between mt-1">
                                     <p className="text-xl font-black text-slate-100 flex items-center gap-2">{settings.portalVisits || 0}</p>
-                                    <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> {settings.studioLikes || 0} إعجاب</span>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-star"></i> التقييمات: {avgRating} ({feedbacks.length})</span>
+                                        <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> الإعجابات: {settings.studioLikes || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div onClick={() => setShowSharersModal(true)} className="bg-gradient-to-br from-emerald-900/20 to-slate-900 p-4 rounded-2xl border border-emerald-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-emerald-500 hover:bg-emerald-900/30 transition-all group relative overflow-hidden">
+                            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-share-network text-2xl"></i></div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-slate-400 group-hover:text-emerald-300 transition-colors">سفراء الاستوديو</p>
+                                <div className="flex items-center justify-between mt-1">
+                                    <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords.filter(r => r.hasSharedLink).length}</p>
+                                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">مكافأة</span>
                                 </div>
                             </div>
                         </div>
@@ -2153,8 +2354,8 @@
                 </div>
 
                 {showDebtsModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDebtsModal(false)}>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setShowDebtsModal(false)}>
+                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setShowDebtsModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
                             <h3 className="text-xl font-black mb-6 border-b border-slate-800 pb-4 text-red-400 flex items-center gap-2 shrink-0"><i className="ph-fill ph-warning-circle text-2xl"></i> إدارة الديون المستحقة (حجوزات الزفاف)</h3>
                             <div className="relative mb-6 shrink-0 group"><div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"><i className="ph ph-magnifying-glass text-slate-400 group-focus-within:text-red-400 text-xl transition-colors"></i></div><input type="text" placeholder="ابحث باسم العريس أو العروسة، رقم الهاتف..." className="w-full p-4 pr-12 border-2 border-slate-800 bg-slate-950/50 text-white placeholder-slate-500 rounded-2xl focus:border-red-500/50 focus:bg-slate-900 outline-none text-sm transition-all shadow-inner" value={debtSearch} onChange={(e) => setDebtSearch(e.target.value)} /></div>
@@ -2182,7 +2383,7 @@
 
                 {showAddModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto">
                       <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل الحجز' : 'حجز زفاف جديد'}</h2>
                       <form onSubmit={handleSubmit} className="space-y-4">
@@ -2325,7 +2526,8 @@
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
-                {showRetargeting && <RetargetingModal allRecords={allRecords} settings={settings} onClose={() => setShowRetargeting(false)} />}
+                {showViewersModal && <ViewersModal allRecords={allRecords} settings={settings} portalVisits={settings.portalVisits || 0} onClose={() => setShowViewersModal(false)} />}
+                {showSharersModal && <SharersModal allRecords={allRecords} settings={settings} onClose={() => setShowSharersModal(false)} />}
               </div>
             );
         };
@@ -2432,8 +2634,8 @@
                 </div>
 
                 {showMonthModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowMonthModal(false)}>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setShowMonthModal(false)}>
+                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setShowMonthModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 z-10"><i className="ph ph-x text-2xl"></i></button>
                             <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-red-400 flex items-center justify-between">
                                 <div className="flex items-center gap-2"><i className="ph-fill ph-calendar-check text-2xl"></i> تفاصيل مصروفات الشهر الحالي</div>
@@ -2633,8 +2835,8 @@
                 </div>
 
                 {electronicDetails && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setElectronicDetails(null)}>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setElectronicDetails(null)}>
+                        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setElectronicDetails(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
                             
                             <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-indigo-400 flex items-center gap-2 shrink-0">
@@ -2875,10 +3077,23 @@
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS
+            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0
           });
 
-          const urlParams = new URLSearchParams(window.location.search);
+          const [currentUrl, setCurrentUrl] = useState(window.location.search);
+
+          useEffect(() => {
+              const handlePopState = () => setCurrentUrl(window.location.search);
+              window.addEventListener('popstate', handlePopState);
+              return () => window.removeEventListener('popstate', handlePopState);
+          }, []);
+
+          const navigateTo = (searchParams) => {
+              window.history.pushState({}, '', searchParams || window.location.pathname);
+              setCurrentUrl(searchParams || '');
+          };
+
+          const urlParams = new URLSearchParams(currentUrl);
           const trackPhone = urlParams.get('phone');
           const trackReceipt = urlParams.get('receipt');
           const trackType = urlParams.get('type') || 't'; 
@@ -2919,10 +3134,8 @@
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
             const basePath = `artifacts/${appId}/public/data`;
 
-            const fetchSettings = async () => {
-              try {
-                  const docSnap = await getDoc(doc(db, basePath, 'settings', 'main'));
-                  if (docSnap.exists()) {
+            const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
+                if (docSnap.exists()) {
                     let data = docSnap.data();
                     if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
                     if (!data.products) data.products = DEFAULT_PRODUCTS;
@@ -2937,20 +3150,11 @@
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
+                    if (!data.portalVisits) data.portalVisits = 0;
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
                     setSettings(data);
-                  }
-              } catch(e) { console.error("Error fetching settings", e); }
-            };
-            fetchSettings();
-
-            // Real-time listener for likes and settings
-            const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
-                if (docSnap.exists()) {
-                    const currentData = docSnap.data();
-                    setSettings(prev => ({...prev, studioLikes: currentData.studioLikes || 0}));
                 }
-            });
+            }, (err) => console.error("Settings error", err));
 
             const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
               if (docSnap.exists()) setInventory(docSnap.data());
@@ -3007,6 +3211,8 @@
               return allRecords.filter(r => r.clientRating > 0 || r.clientFeedback).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
           }, [allRecords]);
           const unreadFeedbackCount = feedbacks.filter(r => !r.adminReadFeedback).length;
+
+          const avgRating = useMemo(() => feedbacks.length > 0 ? (feedbacks.reduce((sum, r) => sum + r.clientRating, 0) / feedbacks.length).toFixed(1) : 0, [feedbacks]);
 
           useEffect(() => {
               if (settings.enableNotifications && unreadFeedbackCount > previousFeedbackCount) {
@@ -3109,7 +3315,7 @@
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} />;
+              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
           }
 
           if (isTracking) {
@@ -3189,11 +3395,36 @@
                   }
               };
 
+              const handleShareTracking = async () => {
+                  try {
+                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                      const targetCol = isWedding ? 'weddings' : 'transactions';
+                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { hasSharedLink: true }, { merge: true });
+                  } catch (err) {
+                      console.error("Error updating share status", err);
+                  }
+
+                  if (navigator.share) {
+                      try {
+                          await navigator.share({
+                              title: settings.studioName,
+                              text: 'شوف صوري واكتشف أحدث العروض من الاستوديو!',
+                              url: window.location.href
+                          });
+                      } catch (err) {
+                          console.log('Share canceled or failed', err);
+                      }
+                  } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert("تم نسخ الرابط بنجاح! يمكنك الآن مشاركته.");
+                  }
+              };
+
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center">
                       
                       <div className="w-full max-w-md flex justify-end mb-2">
-                          <a href="?client=true" className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
+                          <a href="?client=true" onClick={(e) => { e.preventDefault(); navigateTo('?client=true'); }} className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
                               <i className="ph ph-arrow-right"></i> رجوع لبوابة العملاء
                           </a>
                       </div>
@@ -3324,7 +3555,7 @@
                                   <span className="text-2xl sm:text-3xl font-black text-yellow-400">{txn.total} <span className="text-sm font-bold">ج.م</span></span>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-2 gap-3 mb-4">
                                    <div className="bg-green-950/20 p-3 sm:p-4 rounded-xl border border-green-900/30 flex flex-col items-center justify-center gap-1 shadow-sm">
                                        <span className="text-slate-400 text-xs font-bold">المدفوع</span>
                                        <span className="text-green-400 font-black text-lg sm:text-xl">{txn.paid} <span className="text-[10px]">ج.م</span></span>
@@ -3335,6 +3566,21 @@
                                    </div>
                               </div>
                           </div>
+                          
+                          {/* Share & Earn Feature */}
+                          <button onClick={handleShareTracking} className="w-full relative overflow-hidden group bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white p-3 sm:p-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-between border border-emerald-400/50 text-right mb-2">
+                              <div className="flex items-center gap-3 sm:gap-4 relative z-10 w-full">
+                                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform border border-white/20">
+                                      <i className="ph-fill ph-share-network text-xl sm:text-2xl text-white animate-pulse"></i>
+                                  </div>
+                                  <div className="flex-1">
+                                      <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
+                                      <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط صورك مع أصدقائك، واكسب خصم أو مكافأة!</p>
+                                  </div>
+                              </div>
+                              <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
+                              <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
+                          </button>
                       </div>
 
                       {/* بطاقة الدفع المصغرة */}
@@ -3502,15 +3748,16 @@
                                </summary>
                                
                                <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2 mt-4 transition-all duration-300 opacity-0 group-open:opacity-100">
-                                   {clientArchiveRecords.map(record => {
-                                       const isWedRec = record.type === 'wedding';
-                                       const recStatuses = isWedRec ? WEDDING_STATUSES : ORDER_STATUSES;
-                                       const recStatusObj = recStatuses.find(s => s.id === (record.status || 0)) || recStatuses[0];
-                                       const isActive = record.id === txn.id;
-                                       
-                                       return (
-                                           <a key={record.id} href={window.location.href.split('?')[0] + `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${isWedRec ? 'w' : 't'}`} className={`block p-4 rounded-2xl border transition-all ${isActive ? 'bg-blue-950/20 border-blue-500/50 shadow-inner' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
-                                               <div className="flex justify-between items-start mb-2">
+                                  {clientArchiveRecords.map(record => {
+                                      const isWedRec = record.type === 'wedding';
+                                      const recStatuses = isWedRec ? WEDDING_STATUSES : ORDER_STATUSES;
+                                      const recStatusObj = recStatuses.find(s => s.id === (record.status || 0)) || recStatuses[0];
+                                      const isActive = record.id === txn.id;
+                                      const recordUrl = `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${isWedRec ? 'w' : 't'}`;
+                                      
+                                      return (
+                                          <a key={record.id} href={recordUrl} onClick={(e) => { e.preventDefault(); navigateTo(recordUrl); }} className={`block p-4 rounded-2xl border transition-all ${isActive ? 'bg-blue-950/20 border-blue-500/50 shadow-inner' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
+                                              <div className="flex justify-between items-start mb-2">
                                                    <div className="flex items-center gap-2">
                                                        <i className={`text-xl ${isWedRec ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
                                                        <span className="font-bold text-sm text-slate-200">إيصال #{record.receiptNo}</span>
@@ -3603,7 +3850,7 @@
                       {/* رسالة الدفع المنبثقة */}
                       {showClientPaymentPopup && txn.remaining > 0 && (
                           <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-indigo-500/30 relative flex flex-col max-h-[90vh] overflow-hidden">
+                              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-indigo-500/30 relative flex flex-col max-h-[90vh] overflow-hidden m-auto">
                                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
                                   
                                   <div className="p-6 text-center overflow-y-auto custom-scrollbar">
@@ -3678,7 +3925,7 @@
                                               setShowClientPaymentPopup(false);
                                           } catch (err) { setClientViewError('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.'); }
                                           setIsUploading(false);
-                                      }} disabled={isUploading} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
+                                      }} disabled={isUploading || !transferReceipt} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
                                           {isUploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><i className="ph ph-whatsapp-logo text-2xl"></i> تأكيد التحويل عبر واتساب</>}
                                       </button>
                                   </div>
@@ -3707,7 +3954,7 @@
           }
 
           if (!isTracking && !isAuthenticatedAdmin) {
-              return <LoginScreen validPassword={settings.adminPassword || '1234'} onLogin={() => { setIsAuthenticatedAdmin(true); localStorage.setItem('studioAdminAuth', 'true'); }} />;
+              return <LoginScreen validPassword={settings.adminPassword || '1234'} onLogin={() => { setIsAuthenticatedAdmin(true); localStorage.setItem('studioAdminAuth', 'true'); }} navigateTo={navigateTo} />;
           }
 
           return (
@@ -3717,8 +3964,8 @@
               <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
-                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} />}
-                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} />}
+                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} />}
+                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} />}
                         {activeTab === 'expenses' && <ExpensesTab settings={settings} expenses={expenses} inventory={inventory} db={db} />}
                         {activeTab === 'reports' && <ReportsTab settings={settings} transactions={transactions} weddings={weddings} expenses={expenses} setReceiptImageModal={setReceiptImageModal} />}
                         {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} inventory={inventory} updateInventoryExact={updateInventoryExact} saveSettingsToDB={saveSettingsToDB} />}
