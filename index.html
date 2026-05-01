@@ -132,7 +132,8 @@
         const DEFAULT_PROMOTIONS = [
           { id: '1', title: 'خصم التابلوهات', shortDesc: 'خصم 15% على جميع التابلوهات الخشب', fullDesc: 'استمتع بخصم 15% عند طلب أي تابلوه خشب مقاس 30x40 أو أكبر. زيّن جدرانك بأجمل ذكرياتك.', discount: 'خصم 15%', icon: 'ph-image', color: 'amber', images: [] },
           { id: '2', title: 'عرض ألبومات الزفاف', shortDesc: 'خصم 20% على الألبومات الميني', fullDesc: 'لأن ذكرياتك تهمنا، احصل على ألبوم ميني إضافي بخصم 20% عند استلام صور زفافك لتشاركه مع عائلتك.', discount: 'خصم 20%', icon: 'ph-book-open', color: 'pink', images: [] },
-          { id: '3', title: 'جلسات التصوير', shortDesc: 'صورة كارت هدية', fullDesc: 'عند حجز جلسة تصوير كاجوال، احصل على صورة كارت 15x20 مطبوعة مجاناً كهدية من الاستوديو.', discount: 'هدية مجانية', icon: 'ph-camera', color: 'blue', images: [] }
+          { id: '3', title: 'جلسات التصوير', shortDesc: 'صورة كارت هدية', fullDesc: 'عند حجز جلسة تصوير كاجوال، احصل على صورة كارت 15x20 مطبوعة مجاناً كهدية من الاستوديو.', discount: 'هدية مجانية', icon: 'ph-camera', color: 'blue', images: [] },
+          { id: '4', title: 'تصوير كتب كتاب', shortDesc: 'تغطية كاملة لكتب الكتاب بسعر 1000 ج.م فقط', fullDesc: 'يشمل تصوير كتب الكتاب بالكامل مع تسليم الصور معدلة بأعلى جودة للاحتفاظ بأجمل ذكرياتك.', discount: '1000 ج.م', icon: 'ph-camera', color: 'pink', images: [] }
         ];
 
         const DEFAULT_MINI_PRODUCTS = [
@@ -188,7 +189,8 @@
             custRecs.forEach(t => {
                 const paid = parseFloat(t.paid) || 0;
                 if (t.type === 'wedding') {
-                    rawEarned += paid * 0.01;
+                    // تم تعديل النسبة لحجوزات الزفاف لتصبح 1.5% كما طلب المستخدم
+                    rawEarned += paid * 0.015;
                 } else {
                     rawEarned += paid * 0.10;
                 }
@@ -710,27 +712,41 @@
             const [selectedMiniProd, setSelectedMiniProd] = useState(null);
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
             const [localVisits, setLocalVisits] = useState(settings.portalVisits || 1);
+            
+            // حالة خاصة بنافذة تحديد تاريخ الحجز
+            const [bookingItem, setBookingItem] = useState(null);
+            const [eventDate, setEventDate] = useState('');
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
             const avgRating = useMemo(() => reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.clientRating, 0) / reviews.length).toFixed(1) : 0, [reviews]);
 
-            // التحقق من الرابط الخاص بالبطاقة لفتحها تلقائياً وتعديل الـ meta tags قدر الإمكان برمجياً
+            // التحقق من الروابط لفتح البطاقات أو العروض الترويجية تلقائياً
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const cardId = urlParams.get('card');
+                const promoId = urlParams.get('promo');
                 if (cardId && settings.miniProducts) {
                     const card = settings.miniProducts.find(p => p.id === cardId);
                     if (card) setSelectedMiniProd(card);
                 }
-            }, [settings.miniProducts]);
+                if (promoId && settings.promotions) {
+                    const promo = settings.promotions.find(p => p.id === promoId);
+                    if (promo) { setSelectedPromoModal(promo); setPromoImgIndex(0); }
+                }
+            }, [settings.miniProducts, settings.promotions]);
 
             useEffect(() => {
                 if (selectedMiniProd) {
-                    const title = selectedMiniProd.title + " - " + settings.studioName;
-                    document.title = title;
-                    
+                    document.title = selectedMiniProd.title + " - " + settings.studioName;
                     const img = selectedMiniProd.images?.[0] || selectedMiniProd.img;
+                    if (img) {
+                        const ogImage = document.querySelector('meta[property="og:image"]');
+                        if (ogImage) ogImage.setAttribute('content', img);
+                    }
+                } else if (selectedPromoModal) {
+                    document.title = selectedPromoModal.title + " - " + settings.studioName;
+                    const img = selectedPromoModal.images?.[0];
                     if (img) {
                         const ogImage = document.querySelector('meta[property="og:image"]');
                         if (ogImage) ogImage.setAttribute('content', img);
@@ -738,7 +754,7 @@
                 } else {
                     document.title = settings.studioName + " - ستوديو المراكبى";
                 }
-            }, [selectedMiniProd, settings.studioName]);
+            }, [selectedMiniProd, selectedPromoModal, settings.studioName]);
 
             useEffect(() => {
                 setLocalVisits(settings.portalVisits || 1);
@@ -813,6 +829,22 @@
                 }
             };
 
+            const handleSharePromo = async () => {
+                const shareUrl = `${window.location.origin}${window.location.pathname}?client=true&promo=${selectedPromoModal.id}`;
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: selectedPromoModal.title,
+                            text: selectedPromoModal.shortDesc,
+                            url: shareUrl
+                        });
+                    } catch (e) {}
+                } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    alert("تم نسخ رابط العرض بنجاح!");
+                }
+            };
+
             const handleSearch = (e) => {
                 e.preventDefault();
                 const cleanPhone = phone.trim();
@@ -840,6 +872,23 @@
                 setSelectedMiniProd(null);
                 const newUrl = `${window.location.pathname}?client=true`;
                 window.history.pushState({}, '', newUrl);
+            };
+
+            const handleClosePromo = () => {
+                setSelectedPromoModal(null);
+                const newUrl = `${window.location.pathname}?client=true`;
+                window.history.pushState({}, '', newUrl);
+            };
+
+            const confirmBooking = (skipDate = false) => {
+                if (!bookingItem) return;
+                let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${bookingItem.title}*`;
+                if (!skipDate && eventDate) {
+                    msg += `\n📅 تاريخ المناسبة: ${eventDate}`;
+                }
+                openWhatsApp(settings.studioPhone || '01201260040', msg);
+                setBookingItem(null);
+                setEventDate('');
             };
 
             const promoColors = {
@@ -950,22 +999,24 @@
                                                 const colorSet = promoColors[promo.color || 'yellow'] || promoColors.yellow;
                                                 const [bg1, bg2, borderClass, textClass, iconBgClass] = colorSet.split(' ');
                                                 return (
-                                                    <div key={promo.id} onClick={() => { setSelectedPromoModal(promo); setPromoImgIndex(0); }} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden pb-4`}>
-                                                        {promo.images?.length > 0 && (
-                                                            <div className="-mx-4 -mt-4 mb-3 h-40 relative border-b border-slate-700/50 shrink-0">
-                                                                <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+                                                    <div key={promo.id} className="relative group">
+                                                        <div onClick={() => { setSelectedPromoModal(promo); setPromoImgIndex(0); const newUrl = `${window.location.pathname}?client=true&promo=${promo.id}`; window.history.pushState({}, '', newUrl); }} className={`bg-gradient-to-l ${bg1} ${bg2} p-4 rounded-2xl border ${borderClass} shadow-md flex flex-col transition-transform hover:scale-[1.02] cursor-pointer relative overflow-hidden pb-4`}>
+                                                            {promo.images?.length > 0 && (
+                                                                <div className="-mx-4 -mt-4 mb-3 h-40 relative border-b border-slate-700/50 shrink-0">
+                                                                    <img src={promo.images[0]} className="w-full h-full object-cover rounded-t-2xl opacity-90" alt={promo.title} />
+                                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+                                                                </div>
+                                                            )}
+                                                            <div className={`flex items-start gap-4 z-10 ${promo.images?.length > 0 ? '-mt-8' : ''}`}>
+                                                                 <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0 shadow-lg border border-white/10 bg-slate-900`}>
+                                                                     <i className={`ph-fill ${promo.icon} text-2xl`}></i>
+                                                                 </div>
+                                                                 <div className="flex-1 pt-1">
+                                                                     <h4 className="font-bold text-slate-100">{promo.title}</h4>
+                                                                     <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2 drop-shadow-md">{promo.shortDesc}</p>
+                                                                     {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded border border-current/20`}>{promo.discount}</span>}
+                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        <div className={`flex items-start gap-4 z-10 ${promo.images?.length > 0 ? '-mt-8' : ''}`}>
-                                                             <div className={`w-12 h-12 rounded-full ${iconBgClass} ${textClass} flex items-center justify-center shrink-0 shadow-lg border border-white/10 bg-slate-900`}>
-                                                                 <i className={`ph-fill ${promo.icon} text-2xl`}></i>
-                                                             </div>
-                                                             <div className="flex-1 pt-1">
-                                                                 <h4 className="font-bold text-slate-100">{promo.title}</h4>
-                                                                 <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2 drop-shadow-md">{promo.shortDesc}</p>
-                                                                 {promo.discount && <span className={`inline-block mt-2 text-[10px] font-black px-2 py-1 ${iconBgClass} ${textClass} rounded border border-current/20`}>{promo.discount}</span>}
-                                                             </div>
                                                         </div>
                                                     </div>
                                                 )
@@ -1010,7 +1061,7 @@
                              </div>
                         )}
 
-                        {/* Modal for Mini Product Details (Centered) */}
+                        {/* Modal for Mini Product Details */}
                         {selectedMiniProd && (() => {
                             const imgs = selectedMiniProd.images?.length > 0 ? selectedMiniProd.images : (selectedMiniProd.img ? [selectedMiniProd.img] : []);
                             return (
@@ -1031,12 +1082,14 @@
                                         </div>
                                         <p className="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800 shadow-inner w-full">{selectedMiniProd.desc}</p>
                                         
-                                        <button onClick={handleShareCard} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-slate-700 mb-3">
-                                            <i className="ph-fill ph-share-network text-xl"></i> مشاركة هذه البطاقة
-                                        </button>
-                                        <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedMiniProd.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50">
-                                            <i className="ph-fill ph-whatsapp-logo text-2xl"></i> طلب عبر واتساب
-                                        </button>
+                                        <div className="flex gap-2 w-full mb-3">
+                                            <button onClick={() => setBookingItem({title: selectedMiniProd.title, type: 'card'})} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
+                                                <i className="ph-fill ph-whatsapp-logo text-xl"></i> طلب وحجز
+                                            </button>
+                                            <button onClick={handleShareCard} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-slate-700">
+                                                <i className="ph-fill ph-share-network text-xl"></i> مشاركة 
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1044,7 +1097,7 @@
                         
                         {/* Modal for Promo Details */}
                         {selectedPromoModal && (
-                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex p-4 animate-fadeIn" onClick={() => setSelectedPromoModal(null)}>
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex p-4 animate-fadeIn" onClick={handleClosePromo}>
                                 <div className="bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] m-auto" onClick={e => e.stopPropagation()}>
                                     <div className="relative shrink-0">
                                         {selectedPromoModal.images?.length > 0 ? (
@@ -1069,7 +1122,7 @@
                                         ) : (
                                             <div className={`w-full h-32 bg-gradient-to-r ${promoColors[selectedPromoModal.color || 'yellow'].split(' ').slice(0,2).join(' ')} flex items-center justify-center`}><i className={`ph-fill ${selectedPromoModal.icon} text-6xl opacity-50`}></i></div>
                                         )}
-                                        <button onClick={() => setSelectedPromoModal(null)} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
+                                        <button onClick={handleClosePromo} className="absolute top-4 left-4 bg-slate-900/60 hover:bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-colors border border-white/20 shadow-lg z-10"><i className="ph ph-x text-lg"></i></button>
                                     </div>
                                     <div className="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-4">
@@ -1078,7 +1131,57 @@
                                         </div>
                                         <p className="text-slate-300 font-bold mb-4">{selectedPromoModal.shortDesc}</p>
                                         {selectedPromoModal.fullDesc && <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner"><p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p></div>}
-                                        <button onClick={() => openWhatsApp(settings.studioPhone || '01201260040', `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص العرض: *${selectedPromoModal.title}*`)} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-lg border border-green-500/50 mt-auto"><i className="ph-fill ph-whatsapp-logo text-2xl"></i> احجز العرض الآن</button>
+                                        
+                                        <div className="flex gap-2 w-full mt-auto">
+                                            <button onClick={() => setBookingItem({title: selectedPromoModal.title, type: 'promo'})} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
+                                                <i className="ph-fill ph-whatsapp-logo text-xl"></i> احجز العرض الآن
+                                            </button>
+                                            <button onClick={handleSharePromo} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-slate-700">
+                                                <i className="ph-fill ph-share-network text-xl"></i> مشاركة العرض
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal for Date Selection before booking */}
+                        {bookingItem && (
+                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setBookingItem(null)}>
+                                <div className="bg-slate-900 rounded-3xl max-w-sm w-full border border-slate-700 shadow-2xl flex flex-col p-6 m-auto relative" onClick={e => e.stopPropagation()}>
+                                    <button onClick={() => setBookingItem(null)} className="absolute top-4 left-4 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
+                                    
+                                    <div className="text-center mb-6 mt-2">
+                                        <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-blue-500/30">
+                                            <i className="ph-fill ph-calendar-plus text-3xl"></i>
+                                        </div>
+                                        <h3 className="text-xl font-black text-white mb-1">تحديد يوم المناسبة</h3>
+                                        <p className="text-sm text-slate-400">لعرض: <span className="text-yellow-400 font-bold">{bookingItem.title}</span></p>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">اختر تاريخ المناسبة (اختياري)</label>
+                                        <input 
+                                            type="date" 
+                                            className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg text-center shadow-inner cursor-pointer"
+                                            value={eventDate}
+                                            onChange={(e) => setEventDate(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <button 
+                                            onClick={() => confirmBooking(false)}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                                        >
+                                            <i className="ph-bold ph-check text-xl"></i> تأكيد ومتابعة الحجز
+                                        </button>
+                                        <button 
+                                            onClick={() => confirmBooking(true)}
+                                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-colors"
+                                        >
+                                            تخطي وتكملة بدون تاريخ
+                                        </button>
                                     </div>
                                 </div>
                             </div>
