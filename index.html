@@ -712,10 +712,6 @@
             const [selectedMiniProd, setSelectedMiniProd] = useState(null);
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
             const [localVisits, setLocalVisits] = useState(settings.portalVisits || 1);
-            
-            // حالة خاصة بنافذة تحديد تاريخ الحجز
-            const [bookingItem, setBookingItem] = useState(null);
-            const [eventDate, setEventDate] = useState('');
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
@@ -813,38 +809,6 @@
                 }
             };
 
-            const handleShareCard = async () => {
-                const shareUrl = `${window.location.origin}${window.location.pathname}?client=true&card=${selectedMiniProd.id}`;
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: selectedMiniProd.title,
-                            text: selectedMiniProd.desc,
-                            url: shareUrl
-                        });
-                    } catch (e) {}
-                } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    alert("تم نسخ رابط البطاقة بنجاح!");
-                }
-            };
-
-            const handleSharePromo = async () => {
-                const shareUrl = `${window.location.origin}${window.location.pathname}?client=true&promo=${selectedPromoModal.id}`;
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: selectedPromoModal.title,
-                            text: selectedPromoModal.shortDesc,
-                            url: shareUrl
-                        });
-                    } catch (e) {}
-                } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    alert("تم نسخ رابط العرض بنجاح!");
-                }
-            };
-
             const handleSearch = (e) => {
                 e.preventDefault();
                 const cleanPhone = phone.trim();
@@ -878,17 +842,6 @@
                 setSelectedPromoModal(null);
                 const newUrl = `${window.location.pathname}?client=true`;
                 window.history.pushState({}, '', newUrl);
-            };
-
-            const confirmBooking = (skipDate = false) => {
-                if (!bookingItem) return;
-                let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${bookingItem.title}*`;
-                if (!skipDate && eventDate) {
-                    msg += `\n📅 تاريخ المناسبة: ${eventDate}`;
-                }
-                openWhatsApp(settings.studioPhone || '01201260040', msg);
-                setBookingItem(null);
-                setEventDate('');
             };
 
             const promoColors = {
@@ -1082,14 +1035,12 @@
                                         </div>
                                         <p className="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800 shadow-inner w-full">{selectedMiniProd.desc}</p>
                                         
-                                        <div className="flex gap-2 w-full mb-3">
-                                            <button onClick={() => setBookingItem({title: selectedMiniProd.title, type: 'card'})} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
-                                                <i className="ph-fill ph-whatsapp-logo text-xl"></i> طلب وحجز
-                                            </button>
-                                            <button onClick={handleShareCard} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-slate-700">
-                                                <i className="ph-fill ph-share-network text-xl"></i> مشاركة 
-                                            </button>
-                                        </div>
+                                        <button onClick={() => {
+                                            let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedMiniProd.title}*`;
+                                            openWhatsApp(settings.studioPhone || '01201260040', msg);
+                                        }} className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
+                                            <i className="ph-fill ph-whatsapp-logo text-xl"></i> تواصل عبر واتساب
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1132,55 +1083,11 @@
                                         <p className="text-slate-300 font-bold mb-4">{selectedPromoModal.shortDesc}</p>
                                         {selectedPromoModal.fullDesc && <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 shadow-inner"><p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{selectedPromoModal.fullDesc}</p></div>}
                                         
-                                        <div className="flex gap-2 w-full mt-auto">
-                                            <button onClick={() => setBookingItem({title: selectedPromoModal.title, type: 'promo'})} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
-                                                <i className="ph-fill ph-whatsapp-logo text-xl"></i> احجز العرض الآن
-                                            </button>
-                                            <button onClick={handleSharePromo} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-slate-700">
-                                                <i className="ph-fill ph-share-network text-xl"></i> مشاركة العرض
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Modal for Date Selection before booking */}
-                        {bookingItem && (
-                            <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setBookingItem(null)}>
-                                <div className="bg-slate-900 rounded-3xl max-w-sm w-full border border-slate-700 shadow-2xl flex flex-col p-6 m-auto relative" onClick={e => e.stopPropagation()}>
-                                    <button onClick={() => setBookingItem(null)} className="absolute top-4 left-4 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
-                                    
-                                    <div className="text-center mb-6 mt-2">
-                                        <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-blue-500/30">
-                                            <i className="ph-fill ph-calendar-plus text-3xl"></i>
-                                        </div>
-                                        <h3 className="text-xl font-black text-white mb-1">تحديد يوم المناسبة</h3>
-                                        <p className="text-sm text-slate-400">لعرض: <span className="text-yellow-400 font-bold">{bookingItem.title}</span></p>
-                                    </div>
-
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-bold text-slate-300 mb-2">اختر تاريخ المناسبة (اختياري)</label>
-                                        <input 
-                                            type="date" 
-                                            className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-blue-500 outline-none text-lg text-center shadow-inner cursor-pointer"
-                                            value={eventDate}
-                                            onChange={(e) => setEventDate(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        <button 
-                                            onClick={() => confirmBooking(false)}
-                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                                        >
-                                            <i className="ph-bold ph-check text-xl"></i> تأكيد ومتابعة الحجز
-                                        </button>
-                                        <button 
-                                            onClick={() => confirmBooking(true)}
-                                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-colors"
-                                        >
-                                            تخطي وتكملة بدون تاريخ
+                                        <button onClick={() => {
+                                            let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedPromoModal.title}*`;
+                                            openWhatsApp(settings.studioPhone || '01201260040', msg);
+                                        }} className="mt-auto w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
+                                            <i className="ph-fill ph-whatsapp-logo text-xl"></i> تواصل عبر واتساب
                                         </button>
                                     </div>
                                 </div>
@@ -3587,19 +3494,21 @@
                       console.error("Error updating share status", err);
                   }
 
+                  const shareUrl = window.location.href.split('?')[0] + "?client=true";
+
                   if (navigator.share) {
                       try {
                           await navigator.share({
                               title: settings.studioName,
-                              text: 'شوف صوري واكتشف أحدث العروض من الاستوديو!',
-                              url: window.location.href
+                              text: 'تابع حالة طلبك واكتشف أحدث العروض من الاستوديو!',
+                              url: shareUrl
                           });
                       } catch (err) {
                           console.log('Share canceled or failed', err);
                       }
                   } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert("تم نسخ الرابط بنجاح! يمكنك الآن مشاركته.");
+                      navigator.clipboard.writeText(shareUrl);
+                      alert("تم نسخ رابط الاستوديو بنجاح! يمكنك الآن مشاركته.");
                   }
               };
 
@@ -3758,7 +3667,7 @@
                                   </div>
                                   <div className="flex-1">
                                       <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
-                                      <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط صورك مع أصدقائك، واكسب خصم أو مكافأة!</p>
+                                      <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط الاستوديو مع أصدقائك، واكسب خصم أو مكافأة!</p>
                                   </div>
                               </div>
                               <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
