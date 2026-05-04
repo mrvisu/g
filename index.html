@@ -151,7 +151,10 @@
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
-          tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨"
+          tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨",
+          cardInquiry: "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص: *{item_title}*",
+          promoInquiry: "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص العرض: *{item_title}*",
+          rewardPrintInquiry: "مرحباً {studio} 👋\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م (إيصال #{receipt}) وأريد استخدامه لطباعة صور من الموبايل."
         };
 
         const defaultFirebaseConfig = {
@@ -189,7 +192,6 @@
             custRecs.forEach(t => {
                 const paid = parseFloat(t.paid) || 0;
                 if (t.type === 'wedding') {
-                    // تم تعديل النسبة لحجوزات الزفاف لتصبح 1.5% كما طلب المستخدم
                     rawEarned += paid * 0.015;
                 } else {
                     rawEarned += paid * 0.10;
@@ -1040,7 +1042,8 @@
                                         
                                         <div className="flex gap-2 w-full">
                                             <button onClick={() => {
-                                                let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedMiniProd.title}*`;
+                                                let template = settings.waTemplates?.cardInquiry || "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص: *{item_title}*";
+                                                let msg = template.replace(/{studio}/g, settings.studioName).replace(/{item_title}/g, selectedMiniProd.title);
                                                 openWhatsApp(settings.studioPhone || '01201260040', msg);
                                             }} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
                                                 <i className="ph-fill ph-whatsapp-logo text-xl"></i> تواصل
@@ -1104,7 +1107,8 @@
                                         
                                         <div className="flex gap-2 w-full mt-auto">
                                             <button onClick={() => {
-                                                let msg = `مرحباً ${settings.studioName} 👋\nأود الاستفسار/الحجز بخصوص: *${selectedPromoModal.title}*`;
+                                                let template = settings.waTemplates?.promoInquiry || "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص العرض: *{item_title}*";
+                                                let msg = template.replace(/{studio}/g, settings.studioName).replace(/{item_title}/g, selectedPromoModal.title);
                                                 openWhatsApp(settings.studioPhone || '01201260040', msg);
                                             }} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50">
                                                 <i className="ph-fill ph-whatsapp-logo text-xl"></i> تواصل للحجز
@@ -2595,7 +2599,7 @@
                              </div>
                           )}
                         </div>
-                        
+
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
                             <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-images text-blue-400 text-lg align-middle"></i> أرقام الصور للطباعة (اختياري):</label>
                             <div className="flex flex-col gap-3 w-full">
@@ -3119,6 +3123,7 @@
                         <code className="text-blue-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{time}'}</code>
                         <code className="text-purple-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{studio}'}</code>
                         <code className="text-green-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{track_url}'}</code>
+                        <code className="text-yellow-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{item_title}'}</code>
                      </p>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -3133,6 +3138,9 @@
                           case 'ready': return '🎉 رسالة جاهزية الطلب للاستلام';
                           case 'deposit': return '💸 تأكيد استلام العربون';
                           case 'tracking': return '📍 رسالة تتبع الطلب بالرابط';
+                          case 'cardInquiry': return '🖼️ استفسار عن البطاقات المصغرة';
+                          case 'promoInquiry': return '🎟️ استفسار عن العروض الترويجية';
+                          case 'rewardPrintInquiry': return '📱 طلب طباعة الصور بالرصيد';
                           default: return k;
                         }
                       };
@@ -3608,7 +3616,8 @@
                                   </p>
                                   <button 
                                       onClick={() => {
-                                          const msg = `مرحباً ${settings.studioName} 👋\nلدي رصيد مكافآت بقيمة ${availableRewards} ج.م (إيصال #${txn.receiptNo}) وأريد استخدامه لطباعة صور من الموبايل.`;
+                                          let template = settings.waTemplates?.rewardPrintInquiry || "مرحباً {studio} 👋\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م (إيصال #{receipt}) وأريد استخدامه لطباعة صور من الموبايل.";
+                                          let msg = template.replace(/{studio}/g, settings.studioName).replace(/{reward_balance}/g, availableRewards).replace(/{receipt}/g, txn.receiptNo);
                                           openWhatsApp(settings.studioPhone || '01201260040', msg);
                                       }}
                                       className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-md border border-purple-400/50"
@@ -3712,7 +3721,7 @@
                       </div>
 
                       {/* بطاقة الدفع المصغرة */}
-                      {txn.remaining > 0 && (
+                      {showClientPaymentPopup && txn.remaining > 0 && (
                           <div 
                               onClick={() => setShowClientPaymentPopup(true)}
                               className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
@@ -3974,100 +3983,6 @@
                               </>
                           )}
                       </div>
-                      
-                      {/* رسالة الدفع المنبثقة */}
-                      {showClientPaymentPopup && txn.remaining > 0 && (
-                          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-indigo-500/30 relative flex flex-col max-h-[90vh] overflow-hidden m-auto">
-                                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                                  
-                                  <div className="p-6 text-center overflow-y-auto custom-scrollbar">
-                                      <div className="flex justify-center mb-4">
-                                          <div className="bg-indigo-500/20 p-4 rounded-full text-indigo-400 shadow-lg shadow-indigo-900/20">
-                                              <i className="ph ph-wallet text-3xl"></i>
-                                          </div>
-                                      </div>
-                                      <h3 className="text-lg font-bold text-white mb-2">سداد إلكتروني متاح 💳</h3>
-                                      <p className="text-sm text-indigo-200/80 leading-relaxed mb-4">
-                                          لراحتك، يمكنك الآن سداد باقي المبلغ المستحق (<b className="text-white">{txn.remaining} ج.م</b>) بكل سهولة عبر 
-                                          <span className="text-white font-bold mx-1">إنستاباي (InstaPay)</span> أو <span className="text-white font-bold mx-1">المحافظ الإلكترونية</span>.
-                                      </p>
-                                      
-                                      <div className="bg-slate-950/80 py-3 px-4 rounded-2xl border border-indigo-500/20 flex flex-col items-center gap-1 shadow-inner mb-4">
-                                          <span className="text-xs text-indigo-300">رقم التحويل (فودافون كاش / إنستاباي):</span>
-                                          <div className="flex items-center gap-3 mt-1">
-                                              <span className="text-2xl font-black font-mono text-white tracking-widest">{settings.studioPhone || '01201260040'}</span>
-                                              <button onClick={(e) => {
-                                                  const el = document.createElement('textarea');
-                                                  el.value = settings.studioPhone || '01201260040';
-                                                  document.body.appendChild(el);
-                                                  el.select();
-                                                  document.execCommand('copy');
-                                                  document.body.removeChild(el);
-                                                  const originalHTML = e.currentTarget.innerHTML;
-                                                  e.currentTarget.innerHTML = '<i class="ph ph-check text-lg"></i>';
-                                                  setTimeout(() => e.currentTarget.innerHTML = originalHTML, 2000);
-                                              }} className="text-indigo-400 hover:text-indigo-300 bg-indigo-900/30 p-2 rounded-lg transition-colors" title="نسخ الرقم"><i className="ph ph-copy text-lg"></i></button>
-                                          </div>
-                                      </div>
-
-                                      <div className="mb-2 text-right bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
-                                          <label className="block text-sm font-bold text-indigo-300 mb-3"><i className="ph ph-upload-simple text-lg align-middle ml-1"></i> إرفاق صورة التحويل أولاً لتأكيد السداد:</label>
-                                          <input type="file" accept="image/*" onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (!file) return;
-                                                const reader = new FileReader();
-                                                reader.readAsDataURL(file);
-                                                reader.onload = (event) => {
-                                                    const img = new Image();
-                                                    img.src = event.target.result;
-                                                    img.onload = () => {
-                                                        const canvas = document.createElement('canvas');
-                                                        const MAX_WIDTH = 800;
-                                                        let scaleSize = 1;
-                                                        if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                                                        canvas.width = img.width * scaleSize;
-                                                        canvas.height = img.height * scaleSize;
-                                                        const ctx = canvas.getContext('2d');
-                                                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                                        setTransferReceipt(canvas.toDataURL('image/jpeg', 0.6));
-                                                        setClientViewError('');
-                                                    };
-                                                };
-                                              }} className="block w-full text-sm text-slate-400 file:ml-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 transition-colors bg-slate-950 rounded-xl"
-                                          />
-                                          {clientViewError && <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1"><i className="ph ph-warning text-base"></i> {clientViewError}</p>}
-                                          {transferReceipt && <p className="text-green-400 text-xs mt-3 font-bold flex items-center gap-1"><i className="ph ph-check-circle text-base"></i> تم إرفاق الصورة بنجاح وجاهز للتأكيد</p>}
-                                      </div>
-
-                                      <button onClick={async () => {
-                                          if (!transferReceipt) { setClientViewError('عذراً، برجاء إرفاق صورة التحويل أولاً لتأكيد السداد.'); return; }
-                                          setIsUploading(true);
-                                          try {
-                                              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                                              const updated = { ...txn, pendingReceipt: transferReceipt };
-                                              const targetCol = isWedding ? 'weddings' : 'transactions';
-                                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated);
-                                              const confirmMsg = `مرحباً، قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد باقي حساب إيصال رقم #${txn.receiptNo} باسم ${displayName}.\n✅ وقمت برفع صورة التحويل في رابط التتبع لتأكيد الدفع.`;
-                                              openWhatsApp(settings.studioPhone || '01201260040', confirmMsg);
-                                              setShowClientPaymentPopup(false);
-                                          } catch (err) { setClientViewError('حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.'); }
-                                          setIsUploading(false);
-                                      }} disabled={isUploading || !transferReceipt} className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 ${isUploading || !transferReceipt ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'}`}>
-                                          {isUploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><i className="ph ph-whatsapp-logo text-2xl"></i> تأكيد التحويل عبر واتساب</>}
-                                      </button>
-                                  </div>
-
-                                  <div className="p-4 border-t border-slate-800 bg-slate-950/50">
-                                      <button onClick={() => setShowClientPaymentPopup(false)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                          تخطي الآن <i className="ph-bold ph-arrow-left"></i>
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>
-                      )}
-
-                      <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
                   </div>
               );
           }
