@@ -3721,15 +3721,11 @@
                       </div>
 
                       {/* بطاقة الدفع المصغرة */}
-{showClientPaymentPopup && txn.remaining > 0 && (
-    <div 
-        onClick={() => {
-            // كود التحويل إلى واتساب الاستوديو مع رسالة جاهزة لطلب السداد
-            const msg = `مرحباً ${settings.studioName} 👋\nبخصوص الإيصال رقم #${txn.receiptNo}، أود سداد المبلغ المتبقي (${txn.remaining} ج.م) إلكترونياً. الرجاء تزويدي بتفاصيل الدفع (إنستاباي / محفظة).`;
-            openWhatsApp(settings.studioPhone || '01201260040', msg);
-        }}
-        className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
-    >
+                      {txn.remaining > 0 && (
+                          <div 
+                              onClick={() => setShowClientPaymentPopup(true)}
+                              className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
+                          >
                               <div className="absolute left-0 top-0 w-1 h-full bg-red-500"></div>
                               <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
