@@ -67,7 +67,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        import { getStorage, ref, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+        import { getStorage, ref, deleteObject, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         const { useState, useEffect, useMemo, useCallback } = React;
 
@@ -77,6 +77,26 @@
         const removeSafeLocal = (key) => { try { localStorage.removeItem(key); } catch(e) {} };
         const getSafeSession = (key) => { try { return sessionStorage.getItem(key); } catch(e) { return null; } };
         const setSafeSession = (key, val) => { try { sessionStorage.setItem(key, val); } catch(e) {} };
+
+        // --- Helper: Copy to Clipboard with Toast ---
+        const copyToClipboard = (text, e) => {
+            if(e) { e.stopPropagation(); e.preventDefault(); }
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const toast = document.createElement('div');
+            toast.innerHTML = `<i class="ph-fill ph-check-circle text-lg"></i> تم النسخ: ${text}`;
+            toast.className = 'fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-5 py-3 rounded-full shadow-2xl z-[9999] font-bold text-sm animate-fadeIn transition-opacity duration-500 flex items-center gap-2 border border-green-400';
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 500);
+            }, 2000);
+        };
 
         // --- Data Definitions ---
         const ORDER_STATUSES = [
@@ -184,17 +204,19 @@
              return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         };
 
-        const getCustomerRewards = (phone, allRecs) => {
-            if (!phone || !allRecs) return { earned: 0, used: 0, balance: 0 };
+        const getCustomerRewards = (phone, allRecs, settingsObj) => {
+            if (!phone || !allRecs || (settingsObj && settingsObj.enableRewards === false)) return { earned: 0, used: 0, balance: 0 };
+            const studioPct = settingsObj ? (settingsObj.rewardPercentStudio ?? 10) / 100 : 0.10;
+            const weddingPct = settingsObj ? (settingsObj.rewardPercentWedding ?? 1.5) / 100 : 0.015;
             const custRecs = allRecs.filter(t => t.phone === phone);
             let rawEarned = 0;
             let totalUsed = 0;
             custRecs.forEach(t => {
                 const paid = parseFloat(t.paid) || 0;
                 if (t.type === 'wedding') {
-                    rawEarned += paid * 0.015;
+                    rawEarned += paid * weddingPct;
                 } else {
-                    rawEarned += paid * 0.10;
+                    rawEarned += paid * studioPct;
                 }
                 totalUsed += (parseFloat(t.rewardDiscount) || 0);
             });
@@ -294,7 +316,7 @@
             }
 
             const paymentNote = txn.electronicPaid > 0 ? '(تم الدفع إلكترونياً)' : '(تم الدفع كاش)';
-            const rewards = getCustomerRewards(txn.phone, allRecords);
+            const rewards = getCustomerRewards(txn.phone, allRecords, settings);
 
             msg = msg.replace(/{name}/g, clientName || 'العميل');
             msg = msg.replace(/{receipt}/g, txn.receiptNo || '');
@@ -307,6 +329,7 @@
             msg = msg.replace(/{time}/g, formatTimeOnly(txn.dateTime));
             msg = msg.replace(/{payment_note}/g, paymentNote);
             msg = msg.replace(/{reward_balance}/g, rewards.balance);
+            msg = msg.replace(/{item_title}/g, 'عرض/منتج');
             
             const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
             msg = msg.replace(/{track_url}/g, trackUrl);
@@ -1563,10 +1586,13 @@
         };
 
         const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal, db, allRecords }) => {
+            const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+
             useEffect(() => {
                 if(txnDetailsModal) {
                     const runCleanup = async () => {
-                        const updatedTxn = await checkAndCleanExpiredPhotos(txnDetailsModal, db, getStorage());
+                        const storageInstance = getStorage();
+                        const updatedTxn = await checkAndCleanExpiredPhotos(txnDetailsModal, db, storageInstance);
                         if(updatedTxn.uploadedPhotos?.length !== txnDetailsModal.uploadedPhotos?.length) { setTxnDetailsModal(updatedTxn); }
                     }; runCleanup();
                 }
@@ -1577,17 +1603,69 @@
             const displayName = isWedding ? `${txnDetailsModal.groomName || ''} و ${txnDetailsModal.brideName || ''}`.trim() : txnDetailsModal.clientName;
             const reqsText = getReqsText(txnDetailsModal);
             const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
-            const rewards = getCustomerRewards(txnDetailsModal.phone, allRecords);
+            const rewards = getCustomerRewards(txnDetailsModal.phone, allRecords, null);
+
+            const handleUploadGallery = async (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                setIsUploadingGallery(true);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const newGallery = [...(txnDetailsModal.gallery || [])];
+                const storageInstance = getStorage();
+
+                for (const file of files) {
+                    try {
+                        const dataUrl = await processImage(file, 1200); 
+                        const storageRef = ref(storageInstance, `artifacts/${appId}/gallery/${txnDetailsModal.id}/${Date.now()}_${file.name}`);
+                        await uploadString(storageRef, dataUrl, 'data_url');
+                        const url = await getDownloadURL(storageRef);
+                        newGallery.push({ url, path: storageRef.fullPath, name: file.name, selected: false });
+                    } catch (err) {
+                        console.error("خطأ في رفع صورة", err);
+                    }
+                }
+
+                const targetCol = txnDetailsModal.type === 'wedding' ? 'weddings' : 'transactions';
+                const updatedTxn = { ...txnDetailsModal, gallery: newGallery };
+                await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txnDetailsModal.id), updatedTxn);
+                setTxnDetailsModal(updatedTxn);
+                setIsUploadingGallery(false);
+            };
+
+            const handleDeleteGalleryImage = async (imgObj) => {
+                try {
+                    const storageInstance = getStorage();
+                    const storageRef = ref(storageInstance, imgObj.path);
+                    await deleteObject(storageRef);
+                } catch(e) { console.error("Storage delete error", e); }
+                
+                const newGallery = txnDetailsModal.gallery.filter(img => img.path !== imgObj.path);
+                const targetCol = txnDetailsModal.type === 'wedding' ? 'weddings' : 'transactions';
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const updatedTxn = { ...txnDetailsModal, gallery: newGallery };
+                await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txnDetailsModal.id), updatedTxn);
+                setTxnDetailsModal(updatedTxn);
+            };
+
+            const selectedImages = txnDetailsModal.gallery?.filter(g => g.selected) || [];
 
             return (
               <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4" onClick={() => setTxnDetailsModal(null)}>
-                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto" onClick={e => e.stopPropagation()}>
+                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setTxnDetailsModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
                   <h3 className="text-2xl font-black mb-6 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2">{isWedding ? <i className="ph ph-heart text-pink-500"></i> : <i className="ph ph-files text-blue-500"></i>} تفاصيل {isWedding ? 'حجز زفاف' : 'الإيصال'} #{txnDetailsModal.receiptNo}</h3>
                   <div className="space-y-5">
                     <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-                       <div><p className="text-slate-500 text-xs mb-1">الاسم</p><p className="font-bold text-lg text-slate-100">{displayName}</p></div>
-                       <div className="text-left"><p className="text-slate-500 text-xs mb-1">رقم الهاتف</p><p className="font-mono text-slate-300">{txnDetailsModal.phone}</p></div>
+                       <div>
+                           <p className="text-slate-500 text-xs mb-1">الاسم (اضغط للنسخ)</p>
+                           <p className="font-bold text-lg text-slate-100 cursor-pointer flex items-center gap-2" onClick={(e) => copyToClipboard(displayName, e)} title="اضغط للنسخ">
+                               {displayName} <i className="ph ph-copy text-slate-500 hover:text-white transition-colors text-base"></i>
+                           </p>
+                       </div>
+                       <div className="text-left">
+                           <p className="text-slate-500 text-xs mb-1">رقم الهاتف (اضغط للنسخ)</p>
+                           <p className="font-mono text-slate-300 cursor-pointer hover:text-white" onClick={(e) => copyToClipboard(txnDetailsModal.phone, e)}><i className="ph ph-copy text-slate-500 mr-1"></i>{txnDetailsModal.phone}</p>
+                       </div>
                     </div>
                     
                     {isWedding && txnDetailsModal.bookedBy && (
@@ -1630,21 +1708,64 @@
                          </div>
                     )}
 
+                    {/* معرض صور العميل */}
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-800 pb-3">
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2"><i className="ph-fill ph-images text-blue-400 text-xl"></i> معرض الصور (اختيار العميل)</h4>
+                                <p className="text-xs text-slate-500 mt-1">ارفع الصور هنا لتظهر للعميل في الرابط الخاص به ليقوم بتحديدها.</p>
+                            </div>
+                            <label className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2 shrink-0">
+                                {isUploadingGallery ? <i className="ph ph-spinner animate-spin text-lg"></i> : <i className="ph ph-upload-simple text-lg"></i>} رفع مجموعة صور
+                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleUploadGallery} disabled={isUploadingGallery} />
+                            </label>
+                        </div>
+                        
+                        {txnDetailsModal.gallery?.length > 0 ? (
+                            <>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 mb-4 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                    {txnDetailsModal.gallery.map((img, i) => (
+                                        <div key={i} className={`relative rounded-lg overflow-hidden border-2 aspect-square group ${img.selected ? 'border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'border-slate-700'}`}>
+                                            <img src={img.url} className="w-full h-full object-cover" onClick={() => setReceiptImageModal(img.url)} />
+                                            {img.selected && <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full p-0.5"><i className="ph-bold ph-check text-xs"></i></div>}
+                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img); }} className="absolute bottom-1 right-1 bg-red-600 hover:bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><i className="ph ph-trash text-sm"></i></button>
+                                            <span className="absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1 rounded backdrop-blur-sm font-mono">{i+1}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {selectedImages.length > 0 && (
+                                    <div className="bg-green-950/20 border border-green-900/50 p-3 rounded-lg flex flex-col gap-2">
+                                        <p className="text-sm text-green-400 font-bold flex items-center gap-2"><i className="ph-fill ph-check-circle"></i> الصور التي اختارها العميل: ({selectedImages.length} صورة)</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {selectedImages.map((img, i) => (
+                                                <span key={i} className="bg-green-900/40 text-green-300 text-xs px-2 py-1 rounded border border-green-500/30 font-mono">
+                                                    صورة {txnDetailsModal.gallery.indexOf(img) + 1}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-center text-slate-500 text-xs py-4 bg-slate-900 rounded-lg border border-slate-800 border-dashed">لم يتم رفع أي صور في المعرض بعد.</p>
+                        )}
+                    </div>
+
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800"><p className="text-slate-500 text-xs mb-2">المطلوب (الخدمات والمنتجات)</p><p className="text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">{reqsText}</p></div>
                     
                     {txnDetailsModal.photoNo && (Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                            <span className="text-slate-500 text-sm mb-3 block"><i className="ph ph-images text-blue-500 text-lg align-middle"></i> أرقام الصور المختارة:</span>
+                            <span className="text-slate-500 text-sm mb-3 block"><i className="ph ph-images text-blue-500 text-lg align-middle"></i> أرقام الصور للطباعة (مضافة يدوياً):</span>
                             <div className="flex flex-wrap gap-2">
                                 {Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => {
                                     return (
                                         <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-xl border shadow-inner ${p.needsName ? 'bg-red-950/20 border-red-900/40' : 'bg-slate-900 border-slate-700'}`}>
-                                            <span className="font-black text-blue-400 bg-blue-950/30 px-2 py-1 rounded border border-blue-900/30" dir="ltr">{p.number}</span>
+                                            <span className="font-black text-blue-400 bg-blue-950/30 px-2 py-1 rounded border border-blue-900/30 cursor-pointer hover:bg-blue-900/50 transition-colors" dir="ltr" onClick={(e) => copyToClipboard(p.number, e)} title="نسخ الرقم">{p.number}</span>
                                             {p.needsName && <span className="text-xs text-red-400 font-bold bg-red-950/50 px-2 py-1 rounded flex items-center gap-1"><i className="ph-fill ph-text-t"></i> يكتب اسم</span>}
-                                            {p.note && <span className="text-xs text-slate-300"><i className="ph ph-text-aa text-slate-500 mr-1"></i> {p.note}</span>}
+                                            {p.note && <span className="text-xs text-slate-400 border-t border-slate-800 pt-1.5 mt-0.5 cursor-pointer hover:text-white transition-colors" onClick={(e) => copyToClipboard(p.note, e)} title="نسخ التفاصيل"><i className="ph ph-text-aa text-slate-500 ml-1"></i> {p.note}</span>}
                                         </div>
                                     )
-                                }) : <span className="font-bold text-slate-200" dir="ltr">{txnDetailsModal.photoNo}</span>}
+                                }) : <span className="font-bold text-slate-200 cursor-pointer hover:text-white" dir="ltr" onClick={(e) => copyToClipboard(txnDetailsModal.photoNo, e)}>{txnDetailsModal.photoNo}</span>}
                             </div>
                         </div>
                     )}
@@ -1698,7 +1819,7 @@
                     <div className="bg-yellow-950/20 p-4 rounded-xl border border-yellow-500/30 mt-4 flex items-center justify-between">
                         <div>
                             <p className="text-yellow-400 text-sm font-bold flex items-center gap-2"><i className="ph-fill ph-gift text-lg"></i> رصيد مكافآت العميل المتاح</p>
-                            <p className="text-xs text-yellow-200/70 mt-1">يتم حسابه تلقائياً (1% للزفاف، 5% للباقي)</p>
+                            <p className="text-xs text-yellow-200/70 mt-1">يتم حسابه تلقائياً بناءً على إعدادات النظام</p>
                         </div>
                         <span className="text-xl font-black text-yellow-400">{rewards.balance} ج.م</span>
                     </div>
@@ -1766,6 +1887,9 @@
             const isPastPayment = !isCreatedToday && hasPaymentToday;
 
             const hasPhotoNeedingName = txn.writeNameOnPhoto || (Array.isArray(txn.photoNo) && txn.photoNo.some(p => typeof p === 'object' && p.needsName));
+            
+            // Check if there are photos
+            const hasPhotos = txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true);
 
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
@@ -1777,9 +1901,10 @@
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-3">
                       <div className="flex justify-between items-start">
-                        <h3 className={`text-lg font-bold flex items-center gap-2 transition-colors ${isWedding ? 'text-pink-100 group-hover:text-pink-400' : 'text-slate-100 group-hover:text-blue-400'}`}>
+                        <h3 className={`text-lg font-bold flex items-center gap-2 transition-colors cursor-pointer ${isWedding ? 'text-pink-100 hover:text-pink-400 group-hover:text-pink-300' : 'text-slate-100 hover:text-blue-400 group-hover:text-blue-300'}`} onClick={(e) => copyToClipboard(displayName, e)} title="اضغط لنسخ الاسم">
                             {isWedding ? <i className="ph ph-heart text-pink-500 text-2xl group-hover:text-pink-400"></i> : <i className="ph ph-user-circle text-slate-500 text-2xl group-hover:text-blue-500"></i>}
                             {displayName || 'عميل بدون اسم'}
+                            <i className="ph-bold ph-copy text-sm opacity-0 group-hover:opacity-100 transition-opacity ml-1"></i>
                         </h3>
                         <div className="flex flex-wrap justify-end items-center gap-2 max-w-[50%]">
                            {txn.photosLink && <span className="text-green-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-green-950/30 px-2 py-1 rounded border border-green-900/50"><i className="ph-fill ph-link text-sm"></i> يوجد رابط</span>}
@@ -1788,16 +1913,32 @@
                            {txn.clientRating > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5</span>}
                            {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}
                            {isPastPayment && <span className="text-purple-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-purple-950/30 px-2 py-1 rounded border border-purple-900/50"><i className="ph-fill ph-clock-counter-clockwise text-sm"></i> سداد من يوم سابق</span>}
-                           {hasPhotoNeedingName ? (
-                               <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse"><i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة اسم</span>
-                           ) : (
-                               txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) ? (
-                                   <span className="text-slate-400 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700"><i className="ph ph-images text-sm sm:text-base"></i> صور: {Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'object' ? p.number : p).filter(Boolean).join(', ') : txn.photoNo}</span>
-                               ) : null
-                           )}
+                           {txn.gallery?.filter(img => img.selected).length > 0 && <span className="text-green-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-green-950/30 px-2 py-1 rounded border border-green-900/50"><i className="ph-fill ph-image text-sm"></i> حدد صوره</span>}
                            <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>
                         </div>
                       </div>
+
+                      {hasPhotos && (
+                          <div className="flex flex-wrap gap-2 mt-2 bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50">
+                              {hasPhotoNeedingName && <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse ml-2"><i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة اسم</span>}
+                              
+                              <span className="text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-images text-blue-500"></i> أرقام الصور:</span>
+                              
+                              {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, idx) => (
+                                  <div key={idx} 
+                                       onClick={(e) => { e.stopPropagation(); if(p.note) copyToClipboard(p.note, e); else copyToClipboard(p.number, e); }}
+                                       className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-transform hover:scale-105 shadow-sm border ${p.needsName ? 'bg-red-950/40 text-red-300 border-red-900/50' : 'bg-slate-800 text-blue-300 border-slate-700 hover:border-slate-500'}`}
+                                       title={`اضغط لنسخ ${p.note ? 'الاسم' : 'الرقم'}`}
+                                  >
+                                      <span className="font-mono bg-black/30 px-1.5 rounded text-white">{p.number}</span>
+                                      {p.note && <span className="text-yellow-400 max-w-[80px] truncate">{p.note}</span>}
+                                  </div>
+                              )) : (
+                                  <span className="text-blue-400 font-bold text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 cursor-pointer hover:bg-slate-700" onClick={(e) => copyToClipboard(txn.photoNo, e)}>{txn.photoNo}</span>
+                              )}
+                          </div>
+                      )}
+
                       <div className="text-sm text-slate-400 flex flex-wrap gap-x-4">
                         {txn.phone && <span>📞 {txn.phone}</span>}
                         <span>⏱️ {formatDate(txn.dateTime)}</span>
@@ -2097,7 +2238,7 @@
             const handlePhoneChange = (val) => {
                 setFormData(prev => ({...prev, phone: val}));
                 if (val.length >= 10 && allRecords) {
-                    const rewards = getCustomerRewards(val, allRecords);
+                    const rewards = getCustomerRewards(val, allRecords, settings);
                     setCustomerRewards(rewards);
 
                     const pastTxn = allRecords.find(t => t.phone === val);
@@ -2379,7 +2520,7 @@
             const handlePhoneChange = (val) => { 
                 setFormData(prev => ({...prev, phone: val})); 
                 if (val.length >= 10 && allRecords) { 
-                    const rewards = getCustomerRewards(val, allRecords);
+                    const rewards = getCustomerRewards(val, allRecords, settings);
                     setCustomerRewards(rewards);
 
                     const pastTxn = allRecords.find(t => t.phone === val); 
@@ -2563,7 +2704,7 @@
                                            <span className={`font-bold text-sm ${isSelected ? 'text-pink-400' : 'text-slate-300'}`}>{pkg.name}</span>
                                         </div>
                                         {isSelected ? (
-                                           <input type="number" onClick={e=>e.stopPropagation()} value={currentPkg.price} onChange={e => handleUpdatePackagePrice(pkg.name, parseFloat(e.target.value)||0)} className="w-20 p-1 bg-slate-950 border border-slate-700 rounded text-white text-center text-xs outline-none" />
+                                            <input type="number" onClick={e=>e.stopPropagation()} value={currentPkg.price} onChange={e => handleUpdatePackagePrice(pkg.name, parseFloat(e.target.value)||0)} className="w-20 p-1 bg-slate-950 border border-slate-700 rounded text-white text-center text-xs outline-none" />
                                         ) : <span className="text-pink-400 font-bold text-xs">{pkg.price} ج.م</span>}
                                      </div>
                                      <span className="text-[10px] text-slate-500 pr-7">{pkg.desc}</span>
@@ -3060,7 +3201,56 @@
                           <i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i>
                       </div>
                     </div>
-                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+
+                    {/* إعدادات نظام المكافآت */}
+                    <div className="md:col-span-2 bg-slate-950 p-5 rounded-2xl border border-yellow-500/30">
+                        <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 className="font-bold text-base text-yellow-400 flex items-center gap-2"><i className="ph-fill ph-gift text-xl"></i> إعدادات نظام المكافآت (Cashback)</h3>
+                                <p className="text-xs text-slate-500 mt-1">تحديد نسب الرصيد المرتجع للعملاء في كل مرة يدفعون فيها.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" checked={settings.enableRewards !== false} onChange={e => setSettings({...settings, enableRewards: e.target.checked})} />
+                              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                            </label>
+                        </div>
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${settings.enableRewards === false ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">نسبة مكافآت الاستوديو (%)</label>
+                                <div className="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-3">
+                                    <input type="number" step="0.1" value={settings.rewardPercentStudio ?? 10} onChange={e => setSettings({...settings, rewardPercentStudio: parseFloat(e.target.value) || 0})} className="w-full py-2 bg-transparent text-white outline-none font-bold" />
+                                    <span className="text-slate-500">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">نسبة مكافآت حجوزات الزفاف (%)</label>
+                                <div className="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-3">
+                                    <input type="number" step="0.1" value={settings.rewardPercentWedding ?? 1.5} onChange={e => setSettings({...settings, rewardPercentWedding: parseFloat(e.target.value) || 0})} className="w-full py-2 bg-transparent text-white outline-none font-bold" />
+                                    <span className="text-slate-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* إعدادات بيانات الدفع للعملاء */}
+                    <div className="md:col-span-2 bg-indigo-950/20 p-5 rounded-2xl border border-indigo-500/30">
+                        <div className="mb-4 border-b border-indigo-900/50 pb-3">
+                            <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> بيانات الدفع الإلكتروني (للعملاء)</h3>
+                            <p className="text-xs text-slate-400 mt-1">هذه البيانات ستظهر للعميل في رابط التتبع الخاص به ليسدد المبالغ المتبقية.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Vodafone_Cash_logo.png/600px-Vodafone_Cash_logo.png" className="w-4 h-4 object-contain rounded-full bg-white p-0.5" /> رقم فودافون كاش</label>
+                                <input type="text" placeholder="مثال: 010XXXXXXXX" value={settings.vodafoneCashNumber || ''} onChange={e => setSettings({...settings, vodafoneCashNumber: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono tracking-widest" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-bank text-indigo-400"></i> حساب إنستاباي (InstaPay)</label>
+                                <input type="text" placeholder="مثال: yourname@instapay" value={settings.instapayAccount || ''} onChange={e => setSettings({...settings, instapayAccount: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between mt-2">
                         <div>
                             <p className="font-bold text-sm text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
                             <p className="text-xs text-slate-500 mt-1">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
@@ -3185,9 +3375,6 @@
           const [authError, setAuthError] = useState(null);
           const [txnsLoaded, setTxnsLoaded] = useState(false);
           const [wedsLoaded, setWedsLoaded] = useState(false);
-          const [transferReceipt, setTransferReceipt] = useState(null);
-          const [isUploading, setIsUploading] = useState(false);
-          const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
           const [clientViewError, setClientViewError] = useState('');
           const [feedbackText, setFeedbackText] = useState('');
           const [rating, setRating] = useState(0);
@@ -3195,6 +3382,7 @@
           const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
           const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
           const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
+          const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
           
           const [receiptImageModal, setReceiptImageModal] = useState(null);
           const [txnDetailsModal, setTxnDetailsModal] = useState(null);
@@ -3204,6 +3392,7 @@
           const [showStages, setShowStages] = useState(false);
           const [showClientPaymentPopup, setShowClientPaymentPopup] = useState(false);
           const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
+          const [isUploadingPaymentReceipt, setIsUploadingPaymentReceipt] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
@@ -3491,8 +3680,8 @@
               
               const clientPromotions = (!txn.selectedPromos || !settings.promotions) ? [] : settings.promotions.filter(p => txn.selectedPromos.includes(p.id));
 
-              // حساب رصيد المكافآت مع التقريب لأقرب 5
-              const rewardsInfo = getCustomerRewards(txn.phone, allRecords);
+              // حساب رصيد المكافآت
+              const rewardsInfo = getCustomerRewards(txn.phone, allRecords, settings);
               const availableRewards = rewardsInfo.balance;
 
               const handleProfilePicUpload = async (e) => {
@@ -3555,8 +3744,45 @@
                   }
               };
 
+              // دالة العميل لاختيار صور من المعرض
+              const handleToggleClientGallerySelection = async (imgObj) => {
+                  const newGallery = txn.gallery.map(img => {
+                      if (img.path === imgObj.path) return { ...img, selected: !img.selected };
+                      return img;
+                  });
+                  const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
+                  const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                  await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, gallery: newGallery }, { merge: true });
+              };
+
+              const handleUploadPaymentReceipt = async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  setIsUploadingPaymentReceipt(true);
+                  try {
+                      const dataUrl = await processImage(file, 800);
+                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                      const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
+                      
+                      // رفع الصورة للستوريج
+                      const storageRef = ref(storage, `artifacts/${appId}/receipts/${txn.id}/${Date.now()}_receipt.jpg`);
+                      await uploadString(storageRef, dataUrl, 'data_url');
+                      const url = await getDownloadURL(storageRef);
+
+                      // حفظ الرابط في حقل مؤقت للمراجعة
+                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, pendingReceipt: url }, { merge: true });
+                      
+                      alert("تم إرسال صورة التحويل بنجاح. سيتم مراجعتها من قبل الإدارة وتحديث حسابك.");
+                      setShowClientPaymentPopup(false);
+                  } catch (err) {
+                      console.error("Error uploading receipt", err);
+                      alert("حدث خطأ أثناء رفع الصورة، يرجى المحاولة مرة أخرى.");
+                  }
+                  setIsUploadingPaymentReceipt(false);
+              };
+
               return (
-                  <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center">
+                  <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
                       
                       <div className="w-full max-w-md flex justify-end mb-2">
                           <a href="?client=true" onClick={(e) => { e.preventDefault(); navigateTo('?client=true'); }} className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
@@ -3658,17 +3884,12 @@
                           {txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
                               <div className="bg-slate-950/80 p-4 rounded-xl mb-4 border border-blue-500/30 flex flex-col gap-3 shadow-inner">
                                   <span className="text-slate-300 font-bold flex items-center gap-1.5"><i className="ph-fill ph-images text-blue-400 text-xl"></i> أرقام الصور المحددة لك:</span>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                      {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => {
-                                         const num = typeof p === 'object' ? p.number : p;
-                                         const note = typeof p === 'object' ? p.note : '';
-                                         return (
-                                             <div key={i} className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 flex flex-col gap-1 shadow-sm">
-                                                 <span className="font-black text-blue-400 flex items-center gap-1"><i className="ph ph-hash text-slate-500"></i> {num}</span>
-                                                 {note && <span className="text-xs text-slate-400 border-t border-slate-800 pt-1.5 mt-0.5"><i className="ph ph-text-aa text-slate-500 ml-1"></i>{note}</span>}
-                                             </div>
-                                         )
-                                      }) : <span className="font-black text-blue-300 bg-blue-950/50 px-3 py-1.5 rounded-lg border border-blue-900/50 text-center" dir="ltr">{txn.photoNo}</span>}
+                                  <div className="flex flex-wrap gap-2">
+                                      {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => (
+                                          <span key={i} className="font-black text-blue-400 bg-blue-950/50 px-4 py-2 rounded-lg border border-blue-900/50 text-center shadow-sm" dir="ltr">
+                                              {typeof p === 'object' ? p.number : p}
+                                          </span>
+                                      )) : <span className="font-black text-blue-300 bg-blue-950/50 px-4 py-2 rounded-lg border border-blue-900/50 text-center shadow-sm" dir="ltr">{txn.photoNo}</span>}
                                   </div>
                               </div>
                           )}
@@ -3720,8 +3941,68 @@
                           </button>
                       </div>
 
-                      {/* بطاقة الدفع المصغرة */}
-                      {txn.remaining > 0 && (
+                      {/* بطاقة الدفع المصغرة (النافذة المنبثقة) */}
+                      {showClientPaymentPopup && txn.remaining > 0 && (
+                          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setShowClientPaymentPopup(false)}>
+                              <div className="bg-slate-900 rounded-3xl max-w-sm w-full border border-slate-700 shadow-2xl flex flex-col overflow-hidden m-auto relative" onClick={e => e.stopPropagation()}>
+                                  <button onClick={() => setShowClientPaymentPopup(false)} className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
+                                  
+                                  <div className="bg-gradient-to-b from-red-950/40 to-slate-900 p-6 text-center border-b border-red-900/30">
+                                      <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-red-900/20 border border-red-500/30">
+                                          <i className="ph-fill ph-wallet text-3xl"></i>
+                                      </div>
+                                      <h2 className="text-xl font-black text-white mb-1">مبلغ مستحق للدفع</h2>
+                                      <p className="text-slate-400 text-xs">يرجى سداد المبلغ المتبقي لاستكمال طلبك</p>
+                                      <div className="mt-4 inline-block bg-slate-950 px-6 py-3 rounded-2xl border border-red-500/50 shadow-inner">
+                                          <span className="block text-3xl font-black text-red-400">{txn.remaining}</span>
+                                          <span className="text-xs text-red-300 font-bold">جنيهاً مصرياً</span>
+                                      </div>
+                                  </div>
+
+                                  <div className="p-6 flex flex-col gap-4">
+                                      <h4 className="font-bold text-sm text-slate-300 border-b border-slate-800 pb-2">طرق الدفع المتاحة:</h4>
+                                      
+                                      {/* فودافون كاش */}
+                                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                                          <div className="flex items-center gap-2">
+                                              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Vodafone_Cash_logo.png/600px-Vodafone_Cash_logo.png" className="w-6 h-6 object-contain rounded-full bg-white p-0.5" />
+                                              <span className="font-bold text-slate-200">فودافون كاش</span>
+                                          </div>
+                                          <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-700 mt-1">
+                                              <span className="font-mono text-lg font-black text-white tracking-widest px-2" dir="ltr">{settings.vodafoneCashNumber || 'غير متوفر'}</span>
+                                              <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '', e)} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors">نسخ</button>
+                                          </div>
+                                      </div>
+
+                                      {/* إنستاباي */}
+                                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                                          <div className="flex items-center gap-2">
+                                              <i className="ph-fill ph-bank text-indigo-400 text-2xl"></i>
+                                              <span className="font-bold text-slate-200">إنستاباي (InstaPay)</span>
+                                          </div>
+                                          <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-700 mt-1">
+                                              <span className="font-mono text-sm font-black text-indigo-300 px-2 truncate max-w-[150px]" dir="ltr">{settings.instapayAccount || 'غير متوفر'}</span>
+                                              <button onClick={(e) => copyToClipboard(settings.instapayAccount || '', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors">نسخ</button>
+                                          </div>
+                                      </div>
+
+                                      {/* إرفاق الإيصال */}
+                                      <div className="mt-2 border-t border-slate-800 pt-4">
+                                          <p className="text-xs text-yellow-400 mb-2 font-bold text-center"><i className="ph-fill ph-info"></i> بعد التحويل، يرجى إرفاق صورة الإيصال هنا للتأكيد:</p>
+                                          <label className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl border border-slate-600 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
+                                              {isUploadingPaymentReceipt ? <i className="ph ph-spinner animate-spin text-xl"></i> : <i className="ph-fill ph-upload-simple text-xl"></i>}
+                                              {isUploadingPaymentReceipt ? 'جاري الرفع...' : 'رفع صورة إيصال التحويل'}
+                                              <input type="file" accept="image/*" className="hidden" onChange={handleUploadPaymentReceipt} disabled={isUploadingPaymentReceipt} />
+                                          </label>
+                                          {txn.pendingReceipt && <p className="text-center text-green-400 text-xs mt-2 font-bold"><i className="ph-fill ph-check-circle"></i> تم إرسال الإيصال وهو قيد المراجعة.</p>}
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+
+                      {/* زر إظهار الدفع اليدوي لو تم إغلاق النافذة */}
+                      {txn.remaining > 0 && !showClientPaymentPopup && (
                           <div 
                               onClick={() => setShowClientPaymentPopup(true)}
                               className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
@@ -3740,6 +4021,53 @@
                                   <span className="block text-xl font-black text-red-400">{txn.remaining} <span className="text-xs">ج.م</span></span>
                                   <i className="ph-bold ph-caret-left text-slate-500"></i>
                               </div>
+                          </div>
+                      )}
+
+                      {/* معرض صور العميل (الألبوم) */}
+                      {txn.gallery?.length > 0 && (
+                          <div className="w-full max-w-md bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-xl border border-blue-500/30 mb-8 relative overflow-hidden">
+                              <div className="absolute top-0 right-0 w-1 h-full bg-blue-500"></div>
+                              <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                                  <div>
+                                      <h3 className="font-bold text-lg text-blue-400 flex items-center gap-2"><i className="ph-fill ph-images text-2xl"></i> ألبوم الصور الخاص بك</h3>
+                                      <p className="text-xs text-slate-400 mt-1">تصفح صورك واضغط على الصورة التي تريد طباعتها.</p>
+                                  </div>
+                                  <div className="bg-blue-950/50 border border-blue-900/50 px-3 py-1.5 rounded-lg text-center">
+                                      <span className="block text-xs text-blue-300 font-bold mb-0.5">اخترت</span>
+                                      <span className="block text-lg font-black text-blue-400">{txn.gallery.filter(g=>g.selected).length}</span>
+                                  </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                                  {txn.gallery.map((img, i) => (
+                                      <div 
+                                          key={i} 
+                                          onClick={() => handleToggleClientGallerySelection(img)}
+                                          className={`relative rounded-xl overflow-hidden aspect-[4/5] cursor-pointer group border-2 transition-all ${img.selected ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] scale-[0.98]' : 'border-slate-700 hover:border-blue-500'}`}
+                                      >
+                                          <img src={img.url} className={`w-full h-full object-cover transition-opacity ${img.selected ? 'opacity-80' : 'opacity-100'}`} alt={`صورة ${i+1}`} />
+                                          <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                                          
+                                          {/* رقم الصورة */}
+                                          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm font-mono shadow-sm">
+                                              صورة {i+1}
+                                          </span>
+
+                                          {/* علامة التحديد */}
+                                          <div className={`absolute inset-0 flex items-center justify-center transition-transform ${img.selected ? 'scale-100' : 'scale-0'}`}>
+                                              <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center shadow-2xl">
+                                                  <i className="ph-bold ph-check text-2xl"></i>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                              {txn.gallery.filter(g=>g.selected).length > 0 && (
+                                  <p className="text-center text-xs text-green-400 mt-4 font-bold bg-green-950/30 py-2 rounded-lg border border-green-900/50">
+                                      <i className="ph-fill ph-check-circle"></i> تم حفظ اختيارك للصور بنجاح. سيقوم الاستوديو بطباعتها.
+                                  </p>
+                              )}
                           </div>
                       )}
 
