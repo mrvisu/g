@@ -206,7 +206,7 @@
 
         const getCustomerRewards = (phone, allRecs, settingsObj) => {
             if (!phone || !allRecs || (settingsObj && settingsObj.enableRewards === false)) return { earned: 0, used: 0, balance: 0 };
-            const studioPct = settingsObj ? (settingsObj.rewardPercentStudio ?? 10) / 100 : 0.10;
+            const studioPct = settingsObj ? (settingsObj.rewardPercentStudio ?? 5) / 100 : 0.05;
             const weddingPct = settingsObj ? (settingsObj.rewardPercentWedding ?? 1.5) / 100 : 0.015;
             const custRecs = allRecs.filter(t => t.phone === phone);
             let rawEarned = 0;
@@ -612,18 +612,18 @@
                         </div>
 
                         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-950 p-4 rounded-xl border border-blue-500/20 text-center">
-                                    <p className="text-sm text-slate-400 font-bold mb-1">العملاء المسجلين (لهم أرقام)</p>
-                                    <p className="text-2xl font-black text-blue-400">{uniqueCustomers.length}</p>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="flex-1 bg-slate-950 p-5 rounded-xl border border-blue-500/20 text-center shadow-inner flex flex-col items-center justify-center">
+                                    <p className="text-sm text-slate-400 font-bold mb-2">العملاء المسجلين (لهم أرقام)</p>
+                                    <p className="text-3xl font-black text-blue-400">{uniqueCustomers.length}</p>
                                 </div>
-                                <div className="bg-slate-950 p-4 rounded-xl border border-slate-700 text-center">
-                                    <p className="text-sm text-slate-400 font-bold mb-1">زوار جدد (مجهولين الهوية)</p>
-                                    <p className="text-2xl font-black text-slate-300">{anonymousCount}</p>
+                                <div className="flex-1 bg-slate-950 p-5 rounded-xl border border-slate-700 text-center shadow-inner flex flex-col items-center justify-center">
+                                    <p className="text-sm text-slate-400 font-bold mb-2">زوار جدد (مجهولين الهوية)</p>
+                                    <p className="text-3xl font-black text-slate-300">{anonymousCount}</p>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner mt-2">
                                 <label className="block text-sm font-bold text-slate-300 mb-2">إرسال رسالة العروض للعملاء المسجلين:</label>
                                 <textarea
                                     rows="3"
@@ -659,71 +659,6 @@
             );
         };
 
-        const SharersModal = ({ allRecords, settings, onClose }) => {
-            const sharedRecords = useMemo(() => {
-                const map = new Map();
-                allRecords.filter(r => r.hasSharedLink).forEach(t => {
-                    if (!t.phone) return;
-                    if (!map.has(t.phone)) {
-                        map.set(t.phone, {
-                            phone: t.phone,
-                            name: t.clientName || t.groomName || 'عميل',
-                            date: t.dateTime
-                        });
-                    }
-                });
-                return Array.from(map.values()).sort((a,b) => new Date(b.date) - new Date(a.date));
-            }, [allRecords]);
-
-            const [message, setMessage] = useState(`أهلاً بك 🌟\nشكراً لمشاركتك رابط ${settings.studioName} مع أصدقائك! 🎁\nتقديراً لدعمك، بنقدملك خصم إضافي على زيارتك القادمة أو طباعة صور مجانية.`);
-
-            return (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
-                    <div className="bg-slate-900 rounded-3xl max-w-2xl w-full border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
-                            <h2 className="text-xl font-black text-emerald-400 flex items-center gap-2">
-                                <i className="ph-fill ph-share-network text-2xl"></i> سفراء الاستوديو (شاركوا الرابط)
-                            </h2>
-                            <button onClick={onClose} className="text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
-                        </div>
-
-                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-inner">
-                                <label className="block text-sm font-bold text-slate-300 mb-2">إرسال مكافأة للعملاء الذين شاركوا الرابط:</label>
-                                <textarea
-                                    rows="3"
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-emerald-500 transition-colors resize-y custom-scrollbar"
-                                />
-                            </div>
-
-                            <div>
-                                <h3 className="font-bold text-slate-300 mb-3 text-sm border-b border-slate-800 pb-2">العملاء ({sharedRecords.length}):</h3>
-                                <div className="space-y-2">
-                                    {sharedRecords.length === 0 ? <p className="text-center text-slate-500 py-4 text-sm">لا يوجد عملاء قاموا بالمشاركة بعد.</p> : sharedRecords.map((cust, idx) => (
-                                        <div key={idx} className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition-colors">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-sm text-slate-200">{cust.name}</span>
-                                                <div className="text-xs text-slate-500 mt-1 font-mono">📞 {cust.phone}</div>
-                                            </div>
-                                            <button
-                                                onClick={() => openWhatsApp(cust.phone, message)}
-                                                className="bg-emerald-600 hover:bg-emerald-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0"
-                                                title="إرسال رسالة واتساب"
-                                            >
-                                                <i className="ph-fill ph-paper-plane-right text-lg"></i>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio, navigateTo }) => {
             const [phone, setPhone] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
@@ -738,11 +673,13 @@
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
             const [localVisits, setLocalVisits] = useState(settings.portalVisits || 1);
 
+            // Tab state for the combined Details Card (Stages & Archive)
+            const [activeSubTab, setActiveSubTab] = useState('stages');
+
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
             const avgRating = useMemo(() => reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.clientRating, 0) / reviews.length).toFixed(1) : 0, [reviews]);
 
-            // التحقق من الروابط لفتح البطاقات أو العروض الترويجية تلقائياً
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const cardId = urlParams.get('card');
@@ -781,7 +718,6 @@
                 setLocalVisits(settings.portalVisits || 1);
             }, [settings.portalVisits]);
 
-            // تسجيل زيارة جديدة لبوابة العملاء
             useEffect(() => {
                 const recordVisit = async () => {
                     if (!db) return;
@@ -1540,10 +1476,11 @@
             const handleSubmit = async (e) => {
               e.preventDefault();
               const amount = parseFloat(e.target.amount.value);
+              const method = e.target.paymentMethod.value;
               const pDate = e.target.paymentDate.value ? new Date(e.target.paymentDate.value).toISOString() : new Date().toISOString();
-              const newPayment = { amount, method: payModal.paymentType, date: pDate };
-              const updated = { ...payModal, paid: payModal.paid + amount, electronicPaid: (payModal.electronicPaid || 0) + (payModal.paymentType === 'electronic' ? amount : 0), remaining: payModal.total - (payModal.paid + amount), payments: [...(payModal.payments || []), newPayment] };
-              if (updated.pendingReceipt && payModal.paymentType === 'electronic') { updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt]; }
+              const newPayment = { amount, method: method, date: pDate };
+              const updated = { ...payModal, paid: payModal.paid + amount, electronicPaid: (payModal.electronicPaid || 0) + (method === 'electronic' ? amount : 0), remaining: payModal.total - (payModal.paid + amount), payments: [...(payModal.payments || []), newPayment] };
+              if (updated.pendingReceipt && method === 'electronic') { updated.confirmedReceipts = [...(updated.confirmedReceipts || []), updated.pendingReceipt]; }
               if (updated.pendingReceipt) delete updated.pendingReceipt;
               delete updated.paymentType;
               const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
@@ -1553,21 +1490,35 @@
             };
             const displayName = payModal.type === 'wedding' ? `${payModal.groomName || ''} و ${payModal.brideName || ''}`.trim() || 'بدون اسم' : payModal.clientName;
             return (
-              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 m-auto">
-                <div className="bg-slate-900 p-5 rounded-2xl shadow-xl border border-slate-800 w-full max-w-sm relative m-auto">
-                  <button onClick={() => setPayModal(null)} className="absolute top-3 left-3 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
-                  <h3 className="text-xl font-black mb-3 border-b border-slate-800 pb-3 text-center text-slate-100">{payModal.paymentType === 'electronic' ? 'سداد إلكتروني (محافظ)' : 'سداد نقدي'}</h3>
-                  <div className="mb-4 bg-slate-950 p-3 rounded-xl text-center border border-slate-800"><p className="text-slate-400 text-sm">العميل: <b className="text-white text-base">{displayName}</b></p><p className="text-red-400 font-bold mt-1 text-sm">الباقي المستحق: {payModal.remaining} ج.م</p></div>
-                  <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 m-auto" onClick={() => setPayModal(null)}>
+                <div className="bg-slate-900 p-5 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-sm relative m-auto" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
+                  <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-3 text-center text-slate-100 flex items-center justify-center gap-2">
+                     <i className="ph-fill ph-hand-coins text-2xl text-green-500"></i> تحصيل مبلغ مستحق
+                  </h3>
+                  <div className="mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-center shadow-inner">
+                      <p className="text-slate-400 text-sm mb-1">العميل: <b className="text-white text-base">{displayName}</b></p>
+                      <p className="text-red-400 font-black text-lg">الباقي: {payModal.remaining} ج.م</p>
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-slate-400 text-xs font-bold block mb-1">المبلغ المراد تحصيله (ج.م)</label>
+                        <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-4 border border-slate-700 bg-slate-950 text-white rounded-xl text-xl font-black text-center outline-none focus:border-green-500 shadow-inner"/>
+                    </div>
+                    <div>
+                        <label className="text-slate-400 text-xs font-bold block mb-1">طريقة الدفع</label>
+                        <select name="paymentMethod" defaultValue={payModal.paymentType || 'cash'} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 font-bold">
+                            <option value="cash">دفع نقدي (كاش)</option>
+                            <option value="electronic">دفع إلكتروني (محافظ/إنستاباي)</option>
+                        </select>
+                    </div>
                     <div>
                         <label className="text-slate-400 text-xs font-bold block mb-1">تاريخ السداد</label>
-                        <input type="date" name="paymentDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-blue-500 shadow-inner"/>
+                        <input type="date" name="paymentDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 shadow-inner"/>
                     </div>
-                    <div>
-                        <label className="text-slate-400 text-xs font-bold block mb-1">المبلغ المدفوع (ج.م)</label>
-                        <input type="number" name="amount" required min="1" max={payModal.remaining} defaultValue={payModal.remaining} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl text-xl font-black text-center outline-none focus:border-blue-500 shadow-inner"/>
-                    </div>
-                    <button type="submit" className={`w-full text-white font-black py-3 mt-2 rounded-xl shadow-lg transition-all text-base ${payModal.paymentType === 'electronic' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-green-600 hover:bg-green-500'}`}>تأكيد تحصيل المبلغ</button>
+                    <button type="submit" className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 mt-2 rounded-xl shadow-lg transition-transform hover:scale-[1.02] text-base flex items-center justify-center gap-2">
+                        <i className="ph-bold ph-check-circle text-xl"></i> تأكيد التحصيل
+                    </button>
                   </form>
                 </div>
               </div>
@@ -1585,7 +1536,7 @@
             );
         };
 
-        const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal, db, allRecords }) => {
+        const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal, db, allRecords, settings }) => {
             const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
             useEffect(() => {
@@ -1603,7 +1554,7 @@
             const displayName = isWedding ? `${txnDetailsModal.groomName || ''} و ${txnDetailsModal.brideName || ''}`.trim() : txnDetailsModal.clientName;
             const reqsText = getReqsText(txnDetailsModal);
             const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
-            const rewards = getCustomerRewards(txnDetailsModal.phone, allRecords, null);
+            const rewards = getCustomerRewards(txnDetailsModal.phone, allRecords, settings);
 
             const handleUploadGallery = async (e) => {
                 const files = Array.from(e.target.files);
@@ -1630,6 +1581,7 @@
                 await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txnDetailsModal.id), updatedTxn);
                 setTxnDetailsModal(updatedTxn);
                 setIsUploadingGallery(false);
+                e.target.value = ''; // Reset input to allow re-uploading same files
             };
 
             const handleDeleteGalleryImage = async (imgObj) => {
@@ -1888,7 +1840,6 @@
 
             const hasPhotoNeedingName = txn.writeNameOnPhoto || (Array.isArray(txn.photoNo) && txn.photoNo.some(p => typeof p === 'object' && p.needsName));
             
-            // Check if there are photos
             const hasPhotos = txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true);
 
             const handleAddToCalendar = (e) => {
@@ -1954,7 +1905,15 @@
                           {cashPaid > 0 && <span className="text-emerald-400 text-xs bg-emerald-950/30 px-2 py-1 rounded border border-emerald-900/50 flex items-center gap-1"><i className="ph ph-money text-base"></i> نقدي: {cashPaid}</span>}
                           {txn.electronicPaid > 0 && <span className="text-indigo-400 text-xs bg-indigo-950/30 px-2 py-1 rounded border border-indigo-900/50 flex items-center gap-1"><i className="ph ph-wallet text-base"></i> إلكتروني: {txn.electronicPaid}</span>}
                           <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>
-                          <span className={txn.remaining > 0 ? "text-red-400" : "text-green-400"}>الباقي: <b>{txn.remaining}</b></span>
+                          
+                          <div className="flex items-center gap-2">
+                              <span className={txn.remaining > 0 ? "text-red-400" : "text-green-400"}>الباقي: <b>{txn.remaining}</b></span>
+                              {txn.remaining > 0 && (
+                                 <button onClick={(e) => { e.stopPropagation(); onPayRemaining(txn); }} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30 text-[10px] px-2 py-0.5 rounded transition-colors flex items-center gap-1 shadow-sm">
+                                    <i className="ph-bold ph-plus"></i> سداد
+                                 </button>
+                              )}
+                          </div>
                         </div>
                       </div>
 
@@ -2001,13 +1960,6 @@
                       </div>
                     )}
                   </div>
-
-                  {txn.remaining > 0 && (
-                      <div className="flex gap-2 w-full mt-2">
-                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'cash'}); }} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm"><i className="ph ph-money text-lg"></i> نقدي</button>
-                        <button onClick={(e) => { e.stopPropagation(); onPayRemaining({...txn, paymentType: 'electronic'}); }} className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm"><i className="ph ph-wallet text-lg"></i> إلكتروني</button>
-                      </div>
-                  )}
 
                   {onEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(txn); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-2"><i className="ph ph-pencil-simple text-xl"></i> تعديل البيانات</button>}
                   
@@ -2274,19 +2226,12 @@
                 
                 {/* الإحصائيات العامة */}
                 {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
+                        <div className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm relative overflow-hidden">
+                            <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0"><i className="ph-fill ph-camera text-2xl"></i></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
-                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
-                            </div>
-                        </div>
-                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
-                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
+                                <p className="text-xs font-bold text-slate-400">إجمالي العمليات</p>
+                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0}</p>
                             </div>
                         </div>
                         <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-green-500 hover:bg-green-900/30 transition-all group relative overflow-hidden">
@@ -2299,16 +2244,6 @@
                                         <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-star"></i> التقييمات: {avgRating} ({feedbacks.length})</span>
                                         <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> الإعجابات: {settings.studioLikes || 0}</span>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div onClick={() => setShowSharersModal(true)} className="bg-gradient-to-br from-emerald-900/20 to-slate-900 p-4 rounded-2xl border border-emerald-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-emerald-500 hover:bg-emerald-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-share-network text-2xl"></i></div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-emerald-300 transition-colors">سفراء الاستوديو</p>
-                                <div className="flex items-center justify-between mt-1">
-                                    <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords.filter(r => r.hasSharedLink).length}</p>
-                                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">مكافأة</span>
                                 </div>
                             </div>
                         </div>
@@ -2428,373 +2363,23 @@
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 border-t border-slate-800 pt-4">
                           <input type="number" placeholder="الإجمالي" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-blue-500 text-sm font-bold" value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
                           <input type="number" placeholder="المدفوع الان" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 text-sm font-bold" value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} />
-                          {!isEditing && <select className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-indigo-500 col-span-2 md:col-span-1 text-sm font-bold" value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})}><option value="cash">دفع نقدي</option><option value="electronic">دفع إلكتروني (محافظ)</option></select>}
-                        </div>
-                        <div className={`p-3 rounded-xl text-center font-black text-lg border mt-4 ${(displayFinalTotal - (parseFloat(formData.paid)||0)) > 0 ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-green-950/40 text-green-400 border-green-900/50'}`}>
-                            الباقي: {formatCurrency(displayFinalTotal - (parseFloat(formData.paid) || 0))}
-                            {formData.useReward && !isEditing && <span className="block text-xs font-normal text-yellow-400 mt-1">(بعد خصم {Math.min(parseFloat(formData.total)||0, customerRewards.balance)} ج.م من رصيد المكافآت)</span>}
-                        </div>
-                        <button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4"><i className="ph ph-floppy-disk text-lg ml-2 align-middle"></i>حفظ</button>
-                      </form>
-                    </div>
-                  </div>
-                )}
-                
-                <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
-                {showViewersModal && <ViewersModal allRecords={allRecords} settings={settings} portalVisits={settings.portalVisits || 0} onClose={() => setShowViewersModal(false)} />}
-                {showSharersModal && <SharersModal allRecords={allRecords} settings={settings} onClose={() => setShowSharersModal(false)} />}
-              </div>
-            );
-        };
-
-        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
-            const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
-            const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
-            const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [txnDetailsModal, setTxnDetailsModal] = useState(null);
-            const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [showViewersModal, setShowViewersModal] = useState(false);
-            const [showSharersModal, setShowSharersModal] = useState(false);
-            const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
-            const [formData, setFormData] = useState({ groomName: '', brideName: '', phone: '', groomAddress: '', weddingDate: '', location: '', makeupArtist: '', leaveTime: '', sessionType: '', casualShootDate: '', packages: [], addons: [], selectedPromos: [], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total: '', paid: '', paymentMethod: 'cash', photosLink: '', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' });
-            const [newAddon, setNewAddon] = useState({ name: '', notes: '', date: '', price: '' });
-
-            const handleAddAddon = () => { if(!newAddon.name) return; const price = parseFloat(newAddon.price) || 0; setFormData(prev => ({ ...prev, addons: [...prev.addons, { ...newAddon, price }], total: (parseFloat(prev.total) || 0) + price })); setNewAddon({ name: '', notes: '', date: '', price: '' }); };
-            const handleRemoveAddon = (index) => { const addon = formData.addons[index]; const newAddons = [...formData.addons]; newAddons.splice(index, 1); setFormData(prev => ({ ...prev, addons: newAddons, total: Math.max(0, (parseFloat(prev.total) || 0) - addon.price) })); };
-            const handleSelectPackage = (pkg) => { setFormData(prev => { const exists = prev.packages.find(p => p.name === pkg.name); let newPkgs, priceDiff; if (exists) { newPkgs = prev.packages.filter(p => p.name !== pkg.name); priceDiff = -exists.price; } else { newPkgs = [...prev.packages, { ...pkg }]; priceDiff = pkg.price; } return { ...prev, packages: newPkgs, total: Math.max(0, (parseFloat(prev.total) || 0) + priceDiff) }; }); };
-            const handleUpdatePackagePrice = (pkgName, newPrice) => { setFormData(prev => { let diff = 0; const newPkgs = prev.packages.map(p => { if (p.name === pkgName) { diff = newPrice - p.price; return { ...p, price: newPrice }; } return p; }); return { ...prev, packages: newPkgs, total: Math.max(0, (parseFloat(prev.total) || 0) + diff) }; }); };
-
-            const handleEdit = (txn) => {
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, groomName: txn.groomName || '', brideName: txn.brideName || '', phone: txn.phone || '', groomAddress: txn.groomAddress || '', weddingDate: txn.weddingDate || '', location: txn.location || '', makeupArtist: txn.makeupArtist || '', leaveTime: txn.leaveTime || '', sessionType: txn.sessionType || '', casualShootDate: txn.casualShootDate || '', packages: txn.packages || (txn.package ? [txn.package] : []), addons: txn.addons || [], selectedPromos: txn.selectedPromos || [], photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]), writeNameOnPhoto: txn.writeNameOnPhoto || false, total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', photosLink: txn.photosLink || '', rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), bookedBy: txn.bookedBy || 'studio', employeeName: txn.employeeName || '' });
-                setIsEditing(true); setShowAddModal(true);
-            };
-
-            const handleSubmit = async (e) => {
-              e.preventDefault(); 
-              let total = parseFloat(formData.total) || 0; 
-              const paid = parseFloat(formData.paid) || 0;
-              let rewardDiscount = 0;
-              
-              if (formData.useReward && !isEditing) {
-                  rewardDiscount = Math.min(total, customerRewards.balance);
-                  total = total - rewardDiscount;
-              } else if (isEditing) {
-                  rewardDiscount = formData.rewardDiscount || 0;
-              }
-
-              let finalReceiptNo = isEditing ? formData.receiptNo : (settings.nextReceiptNo || 1000);
-              if (!isEditing && allRecords) { let isDuplicate = true; while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) { finalReceiptNo++; } else { isDuplicate = false; } } }
-              
-              const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newWedding = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, type: 'wedding', dateTime: isEditing ? formData.dateTime : new Date().toISOString(), groomName: formData.groomName, brideName: formData.brideName, phone: formData.phone, groomAddress: formData.groomAddress, weddingDate: formData.weddingDate, location: formData.location, makeupArtist: formData.makeupArtist, leaveTime: formData.leaveTime, sessionType: formData.sessionType, casualShootDate: formData.casualShootDate, packages: formData.packages, addons: formData.addons, selectedPromos: formData.selectedPromos || [], photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== ''), writeNameOnPhoto: formData.writeNameOnPhoto, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', payments: isEditing ? (formData.payments || []) : initialPayment, bookedBy: formData.bookedBy, employeeName: formData.bookedBy === 'employee' ? formData.employeeName : '' };
-              
-              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-              await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, newWedding.id), newWedding);
-
-              // اضافة الحافز للموظف كقيد مصروفات عند الحجز لأول مرة بواسطة موظف
-              if (!isEditing && formData.bookedBy === 'employee' && formData.employeeName.trim() !== '') {
-                  const incentiveExp = {
-                      id: Date.now().toString() + '_inc',
-                      date: new Date().toISOString(),
-                      amount: 250,
-                      category: 'حوافز وعمولات',
-                      notes: `حافز حجز زفاف (العريس: ${formData.groomName || 'غير محدد'}) للموظف: ${formData.employeeName}`,
-                      month: new Date().getMonth() + 1,
-                      year: new Date().getFullYear(),
-                      type: 'wedding'
-                  };
-                  await setDoc(doc(db, `artifacts/${appId}/public/data/expenses`, incentiveExp.id), incentiveExp);
-              }
-              
-              if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], selectedPromos:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' });
-              setCustomerRewards({ earned: 0, used: 0, balance: 0 });
-              setIsEditing(false); setShowAddModal(false);
-            };
-
-            const handleDelete = async (id) => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await deleteDoc(doc(db, `artifacts/${appId}/public/data/weddings`, id)); };
-            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = weddings.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, updated.id), updated); } };
-            
-            const handlePhoneChange = (val) => { 
-                setFormData(prev => ({...prev, phone: val})); 
-                if (val.length >= 10 && allRecords) { 
-                    const rewards = getCustomerRewards(val, allRecords, settings);
-                    setCustomerRewards(rewards);
-
-                    const pastTxn = allRecords.find(t => t.phone === val); 
-                    if (pastTxn) { 
-                        setFormData(prev => ({ ...prev, groomName: prev.groomName || pastTxn.groomName || pastTxn.clientName || '', brideName: prev.brideName || pastTxn.brideName || '', groomAddress: prev.groomAddress || pastTxn.groomAddress || '' })); 
-                        const visits = allRecords.filter(t => t.phone === val).length; 
-                        setLoyaltyAlert(`🌟 عميل دائم: هذه هي الزيارة رقم ${visits + 1}! (يمكنك تقديم خصم كهدية ولاء)`); 
-                    } else { setLoyaltyAlert(''); } 
-                } else { 
-                    setLoyaltyAlert('');
-                    setCustomerRewards({ earned: 0, used: 0, balance: 0 }); 
-                } 
-            };
-
-            let filteredWeds = weddings; const isFiltering = query !== '' || filterDate !== '';
-            if (query) filteredWeds = filteredWeds.filter(t => t.groomName?.includes(query) || t.brideName?.includes(query) || t.phone?.includes(query) || t.receiptNo.toString().includes(query));
-            if (filterDate) filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
-            if (!isFiltering) filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString() || (t.payments && t.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString())));
-
-            const dayRevenue = calculatePeriodRevenue(weddings, filterDate ? new Date(filterDate) : new Date(), 'day');
-            const currentTotalCollected = dayRevenue.total;
-            const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
-            
-            const totalDebts = useMemo(() => weddings?.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0) || 0, [weddings]);
-            const filteredDebts = useMemo(() => { if (!weddings) return []; let debts = weddings.filter(t => t.remaining > 0); if (debtSearch) debts = debts.filter(t => (`${t.groomName || ''} ${t.brideName || ''}`).includes(debtSearch) || (t.phone || '').includes(debtSearch) || (t.receiptNo?.toString() || '').includes(debtSearch)); return debts.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); }, [weddings, debtSearch]);
-
-            const uniqueDebtorsCount = useMemo(() => new Set(filteredDebts.map(t => t.phone)).size, [filteredDebts]);
-
-            const handleDayClick = (dateStr) => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate: dateStr, location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], selectedPromos:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); };
-
-            const displayFinalTotal = formData.useReward && !isEditing ? Math.max(0, (parseFloat(formData.total) || 0) - customerRewards.balance) : (parseFloat(formData.total) || 0);
-
-            return (
-              <div className="space-y-6">
-                {!isFiltering && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-4 rounded-2xl border border-blue-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-blue-500 hover:bg-blue-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-users text-2xl"></i></div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-blue-300 transition-colors">عملاء (بدون تكرار)</p>
-                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{uniqueCustomersCount} <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إعادة استهداف</span></p>
-                            </div>
-                        </div>
-                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-pink-900/20 to-slate-900 p-4 rounded-2xl border border-pink-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-pink-500 hover:bg-pink-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-pink-500/10 text-pink-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-camera text-2xl"></i></div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-pink-300 transition-colors">إجمالي العمليات</p>
-                                <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords?.length || 0} <span className="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">إرسال للكل</span></p>
-                            </div>
-                        </div>
-                        <div onClick={() => setShowViewersModal(true)} className="bg-gradient-to-br from-green-900/20 to-slate-900 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-green-500 hover:bg-green-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-eye text-2xl"></i></div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-green-300 transition-colors">إجمالي زيارات البوابة</p>
-                                <div className="flex items-center justify-between mt-1">
-                                    <p className="text-xl font-black text-slate-100 flex items-center gap-2">{settings.portalVisits || 0}</p>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-star"></i> التقييمات: {avgRating} ({feedbacks.length})</span>
-                                        <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md flex items-center gap-1"><i className="ph-fill ph-heart"></i> الإعجابات: {settings.studioLikes || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div onClick={() => setShowSharersModal(true)} className="bg-gradient-to-br from-emerald-900/20 to-slate-900 p-4 rounded-2xl border border-emerald-500/20 flex items-center gap-4 shadow-sm cursor-pointer hover:border-emerald-500 hover:bg-emerald-900/30 transition-all group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><i className="ph-fill ph-share-network text-2xl"></i></div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-slate-400 group-hover:text-emerald-300 transition-colors">سفراء الاستوديو</p>
-                                <div className="flex items-center justify-between mt-1">
-                                    <p className="text-xl font-black text-slate-100 flex items-center gap-2">{allRecords.filter(r => r.hasSharedLink).length}</p>
-                                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">مكافأة</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={setTxnDetailsModal} onDayClick={handleDayClick} />}
-                
-                <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ groomName:'', brideName:'', phone:'', groomAddress:'', weddingDate:'', location:'', makeupArtist:'', leaveTime:'', sessionType:'', casualShootDate:'', packages:[], addons:[], selectedPromos:[], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total:'', paid:'', paymentMethod:'cash', photosLink:'', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-pink-900/50 text-sm sm:text-base"><i className="ph ph-heart text-xl sm:text-2xl"></i> حجز زفاف جديد</button>
-                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>ديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
-                  <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث باسم العريس، العروسة، الهاتف..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-                  <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
-                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                      {filterDate && <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x text-lg"></i></button>}
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                  <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                    <div className="flex items-center gap-2"><i className="ph ph-calendar-heart text-pink-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'حجوزات الزفاف اليوم'}</div>
-                    <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}</span>
-                        <span className="bg-pink-500/10 text-pink-400 border border-pink-500/30 px-4 py-1.5 rounded-xl text-sm font-black flex items-center gap-2 shadow-sm"><i className="ph-fill ph-chart-bar text-lg"></i> {filteredWeds.length} حجز</span>
-                    </div>
-                  </h2>
-                  <div className="space-y-4">
-                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true, allRecords))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
-                  </div>
-                </div>
-
-                {showDebtsModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setShowDebtsModal(false)}>
-                        <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setShowDebtsModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
-                            <h3 className="text-xl font-black mb-6 border-b border-slate-800 pb-4 text-red-400 flex items-center gap-2 shrink-0"><i className="ph-fill ph-warning-circle text-2xl"></i> إدارة الديون المستحقة (حجوزات الزفاف)</h3>
-                            <div className="relative mb-6 shrink-0 group"><div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"><i className="ph ph-magnifying-glass text-slate-400 group-focus-within:text-red-400 text-xl transition-colors"></i></div><input type="text" placeholder="ابحث باسم العريس أو العروسة، رقم الهاتف..." className="w-full p-4 pr-12 border-2 border-slate-800 bg-slate-950/50 text-white placeholder-slate-500 rounded-2xl focus:border-red-500/50 focus:bg-slate-900 outline-none text-sm transition-all shadow-inner" value={debtSearch} onChange={(e) => setDebtSearch(e.target.value)} /></div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                                {filteredDebts.length === 0 ? <p className="text-center text-slate-500 py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد ديون مطابقة للبحث.</p> : filteredDebts.map(txn => (
-                                    <div key={txn.id} onClick={() => setTxnDetailsModal(txn)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
-                                        <div>
-                                            <span className="font-bold text-sm text-pink-300">{`${txn.groomName || ''} و ${txn.brideName || ''}`}</span>
-                                            <div className="text-xs text-slate-500 mt-1 font-mono flex items-center gap-2"><span>📞 {txn.phone}</span><span>|</span><span>#{txn.receiptNo}</span></div>
-                                        </div>
-                                        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto mt-3 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-800 sm:border-0">
-                                            <span className="text-red-400 font-black text-sm bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-900/30 ml-auto sm:ml-4">{txn.remaining} ج.م</span>
-                                            <div className="flex flex-wrap gap-2 justify-end">
-                                                <button onClick={(e) => { e.stopPropagation(); setPayModal({...txn, paymentType: 'cash'}); setShowDebtsModal(false); }} className="bg-yellow-600 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"><i className="ph ph-money text-base"></i> نقدي</button>
-                                                <button onClick={(e) => { e.stopPropagation(); setPayModal({...txn, paymentType: 'electronic'}); setShowDebtsModal(false); }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5"><i className="ph ph-wallet text-base"></i> إلكتروني</button>
-                                                <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, true, allRecords)); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5" title="إرسال تذكير عبر واتساب"><i className="ph ph-whatsapp-logo text-base"></i> تذكير</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {showAddModal && (
-                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto">
-                      <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
-                      <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل الحجز' : 'حجز زفاف جديد'}</h2>
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="bg-pink-900/30 p-3 rounded-xl flex justify-between items-center text-sm font-bold text-pink-300 border border-pink-800/50"><span>رقم الإيصال:</span><span className="text-lg">#{isEditing ? formData.receiptNo : settings.nextReceiptNo}</span></div>
-                        
-                        {/* إضافة تحديد مصدر الحجز */}
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
-                            <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph-fill ph-user-focus text-pink-400 text-lg align-middle"></i> مصدر الحجز (المكافآت والعمولات):</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <select value={formData.bookedBy} onChange={e => setFormData({...formData, bookedBy: e.target.value})} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-xl focus:border-pink-500 outline-none text-sm font-bold">
-                                    <option value="studio">تم الحجز بواسطة الاستوديو</option>
-                                    <option value="employee">تم الحجز بواسطة موظف</option>
-                                </select>
-                                {formData.bookedBy === 'employee' && (
-                                    <input type="text" placeholder="اسم الموظف" required className="w-full p-3 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.employeeName} onChange={e => setFormData({...formData, employeeName: e.target.value})} />
-                                )}
-                            </div>
-                            {formData.bookedBy === 'employee' && !isEditing && (
-                                <p className="text-xs text-green-400 mt-2 font-bold"><i className="ph-fill ph-info"></i> سيتم إضافة حافز بقيمة 250 ج.م تلقائياً لـ "{formData.employeeName || 'الموظف'}" في المصروفات بعد الحفظ.</p>
-                            )}
-                        </div>
-
-                        {loyaltyAlert && <div className="bg-yellow-950/40 border border-yellow-500/50 text-yellow-400 p-3 rounded-xl text-sm font-bold shadow-inner">{loyaltyAlert}</div>}
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">اسم العريس</label><input type="text" placeholder="الاسم" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.groomName} onChange={e => setFormData({...formData, groomName: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">اسم العروسة</label><input type="text" placeholder="الاسم" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.brideName} onChange={e => setFormData({...formData, brideName: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف</label><input type="tel" placeholder="الهاتف" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} /></div>
-                          <div className="sm:col-span-2 lg:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">عنوان العريس</label><input type="text" placeholder="العنوان بالتفصيل" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.groomAddress} onChange={e => setFormData({...formData, groomAddress: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ الزفاف</label><input type="date" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.weddingDate} onChange={e => setFormData({...formData, weddingDate: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">اللوكيشن / القاعة</label><input type="text" placeholder="المكان" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">الميك أب (Makeup Artist)</label><input type="text" placeholder="اسم الكوافير" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.makeupArtist} onChange={e => setFormData({...formData, makeupArtist: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">وقت الخروج</label><input type="time" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.leaveTime} onChange={e => setFormData({...formData, leaveTime: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">نوع السيشن</label><input type="text" placeholder="مثال: داي يوز، سيشن فقط..." className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.sessionType} onChange={e => setFormData({...formData, sessionType: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ تصوير الكاجوال</label><input type="date" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.casualShootDate} onChange={e => setFormData({...formData, casualShootDate: e.target.value})} /></div>
-                        </div>
-
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                          <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-package text-pink-400 text-lg align-middle"></i> باقات الزفاف المتاحة:</label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {settings.weddingPackages && settings.weddingPackages.map((pkg, idx) => {
-                               const isSelected = formData.packages.some(p => p.name === pkg.name);
-                               const currentPkg = isSelected ? formData.packages.find(p => p.name === pkg.name) : pkg;
-                               return (
-                                  <div key={idx} className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${isSelected ? 'bg-pink-900/20 border-pink-500 shadow-inner' : 'bg-slate-900 border-slate-700 hover:border-pink-500/50 cursor-pointer'}`} onClick={() => !isSelected && handleSelectPackage(pkg)}>
-                                     <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-2" onClick={(e) => { if(isSelected){ e.stopPropagation(); handleSelectPackage(pkg); } }}>
-                                           <div className={`w-5 h-5 rounded flex items-center justify-center border ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'border-slate-500'}`}><i className="ph-bold ph-check text-xs"></i></div>
-                                           <span className={`font-bold text-sm ${isSelected ? 'text-pink-400' : 'text-slate-300'}`}>{pkg.name}</span>
-                                        </div>
-                                        {isSelected ? (
-                                            <input type="number" onClick={e=>e.stopPropagation()} value={currentPkg.price} onChange={e => handleUpdatePackagePrice(pkg.name, parseFloat(e.target.value)||0)} className="w-20 p-1 bg-slate-950 border border-slate-700 rounded text-white text-center text-xs outline-none" />
-                                        ) : <span className="text-pink-400 font-bold text-xs">{pkg.price} ج.م</span>}
-                                     </div>
-                                     <span className="text-[10px] text-slate-500 pr-7">{pkg.desc}</span>
-                                  </div>
-                               )
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                          <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-plus-circle text-pink-400 text-lg align-middle"></i> إضافة (حنة / كتب كتاب / ألبوم ميني):</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                             <select value={newAddon.name} onChange={e => {
-                                const tpl = settings.addonTemplates?.find(t => t.name === e.target.value);
-                                if(tpl) setNewAddon({...newAddon, name: tpl.name, price: tpl.price, notes: tpl.desc});
-                                else setNewAddon({...newAddon, name: e.target.value});
-                             }} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg focus:border-pink-500 outline-none text-sm">
-                                <option value="">اختر قالب...</option>
-                                {settings.addonTemplates && settings.addonTemplates.map((t,i)=><option key={i} value={t.name}>{t.name}</option>)}
-                             </select>
-                             <input type="text" placeholder="أو اكتب اسم الإضافة" value={newAddon.name} onChange={e => setNewAddon({...newAddon, name: e.target.value})} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg focus:border-pink-500 outline-none text-sm" />
-                             <input type="number" placeholder="السعر" value={newAddon.price} onChange={e => setNewAddon({...newAddon, price: e.target.value})} className="p-3 border border-slate-700 bg-slate-900 text-white rounded-lg focus:border-pink-500 outline-none text-sm" />
-                             <button type="button" onClick={handleAddAddon} className="bg-pink-600 hover:bg-pink-500 text-white rounded-lg flex items-center justify-center font-bold text-sm"><i className="ph ph-plus mr-1"></i> إضافة</button>
-                          </div>
-                          {formData.addons.length > 0 && (
-                             <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-slate-800">
-                                {formData.addons.map((a, i) => (
-                                   <div key={i} className="flex justify-between items-center bg-slate-900 p-2 rounded-lg border border-slate-700">
-                                      <div><span className="font-bold text-slate-300 text-sm">{a.name}</span> <span className="text-pink-400 text-xs font-bold mr-2">{a.price} ج.م</span></div>
-                                      <button type="button" onClick={() => handleRemoveAddon(i)} className="text-red-400 hover:text-red-300 p-1"><i className="ph ph-x"></i></button>
-                                   </div>
-                                ))}
-                             </div>
-                          )}
-                        </div>
-
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
-                            <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-images text-blue-400 text-lg align-middle"></i> أرقام الصور للطباعة (اختياري):</label>
-                            <div className="flex flex-col gap-3 w-full">
-                                {formData.photoNo.map((pObj, idx) => (
-                                <div key={idx} className={`flex flex-col sm:flex-row items-stretch sm:items-center bg-slate-900 border rounded-xl overflow-hidden transition-colors shadow-inner w-full ${pObj.needsName ? 'border-red-500/50 focus-within:border-red-400' : 'border-slate-700 focus-within:border-pink-500'}`}>
-                                    <div className="flex items-center w-full sm:w-auto">
-                                        <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400'}`}>صورة {idx + 1}</span>
-                                        <input type="text" placeholder="رقم..." className="w-full sm:w-20 p-2.5 bg-slate-950 text-white text-center outline-none text-sm font-bold border-b sm:border-b-0 sm:border-l border-slate-700" value={pObj.number} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].number = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
-                                    </div>
-                                    <div className="flex flex-1 items-center">
-                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
-                                        <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].needsName = !newArr[idx].needsName; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}><i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i><span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span></button>
-                                        {formData.photoNo.length > 1 && <button type="button" onClick={() => { const newArr = formData.photoNo.filter((_, i) => i !== idx); setFormData({...formData, photoNo: newArr}); }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0"><i className="ph ph-x font-bold text-sm"></i></button>}
-                                    </div>
-                                </div>
-                                ))}
-                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false}]})} className="self-start bg-pink-900/30 hover:bg-pink-800/50 text-pink-400 px-4 py-2 rounded-xl border border-pink-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1"><i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى</button>
-                            </div>
-                        </div>
-
-                        <PromoSelector settings={settings} selectedPromos={formData.selectedPromos} onChange={(selected) => setFormData({...formData, selectedPromos: selected})} />
-
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h4 className="text-sm font-bold text-yellow-400 flex items-center gap-1"><i className="ph-fill ph-gift text-lg"></i> رصيد المكافآت للعميل</h4>
-                                    <p className="text-xs text-slate-500">رصيد متاح: {customerRewards.balance} ج.م</p>
-                                </div>
-                                {!isEditing && customerRewards.balance > 0 && (
-                                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg hover:border-yellow-500 transition-colors">
-                                        <input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500" />
-                                        <span className="text-sm font-bold text-slate-300">استخدام الرصيد كخصم</span>
-                                    </label>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 border-t border-slate-800 pt-4">
-                          <input type="number" placeholder="الإجمالي" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-pink-500 text-sm font-bold" value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
-                          <input type="number" placeholder="المدفوع كعربون" className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 text-sm font-bold" value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} />
-                          {!isEditing && <select className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-indigo-500 col-span-2 md:col-span-1 text-sm font-bold" value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})}><option value="cash">دفع نقدي</option><option value="electronic">دفع إلكتروني (محافظ)</option></select>}
+                          {!isEditing && <select className="p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-indigo-500 col-span-2 md:col-span-1 text-sm font-bold" value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})}><option value="cash">دفع نقدي</option><option value="electronic">دفع إلكتروني (محافظ/إنستاباي)</option></select>}
                         </div>
                         <div className={`p-3 rounded-xl text-center font-black text-lg border mt-4 ${(displayFinalTotal - (parseFloat(formData.paid)||0)) > 0 ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-green-950/40 text-green-400 border-green-900/50'}`}>
                             الباقي المستحق: {formatCurrency(displayFinalTotal - (parseFloat(formData.paid) || 0))}
                             {formData.useReward && !isEditing && <span className="block text-xs font-normal text-yellow-400 mt-1">(بعد خصم {Math.min(parseFloat(formData.total)||0, customerRewards.balance)} ج.م من رصيد المكافآت)</span>}
                         </div>
-                        <button type="submit" className="w-full bg-pink-600 text-white hover:bg-pink-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4"><i className="ph ph-floppy-disk text-lg ml-2 align-middle"></i> حفظ بيانات الزفاف</button>
+                        <button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-500 font-black py-3 rounded-xl shadow-lg text-sm mt-4"><i className="ph ph-floppy-disk text-lg ml-2 align-middle"></i> حفظ بيانات الزفاف</button>
                       </form>
                     </div>
                   </div>
                 )}
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
+                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} settings={settings} />
                 {showViewersModal && <ViewersModal allRecords={allRecords} settings={settings} portalVisits={settings.portalVisits || 0} onClose={() => setShowViewersModal(false)} />}
                 {showSharersModal && <SharersModal allRecords={allRecords} settings={settings} onClose={() => setShowSharersModal(false)} />}
               </div>
@@ -2802,22 +2387,38 @@
         };
 
         const ExpensesTab = ({ settings, expenses, inventory, db }) => {
-            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio' });
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio', date: new Date().toISOString().split('T')[0] });
             const [showMonthModal, setShowMonthModal] = useState(false);
             
+            // Filters for past records
+            const [filterMonth, setFilterMonth] = useState(currentMonth);
+            const [filterYear, setFilterYear] = useState(currentYear);
+
             const handleAddExpense = async (e) => {
               e.preventDefault();
-              const newExp = { id: Date.now().toString(), date: new Date().toISOString(), amount: parseFloat(expData.amount), category: expData.category, notes: expData.notes, month: new Date().getMonth() + 1, year: new Date().getFullYear(), type: expData.type };
+              const selectedDate = new Date(expData.date);
+              const newExp = { 
+                  id: Date.now().toString(), 
+                  date: selectedDate.toISOString(), 
+                  amount: parseFloat(expData.amount), 
+                  category: expData.category, 
+                  notes: expData.notes, 
+                  month: selectedDate.getMonth() + 1, 
+                  year: selectedDate.getFullYear(), 
+                  type: expData.type 
+              };
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/expenses`, newExp.id), newExp);
-              setExpData({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio' });
+              setExpData({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio', date: new Date().toISOString().split('T')[0] });
             };
 
             const todaysExpenses = expenses.filter(e => new Date(e.date).toDateString() === new Date().toDateString());
-            const today = new Date();
             const todayTotalExp = todaysExpenses.reduce((sum, e) => sum + e.amount, 0);
-            const thisMonthExpenses = expenses.filter(e => new Date(e.date).getMonth() === today.getMonth() && new Date(e.date).getFullYear() === today.getFullYear());
-            const monthTotalExp = thisMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+            
+            const filteredMonthExpenses = expenses.filter(e => e.month === parseInt(filterMonth) && e.year === parseInt(filterYear));
+            const filteredMonthTotalExp = filteredMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
             
             const inventoryItemsList = useMemo(() => {
                const basicItems = [{name: "ورق طباعة صور"}, {name: "أحبار طابعة"}];
@@ -2840,25 +2441,26 @@
                            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center text-red-400 border border-red-500/30"><i className="ph-fill ph-calendar-blank text-2xl"></i></div>
                        </div>
                        <div onClick={() => setShowMonthModal(true)} className="bg-gradient-to-l from-red-950/40 to-slate-900 border border-red-900/50 p-5 rounded-2xl flex items-center justify-between shadow-inner cursor-pointer hover:border-red-500/30 hover:bg-red-950/20 transition-all group">
-                           <div><p className="text-slate-400 text-sm font-bold group-hover:text-slate-300">مصروفات الشهر الحالي</p><p className="text-2xl font-black text-red-400 mt-1">{formatCurrency(monthTotalExp)}</p></div>
-                           <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center text-red-400 border border-red-500/30 group-hover:scale-110 transition-transform"><i className="ph-fill ph-calendar-check text-2xl"></i></div>
+                           <div><p className="text-slate-400 text-sm font-bold group-hover:text-slate-300">سجل المصروفات (شهري)</p><p className="text-2xl font-black text-red-400 mt-1">{formatCurrency(filteredMonthTotalExp)}</p></div>
+                           <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center text-red-400 border border-red-500/30 group-hover:scale-110 transition-transform"><i className="ph-fill ph-folders text-2xl"></i></div>
                        </div>
                    </div>
 
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4"><i className="ph ph-money text-red-400 text-2xl"></i> تسجيل مصروفات</h2>
-                     <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                       <div><label className="block text-sm font-bold text-slate-400 mb-2">المبلغ (ج.م)</label><input type="number" required placeholder="المبلغ" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold" /></div>
-                       <div><label className="block text-sm font-bold text-slate-400 mb-2">بند المصروف</label><select value={expData.category} onChange={e => setExpData({...expData, category: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500">{settings.expenseCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}</select></div>
-                       <div><label className="block text-sm font-bold text-slate-400 mb-2">نوع المصروف</label><select value={expData.type} onChange={e => setExpData({...expData, type: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold"><option value="studio">الاستوديو</option><option value="wedding">حجوزات الزفاف</option></select></div>
-                       <div><label className="block text-sm font-bold text-slate-400 mb-2">ملاحظات (اختياري)</label><input type="text" placeholder="ملاحظات..." value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 placeholder-slate-500" /></div>
-                       <button type="submit" className="sm:col-span-4 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"><i className="ph ph-plus-circle text-xl"></i> إضافة المصروف</button>
+                     <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">المبلغ</label><input type="number" required placeholder="ج.م" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold" /></div>
+                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">التاريخ</label><input type="date" required value={expData.date} onChange={e => setExpData({...expData, date: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm" /></div>
+                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">البند</label><select value={expData.category} onChange={e => setExpData({...expData, category: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm">{settings.expenseCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}</select></div>
+                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">النوع</label><select value={expData.type} onChange={e => setExpData({...expData, type: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm font-bold"><option value="studio">استوديو</option><option value="wedding">زفاف</option></select></div>
+                       <div className="sm:col-span-2 lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">ملاحظات</label><input type="text" placeholder="ملاحظات..." value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm" /></div>
+                       <button type="submit" className="sm:col-span-2 lg:col-span-5 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-2"><i className="ph ph-plus-circle text-xl"></i> إضافة المصروف</button>
                      </form>
                    </div>
                    
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                       <h2 className="text-xl font-bold mb-4 flex justify-between items-center text-slate-100 border-b border-slate-800 pb-4"><span>سجل مصروفات اليوم</span></h2>
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                         {todaysExpenses.length === 0 ? <p className="text-slate-500 text-center p-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لم يتم تسجيل مصروفات اليوم.</p> : todaysExpenses.map(exp => (
                           <div key={exp.id} className="flex justify-between items-center p-4 bg-slate-950 rounded-xl border border-slate-800">
                             <div>
@@ -2906,12 +2508,27 @@
                     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 m-auto" onClick={() => setShowMonthModal(false)}>
                         <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-2xl relative max-h-[90vh] flex flex-col m-auto" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setShowMonthModal(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 z-10"><i className="ph ph-x text-2xl"></i></button>
-                            <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-4 text-red-400 flex items-center justify-between">
-                                <div className="flex items-center gap-2"><i className="ph-fill ph-calendar-check text-2xl"></i> تفاصيل مصروفات الشهر الحالي</div>
-                                <span className="text-sm bg-red-950/50 px-3 py-1 rounded-lg border border-red-900/50 hidden sm:block">{formatCurrency(monthTotalExp)}</span>
-                            </h3>
+                            <div className="mb-6 border-b border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <h3 className="text-xl font-black text-red-400 flex items-center gap-2">
+                                    <i className="ph-fill ph-calendar-check text-2xl"></i> سجل المصروفات
+                                </h3>
+                                <div className="flex gap-2">
+                                    <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="py-2 px-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none text-sm font-bold">
+                                        {Array.from({length: 12}, (_, i) => i + 1).map(m => <option key={m} value={m}>شهر {m}</option>)}
+                                    </select>
+                                    <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="py-2 px-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none text-sm font-bold">
+                                        {[currentYear-1, currentYear, currentYear+1].map(y => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-red-950/30 border border-red-900/50 p-4 rounded-xl mb-4 flex justify-between items-center text-red-400 shrink-0">
+                                <span className="font-bold">إجمالي مصروفات الفترة المحددة:</span>
+                                <span className="text-xl font-black">{formatCurrency(filteredMonthTotalExp)}</span>
+                            </div>
+
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
-                                {thisMonthExpenses.length === 0 ? <p className="text-slate-500 text-center py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد مصروفات.</p> : thisMonthExpenses.map(exp => (
+                                {filteredMonthExpenses.length === 0 ? <p className="text-slate-500 text-center py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد مصروفات مسجلة في هذا الشهر.</p> : filteredMonthExpenses.map(exp => (
                                     <div key={exp.id} className="flex justify-between items-center p-4 bg-slate-950 rounded-xl border border-slate-800 hover:border-red-500/30 transition-colors">
                                         <div>
                                             <p className="font-bold text-slate-200">{exp.category} <span className="text-red-400 mx-2">{exp.amount} ج.م</span> <span className={`text-[10px] px-2 py-0.5 rounded ${exp.type === 'wedding' ? 'bg-pink-900/40 text-pink-400' : 'bg-blue-900/40 text-blue-400'}`}>{exp.type === 'wedding' ? 'زفاف' : 'استوديو'}</span></p>
@@ -3218,7 +2835,7 @@
                             <div>
                                 <label className="block text-sm font-bold text-slate-300 mb-2">نسبة مكافآت الاستوديو (%)</label>
                                 <div className="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-3">
-                                    <input type="number" step="0.1" value={settings.rewardPercentStudio ?? 10} onChange={e => setSettings({...settings, rewardPercentStudio: parseFloat(e.target.value) || 0})} className="w-full py-2 bg-transparent text-white outline-none font-bold" />
+                                    <input type="number" step="0.1" value={settings.rewardPercentStudio ?? 5} onChange={e => setSettings({...settings, rewardPercentStudio: parseFloat(e.target.value) || 0})} className="w-full py-2 bg-transparent text-white outline-none font-bold" />
                                     <span className="text-slate-500">%</span>
                                 </div>
                             </div>
@@ -3235,17 +2852,13 @@
                     {/* إعدادات بيانات الدفع للعملاء */}
                     <div className="md:col-span-2 bg-indigo-950/20 p-5 rounded-2xl border border-indigo-500/30">
                         <div className="mb-4 border-b border-indigo-900/50 pb-3">
-                            <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> بيانات الدفع الإلكتروني (للعملاء)</h3>
-                            <p className="text-xs text-slate-400 mt-1">هذه البيانات ستظهر للعميل في رابط التتبع الخاص به ليسدد المبالغ المتبقية.</p>
+                            <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> رقم استلام المدفوعات (للعملاء)</h3>
+                            <p className="text-xs text-slate-400 mt-1">هذا الرقم سيظهر للعميل في رابط التتبع الخاص به ليقوم بتحويل المبالغ المتبقية عليه.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Vodafone_Cash_logo.png/600px-Vodafone_Cash_logo.png" className="w-4 h-4 object-contain rounded-full bg-white p-0.5" /> رقم فودافون كاش</label>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-device-mobile text-indigo-400"></i> رقم الهاتف (محافظ / إنستاباي)</label>
                                 <input type="text" placeholder="مثال: 010XXXXXXXX" value={settings.vodafoneCashNumber || ''} onChange={e => setSettings({...settings, vodafoneCashNumber: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono tracking-widest" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-bank text-indigo-400"></i> حساب إنستاباي (InstaPay)</label>
-                                <input type="text" placeholder="مثال: yourname@instapay" value={settings.instapayAccount || ''} onChange={e => setSettings({...settings, instapayAccount: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono" />
                             </div>
                         </div>
                     </div>
@@ -3263,22 +2876,19 @@
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                    <MiniProductsSettingsList title="بطاقات العرض الرئيسية في بوابة العملاء" items={settings.miniProducts || DEFAULT_MINI_PRODUCTS} onAdd={v => handleAddList('miniProducts', v)} onRemove={i => handleRemoveList('miniProducts', i)} onUpdateAll={newList => handleUpdateList('miniProducts', newList)} />
+                   <ServicesSettingsList title="قوالب خدمات التصوير" items={settings.services || []} onAdd={v => handleAddList('services', v)} onRemove={i => handleRemoveList('services', i)} colorTheme="blue" />
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                   <ServicesSettingsList title="قوالب خدمات التصوير" items={settings.services || []} onAdd={v => handleAddList('services', v)} onRemove={i => handleRemoveList('services', i)} colorTheme="blue" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                    <ProductsSettingsList title="قوالب البضاعة والمنتجات" items={settings.products || []} inventory={inventory} onAdd={v => handleAddList('products', v)} onRemove={i => handleRemoveList('products', i)} updateInventoryExact={updateInventoryExact} />
+                   <PromotionsSettingsList title="قوالب العروض الترويجية المخصصة (للعملاء)" items={settings.promotions || []} onAdd={v => handleAddList('promotions', v)} onRemove={i => handleRemoveList('promotions', i)} />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <ServicesSettingsList title="باقات الزفاف الأساسية" items={settings.weddingPackages || []} onAdd={v => handleAddList('weddingPackages', v)} onRemove={i => handleRemoveList('weddingPackages', i)} colorTheme="pink" />
                    <ServicesSettingsList title="قوالب إضافات الزفاف (حنة، كتب كتاب...)" items={settings.addonTemplates || []} onAdd={v => handleAddList('addonTemplates', v)} onRemove={i => handleRemoveList('addonTemplates', i)} colorTheme="pink" />
-                </div>
-
-                <div className="grid grid-cols-1 gap-6">
-                    <PromotionsSettingsList title="قوالب العروض الترويجية المخصصة (للعملاء)" items={settings.promotions || []} onAdd={v => handleAddList('promotions', v)} onRemove={i => handleRemoveList('promotions', i)} />
                 </div>
                 
                 <div>
@@ -3389,17 +2999,19 @@
           
           // Promotional details state
           const [showPromoDetails, setShowPromoDetails] = useState(false);
-          const [showStages, setShowStages] = useState(false);
+          
+          // Tabs for combined Details Card
+          const [activeClientTab, setActiveClientTab] = useState('stages'); // 'stages' or 'archive'
+          
           const [showClientPaymentPopup, setShowClientPaymentPopup] = useState(false);
           const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
-          const [isUploadingPaymentReceipt, setIsUploadingPaymentReceipt] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0
+            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5
           });
 
           const [currentUrl, setCurrentUrl] = useState(window.location.search);
@@ -3474,6 +3086,7 @@
                     if (!data.studioLikes) data.studioLikes = 0;
                     if (!data.portalVisits) data.portalVisits = 0;
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
+                    if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5; // Default 5%
                     setSettings(data);
                 }
             }, (err) => console.error("Settings error", err));
@@ -3573,12 +3186,6 @@
                   const currentTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
                   
                   if (currentTxn) {
-                      // إظهار نافذة الدفع تلقائياً مرة واحدة إذا كان هناك باقي
-                      if (currentTxn.remaining > 0 && !hasAutoShownPayment) {
-                          setShowClientPaymentPopup(true);
-                          setHasAutoShownPayment(true);
-                      }
-
                       // نظام حماية الجهاز: ربط رابط التتبع بمتصفح العميل لأول مرة فقط
                       const currentDeviceId = getSafeLocal('studio_client_device_id') || Math.random().toString(36).substring(2, 15);
                       
@@ -3755,32 +3362,6 @@
                   await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, gallery: newGallery }, { merge: true });
               };
 
-              const handleUploadPaymentReceipt = async (e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  setIsUploadingPaymentReceipt(true);
-                  try {
-                      const dataUrl = await processImage(file, 800);
-                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                      const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
-                      
-                      // رفع الصورة للستوريج
-                      const storageRef = ref(storage, `artifacts/${appId}/receipts/${txn.id}/${Date.now()}_receipt.jpg`);
-                      await uploadString(storageRef, dataUrl, 'data_url');
-                      const url = await getDownloadURL(storageRef);
-
-                      // حفظ الرابط في حقل مؤقت للمراجعة
-                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, pendingReceipt: url }, { merge: true });
-                      
-                      alert("تم إرسال صورة التحويل بنجاح. سيتم مراجعتها من قبل الإدارة وتحديث حسابك.");
-                      setShowClientPaymentPopup(false);
-                  } catch (err) {
-                      console.error("Error uploading receipt", err);
-                      alert("حدث خطأ أثناء رفع الصورة، يرجى المحاولة مرة أخرى.");
-                  }
-                  setIsUploadingPaymentReceipt(false);
-              };
-
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
                       
@@ -3808,71 +3389,44 @@
                                   </label>
                               </div>
                               <div>
-                                  <h1 className={`text-xl md:text-2xl font-black mb-1.5 tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>تتبع حالة الطلب الخاص بك 📸</h1>
-                                  <p className="text-sm font-bold text-slate-300">شكراً لاختياركم <span className="text-yellow-400">{settings.studioName}</span> ✨</p>
+                                  <h1 className={`text-xl md:text-2xl font-black mb-1.5 tracking-wide ${isWedding ? 'text-pink-100' : 'text-blue-100'}`}>أهلاً بك أ. {displayName} 👋</h1>
+                                  <p className="text-sm font-bold text-slate-300">شكراً لثقتكم واختياركم <span className="text-yellow-400">{settings.studioName}</span> ✨ لتوثيق لحظاتكم السعيدة.</p>
                               </div>
                           </div>
                       </div>
 
-                      {/* 2. بطاقة رصيد المكافآت وطباعة الصور من الموبايل */}
-                      <div className="w-full max-w-md bg-gradient-to-r from-purple-900/40 to-slate-900 p-5 rounded-2xl mb-6 border border-purple-500/30 shadow-lg shadow-purple-900/20 relative overflow-hidden flex flex-col gap-3">
-                          <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                              <i className="ph-fill ph-star text-6xl"></i>
-                          </div>
-                          
-                          <div className="flex justify-between items-center relative z-10">
-                              <div>
-                                  <h3 className="text-lg font-black text-purple-300 flex items-center gap-2">
-                                      <i className="ph-fill ph-gift text-2xl text-purple-400"></i>
-                                      رصيد مكافآتك
-                                  </h3>
-                                  <p className="text-xs text-slate-400 mt-1 font-bold">يمكنك استخدامه كخصم أو لطباعة الصور.</p>
-                              </div>
-                              <div className="bg-purple-500/20 px-4 py-2 rounded-xl border border-purple-500/50 shadow-inner text-center">
-                                  <span className="block text-2xl font-black text-white">{availableRewards}</span>
-                                  <span className="block text-[10px] text-purple-300 font-bold -mt-1">ج.م</span>
-                              </div>
-                          </div>
-
-                          {availableRewards > 0 && (
-                              <div className="mt-2 bg-slate-950/50 p-4 rounded-xl border border-purple-500/20 relative z-5">
-                                  <p className="text-sm text-slate-200 font-bold leading-relaxed mb-3">
-                                      <i className="ph-fill ph-sparkle text-yellow-400 mr-1"></i>
-                                      تقدر تستخدم رصيد مكافآتك وتطبع صور من موبايلك <span className="text-yellow-400">مجاناً!</span> أو تخصمه من أي حجز قادم.
-                                  </p>
-                                  <button 
-                                      onClick={() => {
-                                          let template = settings.waTemplates?.rewardPrintInquiry || "مرحباً {studio} 👋\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م (إيصال #{receipt}) وأريد استخدامه لطباعة صور من الموبايل.";
-                                          let msg = template.replace(/{studio}/g, settings.studioName).replace(/{reward_balance}/g, availableRewards).replace(/{receipt}/g, txn.receiptNo);
-                                          openWhatsApp(settings.studioPhone || '01201260040', msg);
-                                      }}
-                                      className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-md border border-purple-400/50"
-                                  >
-                                      <i className="ph-fill ph-whatsapp-logo text-xl"></i> اطلب طباعة صورك الآن
-                                  </button>
-                              </div>
-                          )}
-                      </div>
-
-                      {/* 6. Details Card */}
-                      <div className="bg-slate-900 w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
+                      {/* 2. بطاقة تتبع الطلب ورصيد المكافآت المدمجة */}
+                      <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
                           
+                          {/* Header */}
                           <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-800">
                               <div className="flex items-center gap-3">
                                   <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border-2 ${isWedding ? 'border-pink-500/30 text-pink-400' : 'border-blue-500/30 text-blue-400'} shadow-inner`}>
-                                      {isWedding ? <i className="ph-fill ph-users text-2xl"></i> : <i className="ph-fill ph-user text-2xl"></i>}
+                                      {isWedding ? <i className="ph-fill ph-heart text-2xl"></i> : <i className="ph-fill ph-camera text-2xl"></i>}
                                   </div>
                                   <div className="flex flex-col">
-                                      <span className="text-slate-400 text-[10px] mb-0.5">اسم العميل</span>
-                                      <span className="text-base sm:text-lg font-black text-white">{displayName}</span>
+                                      <span className="text-slate-400 text-[10px] mb-0.5">الطلب الحالي</span>
+                                      <span className={`text-lg sm:text-xl font-black font-mono ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>#{txn.receiptNo}</span>
                                   </div>
                               </div>
                               <div className="text-left flex flex-col items-end">
-                                  <span className="text-slate-400 text-[10px] mb-0.5">رقم الإيصال</span>
-                                  <span className={`text-lg sm:text-xl font-black font-mono ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}>#{txn.receiptNo}</span>
+                                  <span className="text-slate-400 text-[10px] mb-0.5">رصيد مكافآتك 🎁</span>
+                                  <span className="text-lg sm:text-xl font-black text-purple-400">{availableRewards} <span className="text-xs">ج.م</span></span>
                               </div>
                           </div>
+
+                          {/* Rewards Mini-Banner */}
+                          {availableRewards > 0 && (
+                              <div className="bg-purple-950/30 border border-purple-500/20 p-3 rounded-xl mb-5 flex items-start gap-3 shadow-inner">
+                                  <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                                      <i className="ph-fill ph-sparkle text-lg"></i>
+                                  </div>
+                                  <p className="text-xs text-purple-200 leading-relaxed font-bold">
+                                      تهانينا! لديك رصيد مكافآت. يمكنك استخدامه كخصم على أي حجز قادم أو استبداله بخدمات مثل طباعة الصور المجانية.
+                                  </p>
+                              </div>
+                          )}
 
                           {isWedding && txn.weddingDate && (
                               <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
@@ -3895,7 +3449,7 @@
                           )}
 
                           {displayReqs && displayReqs !== 'لا يوجد تفاصيل' && (
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col gap-2 text-sm shadow-inner mb-2">
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col gap-2 text-sm shadow-inner mb-4">
                                   <span className="text-slate-300 font-bold flex items-center gap-1.5">
                                       <i className={`ph-fill ph-list-dashes text-lg ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
                                       الخدمات والتفاصيل المطلوبة:
@@ -3904,124 +3458,140 @@
                               </div>
                           )}
 
-                          <div className="mt-5">
-                              <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
-                                  <span className="text-slate-300 font-bold flex items-center gap-2">
-                                      <i className="ph-fill ph-coins text-yellow-500 text-2xl"></i> إجمالي الحساب
-                                  </span>
-                                  <span className="text-2xl sm:text-3xl font-black text-yellow-400">{txn.total} <span className="text-sm font-bold">ج.م</span></span>
-                              </div>
+                          {/* Financial Summary */}
+                          <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
+                              <span className="text-slate-300 font-bold flex items-center gap-2">
+                                  <i className="ph-fill ph-coins text-yellow-500 text-2xl"></i> إجمالي الحساب
+                              </span>
+                              <span className="text-2xl sm:text-3xl font-black text-yellow-400">{txn.total} <span className="text-sm font-bold">ج.م</span></span>
+                          </div>
 
-                              <div className="grid grid-cols-2 gap-3 mb-4">
-                                   <div className="bg-green-950/20 p-3 sm:p-4 rounded-xl border border-green-900/30 flex flex-col items-center justify-center gap-1 shadow-sm">
-                                       <span className="text-slate-400 text-xs font-bold">المدفوع</span>
-                                       <span className="text-green-400 font-black text-lg sm:text-xl">{txn.paid} <span className="text-[10px]">ج.م</span></span>
-                                   </div>
-                                   <div className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center justify-center gap-1 shadow-sm ${txn.remaining > 0 ? 'bg-red-950/20 border-red-900/30' : 'bg-slate-950/50 border-slate-800'}`}>
-                                       <span className="text-slate-400 text-xs font-bold">الباقي الدفع</span>
-                                       <span className={`${txn.remaining > 0 ? 'text-red-400' : 'text-slate-300'} font-black text-lg sm:text-xl`}>{txn.remaining} <span className="text-[10px]">ج.م</span></span>
-                                   </div>
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                               <div className="bg-green-950/20 p-3 sm:p-4 rounded-xl border border-green-900/30 flex flex-col items-center justify-center gap-1 shadow-sm">
+                                   <span className="text-slate-400 text-xs font-bold">المدفوع</span>
+                                   <span className="text-green-400 font-black text-lg sm:text-xl">{txn.paid} <span className="text-[10px]">ج.م</span></span>
+                               </div>
+                               <div className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center justify-center gap-1 shadow-sm ${txn.remaining > 0 ? 'bg-red-950/20 border-red-900/30' : 'bg-slate-950/50 border-slate-800'}`}>
+                                   <span className="text-slate-400 text-xs font-bold">الباقي المستحق</span>
+                                   <span className={`${txn.remaining > 0 ? 'text-red-400' : 'text-slate-300'} font-black text-lg sm:text-xl`}>{txn.remaining} <span className="text-[10px]">ج.م</span></span>
+                               </div>
+                          </div>
+
+                          {/* Payment Area if Remaining > 0 */}
+                          {txn.remaining > 0 && (
+                              <div className="mt-4 bg-slate-950 rounded-2xl border border-red-900/50 p-4 shadow-inner">
+                                  <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                                      <i className="ph-fill ph-wallet text-xl text-red-400"></i>
+                                      <span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span>
+                                  </div>
+                                  
+                                  <p className="text-xs text-slate-400 mb-3">يمكنك السداد عبر المحافظ الإلكترونية أو إنستاباي على الرقم الموحد التالي:</p>
+                                  
+                                  <div className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4">
+                                      <div className="flex items-center gap-2">
+                                          <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl"></i>
+                                          <div className="flex flex-col">
+                                              <span className="text-[10px] text-slate-400">رقم المحفظة / إنستاباي</span>
+                                              <span className="font-mono text-base font-black text-white tracking-widest" dir="ltr">{settings.vodafoneCashNumber || '01126810107'}</span>
+                                          </div>
+                                      </div>
+                                      <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '01126810107', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md">نسخ</button>
+                                  </div>
+                                  <p className="text-[10px] text-center text-slate-500 mb-4 font-bold bg-slate-900/50 py-1 rounded">يرجى التأكد من ظهور اسم <span className="text-indigo-400">"محمود م ا ا"</span> قبل التحويل.</p>
+
+                                  <button 
+                                      onClick={() => {
+                                          const msg = `مرحباً، لقد قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد المتبقي من الإيصال رقم #${txn.receiptNo}.\nمرفق صورة إيصال التحويل للتأكيد.`;
+                                          openWhatsApp(settings.studioPhone || '01201260040', msg);
+                                      }}
+                                      className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-lg border border-green-500/50"
+                                  >
+                                      <i className="ph-fill ph-whatsapp-logo text-xl"></i> إرسال صورة التأكيد عبر واتساب
+                                  </button>
+                                  <p className="text-[10px] text-center text-slate-500 mt-2 font-bold"><i className="ph-fill ph-lock-key"></i> معاملاتك آمنة ومحفوظة.</p>
+                              </div>
+                          )}
+                      </div>
+                      
+                      {/* Share & Earn Feature */}
+                      <button onClick={handleShareTracking} className="w-full max-w-md relative overflow-hidden group bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white p-3 sm:p-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-between border border-emerald-400/50 text-right mb-6">
+                          <div className="flex items-center gap-3 sm:gap-4 relative z-10 w-full">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform border border-white/20">
+                                  <i className="ph-fill ph-share-network text-xl sm:text-2xl text-white animate-pulse"></i>
+                              </div>
+                              <div className="flex-1">
+                                  <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
+                                  <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط الاستوديو مع أصدقائك، واكسب خصم أو مكافأة!</p>
                               </div>
                           </div>
-                          
-                          {/* Share & Earn Feature */}
-                          <button onClick={handleShareTracking} className="w-full relative overflow-hidden group bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white p-3 sm:p-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-between border border-emerald-400/50 text-right mb-2">
-                              <div className="flex items-center gap-3 sm:gap-4 relative z-10 w-full">
-                                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform border border-white/20">
-                                      <i className="ph-fill ph-share-network text-xl sm:text-2xl text-white animate-pulse"></i>
+                          <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
+                          <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
+                      </button>
+
+                      {/* 3. البطاقة الإعلانية (Promotional Card) */}
+                      {clientPromotions.length > 0 && (
+                          <div 
+                              onClick={() => setShowPromoDetails(!showPromoDetails)}
+                              className={`w-full max-w-md bg-gradient-to-l from-yellow-600 to-amber-500 p-5 rounded-2xl mb-8 shadow-lg shadow-yellow-900/20 text-slate-900 flex flex-col gap-4 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform border border-yellow-400`}
+                          >
+                              <div className="absolute -right-2 -top-4 text-yellow-100/30">
+                                  <i className="ph-fill ph-ticket text-6xl transform rotate-12"></i>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 relative z-10">
+                                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/30 shadow-inner">
+                                      <i className="ph-fill ph-percent text-2xl text-white animate-bounce-slow"></i>
                                   </div>
                                   <div className="flex-1">
-                                      <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
-                                      <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط الاستوديو مع أصدقائك، واكسب خصم أو مكافأة!</p>
+                                      <h3 className="font-black text-lg text-white mb-1">عرض خاص مقدم لك! 🎁</h3>
+                                      <p className="text-[11px] sm:text-xs font-bold text-yellow-50 leading-tight">اضغط هنا لمعرفة التفاصيل والخصم المتاح لك.</p>
                                   </div>
+                                  <i className={`ph-bold ph-caret-${showPromoDetails ? 'up' : 'down'} text-white text-xl transition-transform`}></i>
                               </div>
-                              <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
-                              {/* Animated Shine Effect */}
-                              <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
-                          </button>
-                      </div>
-
-                      {/* بطاقة الدفع المصغرة (النافذة المنبثقة) */}
-                      {showClientPaymentPopup && txn.remaining > 0 && (
-                          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setShowClientPaymentPopup(false)}>
-                              <div className="bg-slate-900 rounded-3xl max-w-sm w-full border border-slate-700 shadow-2xl flex flex-col overflow-hidden m-auto relative" onClick={e => e.stopPropagation()}>
-                                  <button onClick={() => setShowClientPaymentPopup(false)} className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors z-10"><i className="ph ph-x text-2xl"></i></button>
-                                  
-                                  <div className="bg-gradient-to-b from-red-950/40 to-slate-900 p-6 text-center border-b border-red-900/30">
-                                      <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-red-900/20 border border-red-500/30">
-                                          <i className="ph-fill ph-wallet text-3xl"></i>
-                                      </div>
-                                      <h2 className="text-xl font-black text-white mb-1">مبلغ مستحق للدفع</h2>
-                                      <p className="text-slate-400 text-xs">يرجى سداد المبلغ المتبقي لاستكمال طلبك</p>
-                                      <div className="mt-4 inline-block bg-slate-950 px-6 py-3 rounded-2xl border border-red-500/50 shadow-inner">
-                                          <span className="block text-3xl font-black text-red-400">{txn.remaining}</span>
-                                          <span className="text-xs text-red-300 font-bold">جنيهاً مصرياً</span>
-                                      </div>
-                                  </div>
-
-                                  <div className="p-6 flex flex-col gap-4">
-                                      <h4 className="font-bold text-sm text-slate-300 border-b border-slate-800 pb-2">طرق الدفع المتاحة:</h4>
-                                      
-                                      {/* فودافون كاش */}
-                                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
-                                          <div className="flex items-center gap-2">
-                                              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Vodafone_Cash_logo.png/600px-Vodafone_Cash_logo.png" className="w-6 h-6 object-contain rounded-full bg-white p-0.5" />
-                                              <span className="font-bold text-slate-200">فودافون كاش</span>
+                              
+                              {/* Details section that expands */}
+                              <div className={`relative z-10 overflow-hidden transition-all duration-300 ease-in-out ${showPromoDetails ? 'max-h-[600px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
+                                  <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl border border-white/30 shadow-inner flex flex-col gap-3">
+                                      {clientPromotions.map((promo, idx) => (
+                                          <div key={idx} className="bg-white/90 p-3 rounded-lg border border-yellow-200/50 flex flex-col gap-2">
+                                              <div className="flex justify-between items-start">
+                                                  <div className="flex items-center gap-2 font-black text-amber-900">
+                                                      <i className={`ph-fill ${promo.icon || 'ph-gift'} text-xl`}></i> {promo.title}
+                                                  </div>
+                                                  {promo.discount && <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-black border border-amber-300">{promo.discount}</span>}
+                                              </div>
+                                              <p className="text-xs text-amber-800 font-bold">{promo.shortDesc}</p>
+                                              {promo.fullDesc && <p className="text-[10px] text-amber-700 leading-relaxed">{promo.fullDesc}</p>}
                                           </div>
-                                          <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-700 mt-1">
-                                              <span className="font-mono text-lg font-black text-white tracking-widest px-2" dir="ltr">{settings.vodafoneCashNumber || 'غير متوفر'}</span>
-                                              <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '', e)} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors">نسخ</button>
-                                          </div>
-                                      </div>
+                                      ))}
 
-                                      {/* إنستاباي */}
-                                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
-                                          <div className="flex items-center gap-2">
-                                              <i className="ph-fill ph-bank text-indigo-400 text-2xl"></i>
-                                              <span className="font-bold text-slate-200">إنستاباي (InstaPay)</span>
-                                          </div>
-                                          <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-700 mt-1">
-                                              <span className="font-mono text-sm font-black text-indigo-300 px-2 truncate max-w-[150px]" dir="ltr">{settings.instapayAccount || 'غير متوفر'}</span>
-                                              <button onClick={(e) => copyToClipboard(settings.instapayAccount || '', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors">نسخ</button>
-                                          </div>
-                                      </div>
-
-                                      {/* إرفاق الإيصال */}
-                                      <div className="mt-2 border-t border-slate-800 pt-4">
-                                          <p className="text-xs text-yellow-400 mb-2 font-bold text-center"><i className="ph-fill ph-info"></i> بعد التحويل، يرجى إرفاق صورة الإيصال هنا للتأكيد:</p>
-                                          <label className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl border border-slate-600 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
-                                              {isUploadingPaymentReceipt ? <i className="ph ph-spinner animate-spin text-xl"></i> : <i className="ph-fill ph-upload-simple text-xl"></i>}
-                                              {isUploadingPaymentReceipt ? 'جاري الرفع...' : 'رفع صورة إيصال التحويل'}
-                                              <input type="file" accept="image/*" className="hidden" onChange={handleUploadPaymentReceipt} disabled={isUploadingPaymentReceipt} />
-                                          </label>
-                                          {txn.pendingReceipt && <p className="text-center text-green-400 text-xs mt-2 font-bold"><i className="ph-fill ph-check-circle"></i> تم إرسال الإيصال وهو قيد المراجعة.</p>}
-                                      </div>
+                                      <button 
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              const msg = `مرحباً ${settings.studioName} 👋\nلقد رأيت العروض المخصصة لي في صفحة تتبع الطلب (إيصال #${txn.receiptNo}) وأود الاستفسار أو الحجز.`;
+                                              openWhatsApp(settings.studioPhone || '01201260040', msg);
+                                          }}
+                                          className="mt-1 w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] border border-green-400/50"
+                                      >
+                                          <i className="ph-fill ph-whatsapp-logo text-xl"></i>
+                                          تواصل للاستفسار أو الحجز
+                                      </button>
+                                      <p className="text-[10px] text-yellow-900 mt-1 font-bold bg-white/40 p-2 rounded-lg text-center">
+                                          * يرجى إبراز هذه الشاشة في الاستوديو للحصول على العروض.
+                                      </p>
                                   </div>
                               </div>
                           </div>
                       )}
 
-                      {/* زر إظهار الدفع اليدوي لو تم إغلاق النافذة */}
-                      {txn.remaining > 0 && !showClientPaymentPopup && (
-                          <div 
-                              onClick={() => setShowClientPaymentPopup(true)}
-                              className="w-full max-w-md bg-gradient-to-r from-red-900/40 to-slate-900 p-4 rounded-2xl border border-red-500/30 shadow-lg shadow-red-900/20 mb-8 cursor-pointer hover:scale-[1.02] transition-transform flex justify-between items-center group relative overflow-hidden"
-                          >
-                              <div className="absolute left-0 top-0 w-1 h-full bg-red-500"></div>
-                              <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                      <i className="ph-fill ph-warning-circle text-2xl"></i>
-                                  </div>
-                                  <div>
-                                      <h4 className="font-bold text-red-300 text-sm">مبلغ مستحق للدفع</h4>
-                                      <p className="text-xs text-slate-400 mt-0.5">اضغط هنا لسداد الباقي إلكترونياً</p>
-                                  </div>
-                              </div>
-                              <div className="text-left flex items-center gap-2">
-                                  <span className="block text-xl font-black text-red-400">{txn.remaining} <span className="text-xs">ج.م</span></span>
-                                  <i className="ph-bold ph-caret-left text-slate-500"></i>
-                              </div>
-                          </div>
+                      {/* 4. Download Link */}
+                      {txn.photosLink && (
+                          <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-8 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
+                             <div className="bg-white/20 p-2 rounded-full group-hover:animate-bounce">
+                                 <i className="ph-bold ph-download-simple text-2xl"></i>
+                             </div>
+                             <span>تحميل الصور (رابط خارجي)</span>
+                          </a>
                       )}
 
                       {/* معرض صور العميل (الألبوم) */}
@@ -4071,175 +3641,97 @@
                           </div>
                       )}
 
-                      {/* 3. البطاقة الإعلانية (Promotional Card) */}
-                      {clientPromotions.length > 0 && (
-                          <div 
-                              onClick={() => setShowPromoDetails(!showPromoDetails)}
-                              className={`w-full max-w-md bg-gradient-to-l from-yellow-600 to-amber-500 p-5 rounded-2xl mb-8 shadow-lg shadow-yellow-900/20 text-slate-900 flex flex-col gap-4 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform border border-yellow-400`}
-                          >
-                              <div className="absolute -right-2 -top-4 text-yellow-100/30">
-                                  <i className="ph-fill ph-ticket text-6xl transform rotate-12"></i>
-                              </div>
-                              
-                              <div className="flex items-center gap-4 relative z-10">
-                                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/30 shadow-inner">
-                                      <i className="ph-fill ph-percent text-2xl text-white animate-bounce-slow"></i>
-                                  </div>
-                                  <div className="flex-1">
-                                      <h3 className="font-black text-lg text-white mb-1">عرض خاص مقدم لك! 🎁</h3>
-                                      <p className="text-[11px] sm:text-xs font-bold text-yellow-50 leading-tight">اضغط هنا لمعرفة التفاصيل والخصم المتاح لك.</p>
-                                  </div>
-                                  <i className={`ph-bold ph-caret-${showPromoDetails ? 'up' : 'down'} text-white text-xl transition-transform`}></i>
-                              </div>
-                              
-                              {/* Details section that expands */}
-                              <div className={`relative z-10 overflow-hidden transition-all duration-300 ease-in-out ${showPromoDetails ? 'max-h-[600px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
-                                  <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl border border-white/30 shadow-inner flex flex-col gap-3">
-                                      {clientPromotions.map((promo, idx) => (
-                                          <div key={idx} className="bg-white/90 p-3 rounded-lg border border-yellow-200/50 flex flex-col gap-2">
-                                              <div className="flex justify-between items-start">
-                                                  <div className="flex items-center gap-2 font-black text-amber-900">
-                                                      <i className={`ph-fill ${promo.icon || 'ph-gift'} text-xl`}></i> {promo.title}
-                                                  </div>
-                                                  {promo.discount && <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-black border border-amber-300">{promo.discount}</span>}
-                                              </div>
-                                              <p className="text-xs text-amber-800 font-bold">{promo.shortDesc}</p>
-                                              {promo.fullDesc && <p className="text-[10px] text-amber-700 leading-relaxed">{promo.fullDesc}</p>}
-                                          </div>
-                                      ))}
-
-                                      {/* زر واتساب للحجز والاستفسار */}
-                                      <button 
-                                          onClick={(e) => {
-                                              e.stopPropagation();
-                                              const msg = `مرحباً ${settings.studioName} 👋\nلقد رأيت العروض المخصصة لي في صفحة تتبع الطلب (إيصال #${txn.receiptNo}) وأود الاستفسار أو الحجز.`;
-                                              openWhatsApp(settings.studioPhone || '01201260040', msg);
-                                          }}
-                                          className="mt-1 w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] border border-green-400/50"
-                                      >
-                                          <i className="ph-fill ph-whatsapp-logo text-xl"></i>
-                                          تواصل للاستفسار أو الحجز
-                                      </button>
-
-                                      <p className="text-[10px] text-yellow-900 mt-1 font-bold bg-white/40 p-2 rounded-lg text-center">
-                                          * يرجى إبراز هذه الشاشة في الاستوديو للحصول على العروض.
-                                      </p>
-                                  </div>
-                              </div>
-                          </div>
-                      )}
-
-                      {/* 4. Download Link */}
-                      {txn.photosLink && (
-                          <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-8 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
-                             <div className="bg-white/20 p-2 rounded-full group-hover:animate-bounce">
-                                 <i className="ph-bold ph-download-simple text-2xl"></i>
-                             </div>
-                             <span>تحميل الصور (رابط خارجي)</span>
-                          </a>
-                      )}
-
-                      {/* 5. Stages of Preparation */}
-                      {!isDelivered ? (
-                          <div className="w-full max-w-md bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 transition-all">
-                              <div 
-                                  className="flex justify-between items-center cursor-pointer group"
-                                  onClick={() => setShowStages(!showStages)}
+                      {/* 5. الصندوق المدمج (المراحل + الأرشيف) */}
+                      <div className="w-full max-w-md bg-slate-900 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden flex flex-col">
+                          {/* Tabs Header */}
+                          <div className="flex border-b border-slate-800 bg-slate-950/50">
+                              <button 
+                                  onClick={() => setActiveClientTab('stages')}
+                                  className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all relative ${activeClientTab === 'stages' ? 'text-white bg-slate-900' : 'text-slate-400 hover:text-slate-300'}`}
                               >
-                                  <h3 className="font-bold text-base sm:text-lg flex items-center gap-2 text-white">
-                                      <i className="ph ph-clock-counter-clockwise text-blue-500 text-2xl group-hover:rotate-[-30deg] transition-transform"></i> 
-                                      مراحل تجهيز الطلب
-                                  </h3>
-                                  <div className="flex items-center gap-2 sm:gap-3">
-                                      <span className="text-[10px] sm:text-xs font-bold text-blue-400 bg-blue-950/50 border border-blue-900/50 px-2 py-1 rounded-md max-w-[100px] truncate text-center" title="المرحلة الحالية">
-                                          {statusesToUse.find(s => s.id === currentStatus)?.label || 'جاري العمل'}
-                                      </span>
-                                      <i className={`ph-bold ph-caret-${showStages ? 'up' : 'down'} text-slate-400 text-lg sm:text-xl transition-transform`}></i>
-                                  </div>
-                              </div>
-                              
-                              <div className={`transition-all duration-500 ease-in-out ${showStages ? 'max-h-[1200px] opacity-100 mt-6 border-t border-slate-800 pt-6' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                                  <div className="relative pl-4 space-y-8 pr-4">
-                                      <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
-                                      {statusesToUse.map((s, index) => {
-                                          const isCompleted = currentStatus >= s.id;
-                                          const isCurrent = currentStatus === s.id;
-                                          return (
-                                              <div key={s.id} className="relative flex items-start gap-5">
-                                                  <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
-                                                      <i className={`ph ${s.icon} text-xl`}></i>
-                                                  </div>
-                                                  <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
-                                                      <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
-                                                      {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
-                                                      {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
-                                                  </div>
+                                  <i className={`ph-fill ph-clock-counter-clockwise ${activeClientTab === 'stages' ? 'text-blue-500' : ''}`}></i>
+                                  مراحل الطلب
+                                  {activeClientTab === 'stages' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></div>}
+                              </button>
+                              <button 
+                                  onClick={() => setActiveClientTab('archive')}
+                                  className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 transition-all relative ${activeClientTab === 'archive' ? 'text-white bg-slate-900' : 'text-slate-400 hover:text-slate-300'}`}
+                              >
+                                  <i className={`ph-fill ph-folder-open ${activeClientTab === 'archive' ? 'text-yellow-500' : ''}`}></i>
+                                  أرشيف الزيارات
+                                  {clientArchiveRecords.length > 0 && <span className="bg-slate-800 text-xs px-1.5 rounded">{clientArchiveRecords.length}</span>}
+                                  {activeClientTab === 'archive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-yellow-500"></div>}
+                              </button>
+                          </div>
+
+                          {/* Tab Content */}
+                          <div className="p-5 sm:p-6 transition-all duration-300">
+                              {/* Stages Content */}
+                              {activeClientTab === 'stages' && (
+                                  <div className="animate-fadeIn">
+                                      {isDelivered ? (
+                                          <div className="bg-gradient-to-b from-green-950/40 to-slate-900 p-6 rounded-2xl border border-green-500/30 text-center relative overflow-hidden">
+                                              <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/50 shadow-lg shadow-green-900/40">
+                                                  <i className="ph-fill ph-check-circle text-4xl"></i>
                                               </div>
+                                              <h3 className="font-black text-xl mb-2 text-white">تم تسليم الطلب بنجاح! 🎉</h3>
+                                              <p className="text-slate-400 text-sm leading-relaxed">شكراً لاختيارك {settings.studioName}. نتمنى أن تكون الصور والأعمال قد نالت إعجابكم.</p>
+                                          </div>
+                                      ) : (
+                                          <div className="relative pl-4 space-y-8 pr-4 pt-2 pb-2">
+                                              <div className="absolute right-[31px] top-6 bottom-6 w-[2px] bg-slate-800"></div>
+                                              {statusesToUse.map((s, index) => {
+                                                  const isCompleted = currentStatus >= s.id;
+                                                  const isCurrent = currentStatus === s.id;
+                                                  return (
+                                                      <div key={s.id} className="relative flex items-start gap-5">
+                                                          <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full shrink-0 border-4 transition-colors ${isCompleted ? s.clientIconCompleted : 'border-slate-900 bg-slate-800 text-slate-600'}`}>
+                                                              <i className={`ph ${s.icon} text-xl`}></i>
+                                                          </div>
+                                                          <div className={`flex-1 p-4 rounded-2xl border transition-all mt-[-4px] ${isCurrent ? s.clientCardCurrent : isCompleted ? 'bg-slate-800/30 border-slate-800/50' : 'bg-slate-950/50 border-slate-800/30'}`}>
+                                                              <h4 className={`font-bold text-sm sm:text-base ${isCurrent ? s.clientTextCurrent : isCompleted ? 'text-slate-200' : 'text-slate-600'}`}>{s.label}</h4>
+                                                              {isCurrent && <p className={`text-xs mt-2 opacity-80 leading-relaxed ${s.clientTextCurrent}`}>هذه هي المرحلة الحالية لطلبك. سنقوم بتحديثها فور انتقالنا للمرحلة التالية.</p>}
+                                                              {(isCompleted && !isCurrent) && <p className="text-xs mt-1 text-slate-500"><i className="ph ph-check"></i> تمت بنجاح</p>}
+                                                          </div>
+                                                      </div>
+                                                  );
+                                              })}
+                                          </div>
+                                      )}
+                                  </div>
+                              )}
+
+                              {/* Archive Content */}
+                              {activeClientTab === 'archive' && (
+                                  <div className="animate-fadeIn space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                                      {clientArchiveRecords.map(record => {
+                                          const isWedRec = record.type === 'wedding';
+                                          const recStatuses = isWedRec ? WEDDING_STATUSES : ORDER_STATUSES;
+                                          const recStatusObj = recStatuses.find(s => s.id === (record.status || 0)) || recStatuses[0];
+                                          const isActive = record.id === txn.id;
+                                          const recordUrl = `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${isWedRec ? 'w' : 't'}`;
+                                          
+                                          return (
+                                              <a key={record.id} href={recordUrl} onClick={(e) => { e.preventDefault(); navigateTo(recordUrl); }} className={`block p-4 rounded-2xl border transition-all ${isActive ? 'bg-blue-950/20 border-blue-500/50 shadow-inner' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
+                                                  <div className="flex justify-between items-start mb-2">
+                                                       <div className="flex items-center gap-2">
+                                                           <i className={`text-xl ${isWedRec ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
+                                                           <span className="font-bold text-sm text-slate-200">إيصال #{record.receiptNo}</span>
+                                                       </div>
+                                                       <span className="text-xs text-slate-500 font-mono">{formatDateOnly(record.dateTime)}</span>
+                                                  </div>
+                                                  <div className="flex justify-between items-center mt-3">
+                                                       <span className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1 ${recStatusObj.clientIconCompleted.split(' ')[0]} ${recStatusObj.clientIconCompleted.split(' ')[1]} bg-opacity-20 text-opacity-100 border ${recStatusObj.clientIconCompleted.split(' ')[4]}`}>
+                                                           <i className={`ph ${recStatusObj.icon}`}></i> {recStatusObj.label}
+                                                       </span>
+                                                       <span className="text-sm font-black text-slate-300">{record.total} ج.م</span>
+                                                  </div>
+                                              </a>
                                           );
                                       })}
                                   </div>
-                              </div>
+                              )}
                           </div>
-                      ) : (
-                          <div className="w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl shadow-2xl border border-green-500/30 mb-8 text-center relative overflow-hidden">
-                              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-500"></div>
-                              <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/50 shadow-lg shadow-green-900/40">
-                                  <i className="ph-fill ph-check-circle text-5xl"></i>
-                              </div>
-                              <h3 className="font-black text-2xl mb-2 text-white">تم تسليم الطلب بنجاح! 🎉</h3>
-                              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                                  شكراً لاختيارك {settings.studioName}. نتمنى أن تكون الصور والأعمال قد نالت إعجابكم، ونسعد دائماً بتوثيق أجمل لحظاتكم!
-                              </p>
-                              <p className="text-xs text-yellow-400 mt-6 font-bold flex items-center justify-center gap-1 animate-pulse">
-                                  <i className="ph-fill ph-arrow-down"></i> برجاء تقييم تجربتك معنا بالأسفل
-                              </p>
-                          </div>
-                      )}
-
-                      {/* 7. الأرشيف الخاص بالعميل */}
-                      <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
-                           <div className="absolute top-0 right-0 w-1 h-full bg-slate-600"></div>
-                           
-                           <details className="group" open={false}>
-                               <summary className="flex items-center justify-between cursor-pointer list-none border-b border-slate-800 pb-4 mb-2 select-none">
-                                   <div className="flex items-center gap-2">
-                                       <i className="ph-fill ph-folder-open text-2xl text-slate-400 group-open:text-yellow-400 transition-colors"></i> 
-                                       <h3 className="font-bold text-lg text-slate-100 group-open:text-yellow-400 transition-colors">أرشيف زياراتي للاستوديو</h3>
-                                   </div>
-                                   <div className="flex items-center gap-3">
-                                       <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-mono">{clientArchiveRecords.length} زيارات</span>
-                                       <i className="ph-bold ph-caret-down text-slate-400 transition-transform group-open:rotate-180"></i>
-                                   </div>
-                               </summary>
-                               
-                               <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2 mt-4 transition-all duration-300 opacity-0 group-open:opacity-100">
-                                  {clientArchiveRecords.map(record => {
-                                      const isWedRec = record.type === 'wedding';
-                                      const recStatuses = isWedRec ? WEDDING_STATUSES : ORDER_STATUSES;
-                                      const recStatusObj = recStatuses.find(s => s.id === (record.status || 0)) || recStatuses[0];
-                                      const isActive = record.id === txn.id;
-                                      const recordUrl = `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${isWedRec ? 'w' : 't'}`;
-                                      
-                                      return (
-                                          <a key={record.id} href={recordUrl} onClick={(e) => { e.preventDefault(); navigateTo(recordUrl); }} className={`block p-4 rounded-2xl border transition-all ${isActive ? 'bg-blue-950/20 border-blue-500/50 shadow-inner' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
-                                              <div className="flex justify-between items-start mb-2">
-                                                   <div className="flex items-center gap-2">
-                                                       <i className={`text-xl ${isWedRec ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
-                                                       <span className="font-bold text-sm text-slate-200">إيصال #{record.receiptNo}</span>
-                                                   </div>
-                                                   <span className="text-xs text-slate-500 font-mono">{formatDateOnly(record.dateTime)}</span>
-                                              </div>
-                                              <div className="flex justify-between items-center mt-3">
-                                                   <span className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1 ${recStatusObj.clientIconCompleted.split(' ')[0]} ${recStatusObj.clientIconCompleted.split(' ')[1]} bg-opacity-20 text-opacity-100 border ${recStatusObj.clientIconCompleted.split(' ')[4]}`}>
-                                                       <i className={`ph ${recStatusObj.icon}`}></i> {recStatusObj.label}
-                                                   </span>
-                                                   <span className="text-sm font-black text-slate-300">{record.total} ج.م</span>
-                                              </div>
-                                          </a>
-                                      );
-                                  })}
-                               </div>
-                           </details>
                       </div>
 
                       {/* Feedback Box */}
@@ -4344,7 +3836,7 @@
                 )}
               </main>
               
-              <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} />
+              <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} settings={settings} />
               <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
             </div>
           );
