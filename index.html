@@ -29,13 +29,6 @@
     
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script>
-        Babel.registerPreset('react-classic', {
-            presets: [
-                [Babel.availablePresets['react'], { "runtime": "classic" }]
-            ]
-        });
-    </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
@@ -70,13 +63,13 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react-classic" data-type="module">
+    <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
         import { getStorage, ref, deleteObject, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
-        const { useState, useEffect, useMemo, useCallback, Fragment } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         // --- Safe LocalStorage Wrappers ---
         const getSafeLocal = (key) => { try { return localStorage.getItem(key); } catch(e) { return null; } };
@@ -3472,7 +3465,6 @@
                     if (!data.portalVisits) data.portalVisits = 0;
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
                     if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5; // Default 5%
-                    if (data.rewardPercentWedding === undefined) data.rewardPercentWedding = 1.5; // Default 1.5%
                     setSettings(data);
                 }
             }, (err) => console.error("Settings error", err));
@@ -3748,67 +3740,6 @@
                   await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, gallery: newGallery }, { merge: true });
               };
 
-              // دالة العميل لرفع إيصال التحويل الإلكتروني
-              const handleClientReceiptUpload = async (e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  try {
-                      const dataUrl = await processImage(file, 800);
-                      if (!dataUrl) return;
-                      
-                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                      const targetCol = isWedding ? 'weddings' : 'transactions';
-                      const updatedTxn = { ...txn, pendingReceipt: dataUrl };
-                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updatedTxn);
-                      alert("تم رفع صورة الإيصال بنجاح. سيقوم الاستوديو بمراجعتها لتأكيد السداد.");
-                      setShowClientPaymentPopup(false);
-                  } catch (err) {
-                      console.error("Error uploading receipt:", err);
-                      alert("حدث خطأ أثناء رفع الصورة.");
-                  }
-              };
-
-              // دالة العميل لرفع صور للطباعة
-              const handleClientPhotosUpload = async (e) => {
-                  const files = Array.from(e.target.files);
-                  if (!files.length) return;
-                  
-                  try {
-                      const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                      const newUploads = [...(txn.clientUploads || [])];
-
-                      for (const file of files) {
-                          const dataUrl = await processImage(file, 1200); 
-                          if (!dataUrl) continue;
-                          const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-                          const storageRef = ref(storage, `artifacts/${appId}/public/data/clientUploads/${txn.id}/${Date.now()}_${safeName}`);
-                          await uploadString(storageRef, dataUrl, 'data_url');
-                          const url = await getDownloadURL(storageRef);
-                          newUploads.push({ url, path: storageRef.fullPath, name: file.name });
-                      }
-
-                      const targetCol = isWedding ? 'weddings' : 'transactions';
-                      await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { ...txn, clientUploads: newUploads }, { merge: true });
-                      alert("تم رفع صورك بنجاح! سيتم إضافتها لطلبك للطباعة.");
-                  } catch (err) {
-                      console.error("Error uploading client photos:", err);
-                      alert("حدث خطأ أثناء رفع الصور.");
-                  } finally {
-                      if (e.target) e.target.value = '';
-                  }
-              };
-
-              // إظهار نافذة الدفع التلقائية إذا كان عليه متبقي ولم تظهر من قبل
-              useEffect(() => {
-                  if (txn.remaining > 0 && !hasAutoShownPayment) {
-                      const timer = setTimeout(() => {
-                          setShowClientPaymentPopup(true);
-                          setHasAutoShownPayment(true);
-                      }, 2000); // تظهر بعد ثانيتين من فتح الصفحة
-                      return () => clearTimeout(timer);
-                  }
-              }, [txn.remaining, hasAutoShownPayment]);
-
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
                       
@@ -3944,12 +3875,16 @@
                                       </div>
                                       <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '01126810107', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md">نسخ</button>
                                   </div>
-                                  
+                                  <p className="text-[10px] text-center text-slate-500 mb-4 font-bold bg-slate-900/50 py-1 rounded">يرجى التأكد من ظهور اسم <span className="text-indigo-400">"محمود م ا ا"</span> قبل التحويل.</p>
+
                                   <button 
-                                      onClick={() => setShowClientPaymentPopup(true)}
+                                      onClick={() => {
+                                          const msg = `مرحباً، لقد قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد المتبقي من الإيصال رقم #${txn.receiptNo}.\nمرفق صورة إيصال التحويل للتأكيد.`;
+                                          openWhatsApp(settings.studioPhone || '01201260040', msg);
+                                      }}
                                       className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-lg border border-green-500/50"
                                   >
-                                      <i className="ph-bold ph-upload-simple text-xl"></i> إرفاق إيصال الدفع
+                                      <i className="ph-fill ph-whatsapp-logo text-xl"></i> إرسال صورة التأكيد عبر واتساب
                                   </button>
                                   <p className="text-[10px] text-center text-slate-500 mt-2 font-bold"><i className="ph-fill ph-lock-key"></i> معاملاتك آمنة ومحفوظة.</p>
                               </div>
@@ -3968,7 +3903,6 @@
                               </div>
                           </div>
                           <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
-                          {/* Animated Shine Effect */}
                           <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
                       </button>
 
@@ -4028,23 +3962,15 @@
                           </div>
                       )}
 
-                      {/* 4. Download Link & Client Uploads */}
+                      {/* 4. Download Link */}
                       {txn.photosLink && (
-                          <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-4 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
+                          <a href={txn.photosLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-md bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white p-5 rounded-3xl shadow-xl shadow-green-900/20 mb-8 flex items-center justify-center gap-3 font-bold text-lg hover:scale-[1.02] transition-all border border-green-400/30 group">
                              <div className="bg-white/20 p-2 rounded-full group-hover:animate-bounce">
                                  <i className="ph-bold ph-download-simple text-2xl"></i>
                              </div>
                              <span>تحميل الصور (رابط خارجي)</span>
                           </a>
                       )}
-
-                      <div className="w-full max-w-md mb-8">
-                          <label className="w-full bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 p-4 rounded-2xl flex items-center justify-center gap-2 font-bold cursor-pointer transition-colors shadow-sm">
-                              <i className="ph-bold ph-upload-simple text-xl"></i> رفع صور للطباعة
-                              <input type="file" multiple accept="image/*" className="hidden" onChange={handleClientPhotosUpload} />
-                          </label>
-                          <p className="text-[10px] text-slate-500 text-center mt-2">اختر الصور من جهازك ليقوم الاستوديو بطباعتها لك مباشرة.</p>
-                      </div>
 
                       {/* معرض صور العميل (الألبوم) */}
                       {txn.gallery?.length > 0 && (
@@ -4255,41 +4181,6 @@
                               </>
                           )}
                       </div>
-
-                      {/* نافذة دفع العميل المنبثقة */}
-                      {showClientPaymentPopup && (
-                          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4" onClick={() => setShowClientPaymentPopup(false)}>
-                              <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-sm relative animate-fadeIn" onClick={e => e.stopPropagation()}>
-                                  <button onClick={() => setShowClientPaymentPopup(false)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-xl"></i></button>
-                                  
-                                  <div className="text-center mb-6">
-                                      <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/30">
-                                          <i className="ph-fill ph-wallet text-3xl"></i>
-                                      </div>
-                                      <h3 className="text-lg font-black text-white">تذكير بالسداد</h3>
-                                      <p className="text-sm text-slate-400 mt-1">يوجد مبلغ متبقي على حسابك.</p>
-                                  </div>
-
-                                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center mb-5">
-                                      <span className="text-red-400 font-black text-2xl">{txn.remaining} <span className="text-sm font-bold">ج.م</span></span>
-                                  </div>
-
-                                  <div className="space-y-3">
-                                      <p className="text-xs text-slate-400 text-center mb-2">يمكنك تحويل المبلغ الآن عبر (محافظ / إنستاباي) إلى:</p>
-                                      <div className="bg-indigo-950/20 border border-indigo-500/30 p-3 rounded-xl flex items-center justify-between">
-                                          <span className="font-mono font-bold text-lg tracking-widest text-indigo-300" dir="ltr">{settings.vodafoneCashNumber || '01126810107'}</span>
-                                          <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '01126810107', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">نسخ</button>
-                                      </div>
-                                      <p className="text-[10px] text-center text-slate-500 font-bold bg-slate-900/50 py-1 rounded">يرجى التأكد من ظهور اسم <span className="text-indigo-400">"محمود م ا ا"</span> قبل التحويل.</p>
-
-                                      <label className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-lg cursor-pointer mt-4">
-                                          <i className="ph-bold ph-upload-simple text-xl"></i> إرفاق صورة إيصال التحويل
-                                          <input type="file" accept="image/*" className="hidden" onChange={handleClientReceiptUpload} />
-                                      </label>
-                                  </div>
-                              </div>
-                          </div>
-                      )}
                   </div>
               );
           }
