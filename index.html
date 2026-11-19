@@ -58,6 +58,26 @@
         
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
+        /* Responsive administration layout: fluid on every screen size */
+        *, *::before, *::after { box-sizing: border-box; }
+        .admin-app { width: 100%; min-width: 0; overflow-x: hidden; }
+        .admin-app main { width: 100%; max-width: none !important; min-width: 0; margin-inline: 0; }
+        .admin-app .max-w-7xl { max-width: none !important; width: 100%; }
+        .admin-app [class*="grid"] > *, .admin-app .flex > * { min-width: 0; }
+        .admin-app input, .admin-app select, .admin-app textarea, .admin-app button { max-width: 100%; }
+        .admin-app .overflow-x-auto { max-width: 100%; overscroll-behavior-x: contain; }
+        .admin-app table { max-width: 100%; }
+        @media (max-width: 640px) {
+            .admin-app main { padding: 0.75rem !important; }
+            .admin-app .rounded-3xl { border-radius: 1.25rem; }
+            .admin-app .p-6 { padding: 1rem; }
+            .admin-app .p-8 { padding: 1.25rem; }
+            .admin-app .text-3xl { font-size: 1.5rem; line-height: 2rem; }
+            .admin-app .text-2xl { font-size: 1.25rem; line-height: 1.75rem; }
+        }
+        @media (min-width: 1536px) {
+            .admin-app main { padding-inline: clamp(1.5rem, 3vw, 4rem); }
+        }
     </style>
 </head>
 <body>
@@ -349,9 +369,18 @@
             msg = msg.replace(/{reward_balance}/g, rewards.balance);
             msg = msg.replace(/{item_title}/g, 'عرض/منتج');
             
-            const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
+            const portalBaseUrl = window.location.href.split('?')[0];
+            const trackUrl = portalBaseUrl + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
+            const portalUrl = portalBaseUrl + '?client=true';
+            const productsUrl = portalBaseUrl + '?client=true&view=products';
+            const bookingUrl = portalBaseUrl + '?client=true&view=booking';
+            const archiveUrl = portalBaseUrl + '?client=true&view=archive';
             msg = msg.replace(/{track_url}/g, trackUrl);
-            if (templateKey === 'invoice' && txn.pickupDate && !msg.includes(formatDateOnly(txn.pickupDate))) msg += `\n\n📦 موعد استلام الصور: ${formatDateOnly(txn.pickupDate)}`;
+            msg = msg.replace(/{portal_url}/g, portalUrl).replace(/{products_url}/g, productsUrl).replace(/{booking_url}/g, bookingUrl).replace(/{archive_url}/g, archiveUrl);
+            if (templateKey === 'invoice') {
+                if (txn.pickupDate && !msg.includes(formatDateOnly(txn.pickupDate))) msg += `\n\n📦 موعد استلام الصور: ${formatDateOnly(txn.pickupDate)}`;
+                msg += `\n\n🌟 *بوابتك الرقمية مع ${settings.studioName || 'الاستوديو'}*\nتابع منتجاتنا وعروضنا الجديدة، واحجز موعدك، وراجع أرشيف طلباتك في أي وقت من خلال الروابط التالية:\n🛍️ بوابة المنتجات والعروض: ${productsUrl}\n📅 حجز موعد تصوير: ${bookingUrl}\n🗂️ الأرشيف وطلباتك: ${archiveUrl}\n\nنسعد دائمًا بزيارتك وخدمتك بكل حب ✨`;
+            }
             return msg;
         };
 
@@ -545,6 +574,10 @@
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
+                const view = urlParams.get('view');
+                if (view === 'booking') setShowBookingModal(true);
+                if (view === 'archive') setShowPhoneInput(true);
+                if (view === 'products') setTimeout(() => document.getElementById('customer-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
                 const cardId = urlParams.get('card');
                 const promoId = urlParams.get('promo');
                 if (cardId && settings.miniProducts) {
@@ -844,7 +877,7 @@
                                 </div>
                                 
                                 {/* Miniature Products Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                                <div id="customer-products" className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                                     {displayMiniProducts.map((prod, idx) => {
                                         const isThirdOfThree = false;
                                         return (
@@ -3641,11 +3674,14 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           const [appointmentsLoaded, setAppointmentsLoaded] = useState(false);
           const [appointmentNotice, setAppointmentNotice] = useState(null);
           const previousAppointmentsRef = useRef([]);
+          const appointmentsInitializedRef = useRef(false);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
             workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
+          const settingsRef = useRef(settings);
+          settingsRef.current = settings;
 
           const [currentUrl, setCurrentUrl] = useState(window.location.search);
 
@@ -3743,8 +3779,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               if (docSnap.exists()) setInventory(docSnap.data());
             }, (err) => console.error("Inventory error", err)) : noop;
 
-            const unsubTxns = isTracking ? (trackType === 't' ? listenRecords('transactions', setTransactions, setTxnsLoaded, true) : noop) : (!isClientPortal ? listenRecords('transactions', setTransactions, setTxnsLoaded, false) : noop);
-            const unsubWeds = isTracking ? (trackType === 'w' ? listenRecords('weddings', setWeddings, setWedsLoaded, true) : noop) : (!isClientPortal ? listenRecords('weddings', setWeddings, setWedsLoaded, false) : noop);
+            const unsubTxns = isTracking ? (trackType === 't' ? listenRecords('transactions', setTransactions, setTxnsLoaded, true) : noop) : listenRecords('transactions', setTransactions, setTxnsLoaded, false);
+            const unsubWeds = isTracking ? (trackType === 'w' ? listenRecords('weddings', setWeddings, setWedsLoaded, true) : noop) : listenRecords('weddings', setWeddings, setWedsLoaded, false);
 
             // في رابط التتبع نقرأ حجوزات الهاتف نفسه فقط، أما بوابة الحجز العامة فلا تحتاجها.
             const appointmentsSource = collection(db, basePath, 'appointments');
@@ -3753,17 +3789,17 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               const data = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
               data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
               if (!isTracking) {
-                const previousAppointments = previousAppointmentsRef.current;
-                if (previousAppointments.length > 0) {
-                  const previousIds = new Set(previousAppointments.map(item => item.id));
-                  const newPending = data.find(item => item.status === 'pending' && !previousIds.has(item.id));
+                // لا نعتبر اللقطة الأولى حجزًا جديدًا، لكن نلتقط أي إضافة لاحقة حتى لو كانت القائمة فارغة عند البداية.
+                if (appointmentsInitializedRef.current) {
+                  const newPending = snapshot.docChanges().filter(change => change.type === 'added').map(change => ({ ...change.doc.data(), id: change.doc.id })).find(item => item.status === 'pending');
                   if (newPending) {
                     playNotificationSound();
                     setAppointmentNotice({ name: newPending.clientName || 'عميل جديد', phone: newPending.phone || '', id: newPending.id });
                     setTimeout(() => setAppointmentNotice(null), 9000);
-                    if (settings.enableNotifications) showBrowserNotification('حجز تصوير جديد', `طلب جديد من ${newPending.clientName || 'عميل جديد'}`);
+                    if (settingsRef.current.enableNotifications) showBrowserNotification('حجز تصوير جديد', `طلب جديد من ${newPending.clientName || 'عميل جديد'}`);
                   }
                 }
+                appointmentsInitializedRef.current = true;
                 previousAppointmentsRef.current = data;
               }
               setAppointments(data);
@@ -4443,11 +4479,11 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           }
 
           return (
-            <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+            <div className={`min-h-screen bg-slate-950 text-slate-100 pb-20 ${!isTracking ? 'admin-app' : ''}`}>
               {authError && <div className="bg-red-600 text-white text-center py-1 font-bold text-xs">{authError}</div>}
               {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} onLogout={handleLogout} feedbacks={feedbacks} unreadCount={unreadFeedbackCount} onViewFeedback={handleViewFeedback} />}
               {appointmentNotice && !isTracking && <div className="fixed top-24 left-3 right-3 sm:left-auto sm:right-6 z-[100] sm:w-96 bg-gradient-to-l from-yellow-500 to-amber-500 text-slate-950 rounded-2xl shadow-2xl border border-yellow-200 p-4 animate-fadeIn cursor-pointer" onClick={() => { setActiveTab('appointments'); setAppointmentNotice(null); }}><div className="flex items-start gap-3"><div className="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center shrink-0"><i className="ph-fill ph-bell-ringing text-2xl"></i></div><div className="min-w-0"><p className="font-black text-sm">حجز تصوير جديد</p><p className="text-xs font-bold mt-1 truncate">{appointmentNotice.name} {appointmentNotice.phone && `— ${appointmentNotice.phone}`}</p><p className="text-[10px] mt-2 font-bold opacity-75">اضغط لعرض الحجوزات الجديدة</p></div><button onClick={(e) => { e.stopPropagation(); setAppointmentNotice(null); }} className="text-slate-900/70 hover:text-slate-950"><i className="ph ph-x"></i></button></div></div>}
-              <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
+              <main className={`${isTracking ? '' : 'w-full p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
                         {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} />}
