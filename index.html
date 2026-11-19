@@ -2448,19 +2448,17 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
-                            <div><label className="block text-xs font-bold text-slate-400 mb-1">موعد الاستلام المتوقع</label><input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupDate:e.target.value})} className="w-full h-[46px] p-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500" /></div>
-                            <div><label className="block text-xs font-bold text-slate-400 mb-1">المطلوب بالتفصيل</label><textarea placeholder="اكتب تفاصيل ومتطلبات العملية..." rows="3" className="w-full h-[46px] md:h-full min-h-[46px] p-3 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar resize-y" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} /></div>
-                            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-center gap-2">
-                                <div>
-                                    <h4 className="text-sm font-bold text-yellow-400 flex items-center gap-1"><i className="ph-fill ph-gift text-lg"></i> رصيد المكافآت للعميل</h4>
-                                    <p className="text-xs text-slate-500">رصيد متاح: {customerRewards.balance} ج.م</p>
-                                </div>
-                                {!isEditing && customerRewards.balance > 0 && (
-                                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg hover:border-yellow-500 transition-colors w-fit max-w-full">
-                                        <input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500 shrink-0" />
-                                        <span className="text-xs font-bold text-slate-300">استخدام الرصيد كخصم</span>
-                                    </label>
-                                )}
+                            <div className="bg-slate-950 p-4 rounded-xl border border-blue-500/25 flex flex-col gap-3 shadow-inner hover:border-blue-500/50 transition-colors">
+                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-lg"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1">حدد اليوم المقترح لاستلام الصور</p></div></div>
+                                <input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupDate:e.target.value})} className="w-full h-11 px-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors text-sm font-bold" />
+                            </div>
+                            <div className="bg-slate-950 p-4 rounded-xl border border-indigo-500/25 flex flex-col gap-3 shadow-inner hover:border-indigo-500/50 transition-colors">
+                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-clipboard-text text-lg"></i></div><div><label className="block text-sm font-black text-indigo-200">المطلوب بالتفصيل</label><p className="text-[10px] text-slate-500 mt-1">أضف أي ملاحظات أو طلبات خاصة</p></div></div>
+                                <textarea placeholder="اكتب تفاصيل ومتطلبات العملية..." rows="3" className="w-full min-h-[92px] p-3 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none text-sm custom-scrollbar resize-y leading-relaxed" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
+                            </div>
+                            <div className="bg-slate-950 p-4 rounded-xl border border-yellow-500/25 flex flex-col justify-between gap-3 shadow-inner hover:border-yellow-500/50 transition-colors">
+                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-yellow-500/15 border border-yellow-400/25 text-yellow-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-gift text-lg"></i></div><div><h4 className="text-sm font-black text-yellow-200">رصيد المكافآت للعميل</h4><p className="text-[10px] text-slate-500 mt-1">الرصيد المتاح: <span className="text-yellow-300 font-bold">{customerRewards.balance} ج.م</span></p></div></div>
+                                {!isEditing && customerRewards.balance > 0 ? <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg hover:border-yellow-500 transition-colors w-full"><input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500 shrink-0" /><span className="text-xs font-bold text-slate-300">استخدام الرصيد كخصم</span></label> : <div className="text-[10px] text-slate-600 bg-slate-900/60 rounded-lg px-3 py-2">لا يوجد رصيد متاح حاليًا</div>}
                             </div>
                         </div>
 
