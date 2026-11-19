@@ -194,7 +194,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "أهلاً بك أ. {name} 👋\nنورتنا وشرفتنا في {studio} 📸✨\n\n🧾 فاتورة إلكترونية\n----------------------------------\n🧾 رقم الإيصال: {receipt}\n🪪 الرقم القومي: {national_id}\n📅 التاريخ: {date}\n⏰ الوقت: {time}\n----------------------------------\n🛠️ المطلوب بالتفصيل:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م {payment_note}\n🔴 الباقي: {remaining} ج.م\n🎁 رصيد المكافآت المكتسب: {reward_balance} ج.م\n----------------------------------\n📍 لمتابعة حالة طلبك ومراجعة الاسم والرقم القومي قبل الطباعة:\n{track_url}\n\nشكراً لثقتكم بنا!",
+          invoice: "*ستوديو {studio}* 📸\nأهلاً بك أ. {name}، شكرًا لاختياركم لنا ✨\n\n*🧾 تفاصيل الفاتورة*\n━━━━━━━━━━━━━━━━\n*رقم الإيصال:* #{receipt}\n*الرقم القومي:* {national_id}\n*تاريخ التسجيل:* {date}\n*وقت التسجيل:* {time}\n*موعد استلام الصور:* {pickup_date}\n━━━━━━━━━━━━━━━━\n*🛠️ الخدمات والتفاصيل المطلوبة:*\n{services}\n━━━━━━━━━━━━━━━━\n*💰 الملخص المالي*\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م {payment_note}\nالمتبقي: {remaining} ج.م\nرصيد المكافآت: {reward_balance} ج.م\n━━━━━━━━━━━━━━━━\n📍 لمراجعة حالة الطلب والبيانات قبل الطباعة: \n{track_url}\n\nنسعد بخدمتكم دائمًا،\n*فريق {studio}* ✨",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -332,12 +332,14 @@
             msg = msg.replace(/{studio}/g, settings.studioName || 'الاستوديو');
             msg = msg.replace(/{date}/g, formatDateOnly(txn.dateTime));
             msg = msg.replace(/{time}/g, formatTimeOnly(txn.dateTime));
+            msg = msg.replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو');
             msg = msg.replace(/{payment_note}/g, paymentNote);
             msg = msg.replace(/{reward_balance}/g, rewards.balance);
             msg = msg.replace(/{item_title}/g, 'عرض/منتج');
             
             const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
             msg = msg.replace(/{track_url}/g, trackUrl);
+            if (templateKey === 'invoice' && txn.pickupDate && !msg.includes(formatDateOnly(txn.pickupDate))) msg += `\n\n📦 موعد استلام الصور: ${formatDateOnly(txn.pickupDate)}`;
             return msg;
         };
 
@@ -3934,7 +3936,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
               const instantPrintName = instantPrintService?.name || 'طباعة فورية';
               const instantPrintCost = Number(instantPrintService?.price || settings.appointmentSettings?.instantPrintPrice || 90);
-              const instantPrintTotalDue = Math.max(0, Number(txn.remaining) || 0) + instantPrintCost;
+              const instantPrintPaid = Math.min(instantPrintCost, Number(txn.paid) || 0);
+              const instantPrintTotalDue = Math.max(0, instantPrintCost - instantPrintPaid);
 
               const handleProfilePicUpload = async (e) => {
                   const file = e.target.files[0];
@@ -3970,18 +3973,16 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               };
 
               const handleInstantPrintRequest = () => {
-                  const paymentNumber = settings.vodafoneCashNumber || 'رقم الدفع المسجل لدى الاستوديو';
-                  const msg = `مرحباً ${settings.studioName || 'ستوديو المراكبي'}،
+                  const msg = `مرحباً فريق ${settings.studioName || 'الاستوديو'}،
 أرغب في طلب طباعة فورية للصور الخاصة بي.
 
 رقم الإيصال: #${txn.receiptNo}
 الاسم: ${txn.photoName || txn.clientName || displayName || 'العميل'}
 الخدمة: ${instantPrintName}
 تكلفة الطباعة الفورية: ${formatCurrency(instantPrintCost)}
-المتبقي الحالي على الإيصال: ${formatCurrency(Number(txn.remaining) || 0)}
-إجمالي المطلوب لإتمام الطباعة الفورية: ${formatCurrency(instantPrintTotalDue)}
+المدفوع المحتسب للطباعة الفورية: ${formatCurrency(instantPrintPaid)}
+المتبقي لاستكمال الطباعة الفورية: ${formatCurrency(instantPrintTotalDue)}
 
-سأقوم بالسداد عند الاستلام، أو من خلال إنستاباي / المحفظة الإلكترونية على رقم: ${paymentNumber}
 برجاء تأكيد الطلب وموعد جاهزية الطباعة. شكراً لحضراتكم.`;
                   openWhatsApp(settings.studioPhone || '01201260040', msg);
               };
@@ -4077,10 +4078,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                               </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-sm">
-                              <div className="bg-slate-950/80 border border-slate-700 rounded-xl p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className="ph-fill ph-phone text-emerald-400"></i> رقم الهاتف</p><p className="text-slate-200 font-bold font-mono truncate" dir="ltr" title={txn.phone || '—'}>{txn.phone || '—'}</p><span className="text-[9px] text-slate-500">للتواصل والمتابعة</span></div>
-                              <div className="bg-slate-950/80 border border-slate-700 rounded-xl p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className="ph-fill ph-calendar-blank text-yellow-400"></i> تاريخ ووقت الإيصال</p><p className="text-slate-200 font-bold text-xs leading-relaxed">{formatDate(txn.dateTime) || '—'}</p><span className="text-[9px] text-slate-500">وقت التسجيل</span></div>
-                          </div>
+                          <div className="bg-slate-950/80 border border-slate-700 rounded-2xl p-3 mb-4 text-sm shadow-inner"><div className="flex items-center gap-2 mb-3"><i className="ph-fill ph-identification-card text-blue-300 text-lg"></i><p className="text-slate-300 text-xs font-black">بيانات التواصل والتسجيل</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="flex items-center gap-3 min-w-0 bg-slate-900/80 rounded-xl border border-slate-800 p-3"><div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-phone"></i></div><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">رقم الهاتف</p><p className="text-slate-200 font-bold font-mono truncate" dir="ltr" title={txn.phone || '—'}>{txn.phone || '—'}</p></div></div><div className="flex items-center gap-3 min-w-0 bg-slate-900/80 rounded-xl border border-slate-800 p-3"><div className="w-8 h-8 rounded-lg bg-yellow-500/15 text-yellow-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-blank"></i></div><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">تاريخ ووقت الإيصال</p><p className="text-slate-200 font-bold text-xs leading-relaxed truncate">{formatDate(txn.dateTime) || '—'}</p></div></div></div></div>
                           {/* Rewards Mini-Banner */}
                           {availableRewards > 0 && (
                               <div className="bg-purple-950/30 border border-purple-500/20 p-3 rounded-xl mb-5 flex items-start gap-3 shadow-inner">
@@ -4109,7 +4107,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
 
                           {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
                           {txn.appointmentConfirmed && <div className="mb-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-seal-check text-emerald-300 text-2xl shrink-0"></i><div><p className="text-emerald-200 font-black text-sm">تم تأكيد موعدك بنجاح</p><p className="text-emerald-100/80 text-xs leading-relaxed mt-1">{txn.confirmationMessage || 'ننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.'}</p></div></div>}
-                          {!isWedding && <div className="mb-3 bg-blue-950/30 border border-blue-500/30 rounded-xl p-3 space-y-3"><div className="flex items-center gap-3"><i className="ph-fill ph-calendar-check text-blue-300 text-xl"></i><div className="min-w-0"><p className="text-[10px] text-blue-200/70 font-bold">موعد استلام الصور</p><p className="text-white text-sm font-black">{txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'يتم تحديده مع الاستوديو'}</p></div></div><div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة الإضافية: <span className="text-amber-300 font-black">{formatCurrency(instantPrintCost)}</span> • الإجمالي المطلوب: <span className="text-amber-300 font-black">{formatCurrency(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">يمكنك السداد عند الاستلام أو عبر إنستاباي / المحفظة الإلكترونية.</p></div></div>}
+                          {!isWedding && <div className="mb-3 bg-blue-950/30 border border-blue-500/30 rounded-xl p-3 space-y-3"><div className="flex items-center gap-3"><i className="ph-fill ph-calendar-check text-blue-300 text-xl"></i><div className="min-w-0"><p className="text-[10px] text-blue-200/70 font-bold">موعد استلام الصور</p><p className="text-white text-sm font-black">{txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'يتم تحديده مع الاستوديو'}</p></div></div><div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة: <span className="text-amber-300 font-black">{formatCurrency(instantPrintCost)}</span> • المدفوع: <span className="text-emerald-300 font-black">{formatCurrency(instantPrintPaid)}</span> • المتبقي: <span className="text-amber-300 font-black">{formatCurrency(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">للسداد، استخدم حقل <span className="text-indigo-300 font-bold">سداد المبلغ المتبقي</span> الموجود أسفل البطاقة.</p></div></div>}
 
                           {/* Financial Summary */}
                           <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
