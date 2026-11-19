@@ -98,10 +98,22 @@
         // --- Audio Notification Helper ---
         const playNotificationSound = () => {
             try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    const ctx = new AudioContextClass();
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.65);
+                    gain.connect(ctx.destination);
+                    [880, 1175].forEach((frequency, index) => { const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = frequency; osc.connect(gain); osc.start(ctx.currentTime + index * 0.16); osc.stop(ctx.currentTime + 0.16 + index * 0.16 + 0.22); });
+                    setTimeout(() => ctx.close().catch(() => {}), 1000);
+                    return;
+                }
                 const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
                 audio.play().catch(e => console.log("Audio blocked by browser", e));
             } catch (error) {
-                console.log("Audio error", error);
+                try { const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'); audio.play().catch(() => {}); } catch (fallbackError) { console.log("Audio error", fallbackError); }
             }
         };
 
@@ -1890,7 +1902,7 @@
                 ? `${records[0]?.groomName || ''} و ${records[0]?.brideName || ''}`.trim()
                 : (records[0]?.clientName || 'العميل');
             return (
-                <div className="fixed inset-0 z-[80] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+                <div className="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
                     <div className="w-full max-w-md max-h-[82vh] overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between gap-3 border-b border-slate-800 p-4">
                             <div className="min-w-0"><p className="text-yellow-400 text-xs font-bold flex items-center gap-2"><i className="ph-fill ph-clock-counter-clockwise"></i> سجل زيارات العميل</p><h3 className="text-white font-black truncate mt-1">{customerName}</h3><p className="text-slate-500 text-xs font-mono mt-1" dir="ltr">{phone}</p></div>
@@ -3859,9 +3871,12 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
 
           if (!authReady) {
               return (
-                  <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100">
-                      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <p className="font-bold">جاري المزامنة مع السحابة...</p>
+                  <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950 flex items-center justify-center text-slate-100 p-6 relative overflow-hidden">
+                      <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl"></div><div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl"></div>
+                      <div className="relative z-10 w-full max-w-md text-center bg-slate-900/80 border border-blue-500/20 rounded-3xl p-8 shadow-2xl backdrop-blur-sm">
+                          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/30 flex items-center justify-center shadow-lg shadow-blue-900/30"><i className="ph-fill ph-camera text-4xl text-blue-300"></i></div>
+                          {(isTracking || isClientPortal) ? <><p className="text-blue-200 text-xs font-bold mb-2">أهلاً بك في</p><h1 className="text-2xl font-black text-white mb-3">{settings.studioName || 'ستوديو المراكبي'} ✨</h1><p className="text-slate-300 text-sm font-bold leading-relaxed">نجهّز لك بوابة متابعة طلبك بكل عناية، لحظات ونزامن بياناتك بأمان مع السحابة.</p><div className="mt-6 flex items-center justify-center gap-3 text-indigo-200 text-xs font-bold"><span className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span><span>جاري تحميل بيانات طلبك ومزامنتها...</span></div><p className="text-[10px] text-slate-500 mt-4">لا تغلق الصفحة حتى تكتمل المزامنة</p></> : <><h1 className="text-xl font-black text-white mb-2">{settings.studioName || 'ستوديو المراكبي'}</h1><p className="text-slate-400 text-sm font-bold">جاري المزامنة مع السحابة...</p><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mt-5"></div></>}
+                      </div>
                   </div>
               );
           }
@@ -4131,12 +4146,12 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                           {/* Payment Area if Remaining > 0 */}
                           {txn.remaining > 0 && (
                               <div className="mt-4 bg-slate-950 rounded-2xl border border-red-900/50 p-4 shadow-inner">
-                                  <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
-                                      <i className="ph-fill ph-wallet text-xl text-red-400"></i>
-                                      <span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span>
+                                  <div className="flex items-center justify-between gap-3 mb-3 border-b border-slate-800 pb-3">
+                                      <div className="flex items-center gap-2"><i className="ph-fill ph-wallet text-xl text-red-400"></i><span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span></div>
+                                      <span className="text-red-300 font-black text-lg">{formatCurrency(txn.remaining)}</span>
                                   </div>
-                                  
-                                  <p className="text-xs text-slate-400 mb-3">يمكنك السداد عبر المحافظ الإلكترونية أو إنستاباي على الرقم الموحد التالي:</p>
+                                  <div className="mb-3 rounded-xl border border-red-500/25 bg-red-950/25 px-3 py-2.5 flex items-center justify-between gap-3"><span className="text-xs text-red-100/80 font-bold">المبلغ المطلوب سداده حاليًا</span><strong className="text-red-300 text-base font-black">{formatCurrency(txn.remaining)}</strong></div>
+                                  <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
                                   
                                   <div className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4">
                                       <div className="flex items-center gap-2">
@@ -4159,7 +4174,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                                       </button>
                                   ) : (
                                       <div className="animate-fadeIn mt-4 border-t border-slate-800 pt-4">
-                                          <label className="block text-xs text-slate-300 mb-2 font-bold">المبلغ الذي تريد سداده الآن (يمكنك دفع جزء من المتبقي)</label>
+                                          <label className="block text-xs text-slate-300 mb-2 font-bold">المبلغ الذي تريد سداده الآن <span className="text-red-300">(المتبقي الكلي: {formatCurrency(txn.remaining)})</span></label>
                                           <input type="number" min="1" max={txn.remaining} value={clientPaymentAmount} onChange={e => setClientPaymentAmount(Math.min(parseFloat(e.target.value) || 0, parseFloat(txn.remaining) || 0))} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white font-black text-center outline-none focus:border-green-500 mb-3" />
                                           <p className="text-[10px] text-slate-500 mb-3">سيتم اعتماد المبلغ من الاستوديو وتحديث الرصيد بعد المراجعة.</p>
                                           <p className="text-xs text-slate-300 mb-3 font-bold">أين قمت بدفع المبلغ؟ (اختر طريقة السداد)</p>
