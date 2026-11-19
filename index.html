@@ -194,7 +194,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "أهلاً بك أ. {name} 👋\nنورتنا وشرفتنا في {studio} 📸✨\n\n🧾 فاتورة إلكترونية\n----------------------------------\n🧾 رقم الإيصال: {receipt}\n📅 التاريخ: {date}\n⏰ الوقت: {time}\n----------------------------------\n🛠️ المطلوب بالتفصيل:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م {payment_note}\n🔴 الباقي: {remaining} ج.م\n🎁 رصيد المكافآت المكتسب: {reward_balance} ج.م\n----------------------------------\n📍 لمتابعة حالة طلبك:\n{track_url}\n\nشكراً لثقتكم بنا!",
+          invoice: "أهلاً بك أ. {name} 👋\nنورتنا وشرفتنا في {studio} 📸✨\n\n🧾 فاتورة إلكترونية\n----------------------------------\n🧾 رقم الإيصال: {receipt}\n🪪 الرقم القومي: {national_id}\n📅 التاريخ: {date}\n⏰ الوقت: {time}\n----------------------------------\n🛠️ المطلوب بالتفصيل:\n{services}\n----------------------------------\n💰 إجمالي الحساب: {total} ج.م\n✅ المدفوع: {paid} ج.م {payment_note}\n🔴 الباقي: {remaining} ج.م\n🎁 رصيد المكافآت المكتسب: {reward_balance} ج.م\n----------------------------------\n📍 لمتابعة حالة طلبك ومراجعة الاسم والرقم القومي قبل الطباعة:\n{track_url}\n\nشكراً لثقتكم بنا!",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -267,7 +267,9 @@
                 let addonsText = txn.addons?.length > 0 ? txn.addons.map(a => a.name + (a.notes ? ` (${a.notes})` : '')).join(' + ') : 'لا يوجد';
                 return `الباقات: ${pkgs}\nالسيشن: ${txn.sessionType || 'غير محدد'}\nالكاجوال: ${casualText}\nإضافات: ${addonsText}`;
             }
-            return txn.requirements || 'لا يوجد تفاصيل';
+            const identity = [`الاسم: ${txn.photoName || txn.fullName || txn.clientName || '—'}`, `الرقم القومي: ${txn.nationalId || '—'}`, `الشعبة / المسار: ${txn.branch || '—'}`];
+            const notes = (txn.requirements || '').trim();
+            return [...identity, notes ? `ملاحظات: ${notes}` : ''].filter(Boolean).join('\n');
         };
 
         const processImage = (file, maxWidth = 800) => {
@@ -300,7 +302,6 @@
         const generateWA_Message = (templateKey, txn, settings, isWedding = false, allRecords = []) => {
             let msg = settings.waTemplates[templateKey] || "";
             const clientName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
-            
             let reqs = '';
             if (isWedding) {
                 const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : '');
@@ -317,11 +318,13 @@
                 reqs = txn.requirements || 'خدمات تصوير';
             }
 
+            if (txn.photoName) reqs += `\nالاسم المطلوب على الصورة (منفصل عن اسم العميل): ${txn.photoName}\nالرقم القومي: ${txn.nationalId || 'غير مسجل'}`;
             const paymentNote = txn.electronicPaid > 0 ? '(تم الدفع إلكترونياً)' : '(تم الدفع كاش)';
             const rewards = getCustomerRewards(txn.phone, allRecords, settings);
 
             msg = msg.replace(/{name}/g, clientName || 'العميل');
             msg = msg.replace(/{receipt}/g, txn.receiptNo || '');
+            msg = msg.replace(/{national_id}/g, txn.nationalId || 'غير مسجل');
             msg = msg.replace(/{total}/g, txn.total || 0);
             msg = msg.replace(/{paid}/g, txn.paid || 0);
             msg = msg.replace(/{remaining}/g, txn.remaining || 0);
@@ -516,10 +519,11 @@
             // Booking Modal State
             const [showBookingModal, setShowBookingModal] = useState(false);
             const [bookingData, setBookingData] = useState({
-                name: '', phone: '', details: '', writeName: false, date: '', time: '', paymentMethod: 'cash', paymentType: 'full', depositAmount: '',
+                clientName: '', name: '', nationalId: '', branch: '', photoName: '', phone: '', details: '', writeName: false, date: '', time: '', paymentMethod: 'cash', paymentType: 'full', depositAmount: '',
                 requireFemalePhotographer: false, isFreeSchool: false, extraServices: []
             });
             const [bookingSuccess, setBookingSuccess] = useState(null);
+            const [showBookingReview, setShowBookingReview] = useState(false);
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
@@ -690,7 +694,8 @@
 
             const handleBookAppointment = async (e) => {
                 e.preventDefault();
-                if(!bookingData.name || !bookingData.phone || !bookingData.date || !bookingData.time) return;
+                if(!showBookingReview) { setShowBookingReview(true); return; }
+                if(!bookingData.clientName || !bookingData.name || !bookingData.phone || !bookingData.date || !bookingData.time) return;
                 
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                 const receiptNo = settings.nextReceiptNo || 1000;
@@ -708,7 +713,11 @@
                 const newAppt = {
                     id: Date.now().toString(),
                     receiptNo: receiptNo,
-                    clientName: bookingData.name,
+                    clientName: bookingData.clientName,
+                    fullName: bookingData.name,
+                    nationalId: bookingData.nationalId,
+                    branch: bookingData.branch || '',
+                    photoName: bookingData.name || '',
                     phone: bookingData.phone,
                     photoType: bookingData.extraServices.map(s => `${s.name} ${s.qty > 1 ? '(x'+s.qty+')' : ''}`).join(' + ') || 'خدمات أخرى',
                     details: bookingData.details,
@@ -719,8 +728,12 @@
                     date: bookingData.date,
                     time: bookingData.time,
                     paymentMethod: bookingData.paymentMethod,
-                    price: expectedTotalPrice,
-                    electronicPaid: electronicPaidValue,
+                    requestedPrice: expectedTotalPrice,
+                    price: 0,
+                    approvedPrice: 0,
+                    electronicPaid: 0,
+                    approvedPaid: 0,
+                    paymentStatus: 'pending_studio_confirmation',
                     status: 'pending',
                     createdAt: new Date().toISOString()
                 };
@@ -730,7 +743,7 @@
                     await setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), { nextReceiptNo: increment(1) }, { merge: true });
                     
                     setBookingSuccess(newAppt);
-                    setBookingData({ name: '', phone: '', details: '', writeName: false, date: '', time: '', paymentMethod: 'cash', paymentType: 'full', depositAmount: '', requireFemalePhotographer: false, isFreeSchool: false, extraServices: [] });
+                    setBookingData({ clientName: '', name: '', nationalId: '', branch: '', photoName: '', phone: '', details: '', writeName: false, date: '', time: '', paymentMethod: 'cash', paymentType: 'full', depositAmount: '', requireFemalePhotographer: false, isFreeSchool: false, extraServices: [] });
                 } catch(err) {
                     console.error("Booking error:", err);
                 }
@@ -808,22 +821,20 @@
                                             <i className="ph-fill ph-calendar-plus text-2xl"></i> احجز موعد تصوير الآن
                                         </button>
                                     )}
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 gap-3">
                                         <button onClick={() => setShowPhoneInput(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 border border-slate-700 text-sm sm:text-base">
                                             <i className="ph-fill ph-folder-open text-xl text-blue-400"></i> الأرشيف وطلباتك
                                         </button>
-                                        <button onClick={handleShare} className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold py-3.5 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 border border-emerald-500/30 text-sm sm:text-base">
-                                            <i className="ph-fill ph-share-network text-xl"></i> شارك واكسب
-                                        </button>
+
                                     </div>
                                 </div>
                                 
                                 {/* Miniature Products Grid */}
-                                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                                     {displayMiniProducts.map((prod, idx) => {
-                                        const isThirdOfThree = displayMiniProducts.length === 3 && idx === 2;
+                                        const isThirdOfThree = false;
                                         return (
-                                            <div key={prod.id} className={isThirdOfThree ? 'col-span-2' : ''}>
+                                            <div key={prod.id} className="col-span-1">
                                                 <MiniProductCard prod={prod} onClick={handleOpenCard} spanTwo={isThirdOfThree} />
                                             </div>
                                         );
@@ -912,7 +923,7 @@
                                             <div className="text-center bg-green-950/30 p-6 rounded-2xl border border-green-500/30 animate-fadeIn">
                                                 <i className="ph-fill ph-check-circle text-6xl text-green-500 mb-4"></i>
                                                 <h3 className="text-xl font-bold text-white mb-2">تم الحجز بنجاح!</h3>
-                                                <p className="text-slate-300 mb-4">تم تسجيل موعدك في الاستوديو.</p>
+                                                <p className="text-slate-300 mb-3">تم تسجيل طلب حجزك بنجاح، وسيقوم الاستوديو بمراجعة الموعد واعتماده قبل الحضور.</p><div className="bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs font-bold leading-relaxed p-3 rounded-xl mb-4">قيمة الخدمات الظاهرة هي تقديرية فقط، ولا يتم اعتماد المبلغ إلا من الاستوديو. يمكنك دفع المبلغ كاملاً أو جزءاً منه بعد الاعتماد وحتى الاستلام.</div><p className="text-emerald-300 text-xs font-bold mb-4">شكراً لاختيارك لنا، ونسعد بخدمتك دائماً.</p>
                                                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
                                                     <p className="text-sm text-slate-400 mb-1">رقم الإيصال / الحجز:</p>
                                                     <p className="text-2xl font-black text-blue-400 tracking-widest" dir="ltr">#{bookingSuccess.receiptNo}</p>
@@ -921,7 +932,7 @@
                                                 <button onClick={() => { setShowBookingModal(false); setBookingSuccess(null); }} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors">إغلاق</button>
                                             </div>
                                         ) : (
-                                            <form onSubmit={handleBookAppointment} className="space-y-4">
+                                            <form id="customer-booking-form" onSubmit={handleBookAppointment} className="space-y-4">
                                                 {settings.appointmentSettings?.detailsText && (
                                                     <div className="bg-blue-950/30 border border-blue-900/50 p-3 rounded-xl text-blue-300 text-xs leading-relaxed flex gap-2">
                                                         <i className="ph-fill ph-info text-lg shrink-0"></i>
@@ -929,20 +940,20 @@
                                                     </div>
                                                 )}
                                                 
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    <input type="text" required placeholder="الاسم ثلاثي" value={bookingData.name} onChange={e => setBookingData({...bookingData, name: e.target.value})} className="w-full p-3.5 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none text-sm" />
-                                                    <input type="tel" required placeholder="رقم الهاتف" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} className="w-full p-3.5 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none text-sm" />
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div><label className="block text-xs font-bold text-slate-400 mb-1">الاسم الأساسي للعميل</label><input type="text" required placeholder="اسم العميل للتواصل" value={bookingData.clientName} onChange={e => setBookingData({...bookingData, clientName: e.target.value})} className="w-full p-3.5 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none text-sm" /></div>
+                                                    <div><label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف</label><input type="tel" required placeholder="رقم الهاتف" value={bookingData.phone} onChange={e => setBookingData({...bookingData, phone: e.target.value})} className="w-full p-3.5 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none text-sm" /></div>
                                                 </div>
 
                                                 <div>
                                                     <label className="block text-sm font-bold text-slate-300 mb-2">الباقات وخدمات التصوير المتاحة:</label>
-                                                    <div className="grid grid-cols-1 gap-2 mb-2">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                                                         {settings.services?.map((srv, idx) => {
                                                             const existing = bookingData.extraServices.find(s => s.name === srv.name);
                                                             return (
                                                                 <div key={idx} className={`p-2.5 rounded-xl border transition-all ${existing ? 'bg-purple-900/30 border-purple-500 shadow-inner' : 'bg-slate-950 border-slate-700 hover:border-slate-500'}`}>
                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                        <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-[120px]">
+                                                                        <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
                                                                             <input type="checkbox" className="accent-purple-500 w-4 h-4" checked={!!existing} onChange={() => handleExtraServiceChange(srv, 'toggle')} />
                                                                             <div className="flex flex-col">
                                                                                 <span className={`text-sm font-bold ${existing ? 'text-purple-300' : 'text-slate-300'}`}>{srv.name}</span>
@@ -977,7 +988,7 @@
                                                     </div>
                                                 )}
 
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-400 mb-1">التاريخ المقترح</label>
                                                         <input type="date" required value={bookingData.date} onChange={e => setBookingData({...bookingData, date: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none text-sm" />
@@ -988,11 +999,16 @@
                                                     </div>
                                                 </div>
 
+                                                <div className="space-y-3">
+                                                    <div><label className="block text-xs font-bold text-slate-400 mb-1">الاسم بالكامل</label><input type="text" required value={bookingData.name} onChange={e => setBookingData({...bookingData, name:e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none" placeholder="اكتب الاسم بالكامل كما سيظهر في الإيصال" /></div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label className="block text-xs font-bold text-slate-400 mb-1">الرقم القومي (14 رقمًا)</label><input type="text" inputMode="numeric" maxLength="14" required pattern="[0-9]{14}" value={bookingData.nationalId} onChange={e => setBookingData({...bookingData, nationalId:e.target.value.replace(/\D/g,'').slice(0,14)})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none" placeholder="00000000000000" /></div><div><label className="block text-xs font-bold text-slate-400 mb-1">الشعبة / المسار</label><input type="text" value={bookingData.branch} onChange={e => setBookingData({...bookingData, branch:e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-purple-500 outline-none" placeholder="مثال: علمي / أدبي" /></div></div>
+                                                </div>
                                                 <div className="space-y-2 border-y border-slate-800 py-3">
                                                     <label className="flex items-center gap-3 p-3 bg-slate-950 border border-slate-700 rounded-xl cursor-pointer hover:border-slate-500 transition-colors">
                                                         <input type="checkbox" checked={bookingData.writeName} onChange={e => setBookingData({...bookingData, writeName: e.target.checked})} className="w-5 h-5 accent-purple-500" />
                                                         <span className="text-sm font-bold text-slate-200">أرغب في كتابة اسمي على الصورة</span>
                                                     </label>
+                                                    {bookingData.writeName && <div className="bg-gradient-to-l from-purple-950 to-slate-900 p-4 rounded-xl border-2 border-purple-400/70 shadow-lg shadow-purple-900/30 animate-fadeIn"><div className="text-sm font-black text-purple-200 mb-2"><i className="ph-fill ph-text-t text-xl ml-1"></i> ستُكتب البيانات المؤكدة على الصورة</div><div className="text-xs text-purple-100">الاسم: {bookingData.name || '—'} • الرقم القومي: {bookingData.nationalId || '—'}</div></div>}
                                                     <label className="flex items-center gap-3 p-3 bg-pink-950/20 border border-pink-900/30 rounded-xl cursor-pointer hover:border-pink-500/50 transition-colors group">
                                                         <input type="checkbox" checked={bookingData.requireFemalePhotographer} onChange={e => setBookingData({...bookingData, requireFemalePhotographer: e.target.checked})} className="w-5 h-5 accent-pink-500" />
                                                         <div className="flex flex-col">
@@ -1041,19 +1057,13 @@
                                                     )}
                                                 </div>
                                                 
-                                                <button type="button" onClick={() => {
-                                                    alert("لا تشيل هم! هذا واجبنا تجاهك وتجاه أبنائنا. سيتم تصويرك مجاناً بالكامل بكل حب. فقط أكمل الحجز وسنتكفل بالباقي.");
-                                                    setBookingData({...bookingData, isFreeSchool: true});
-                                                }} className="w-full text-center text-xs text-blue-400 hover:text-blue-300 font-bold underline mb-2">
-                                                    هل تواجه صعوبة في دفع تكلفة الصور المدرسية؟ اضغط هنا.
-                                                </button>
+                                                <button type="button" onClick={() => setBookingData({...bookingData, isFreeSchool: !bookingData.isFreeSchool})} className="fixed top-5 left-5 z-[120] rounded-full bg-gradient-to-r from-violet-700 via-indigo-600 to-cyan-600 text-white px-5 py-3 shadow-[0_12px_35px_rgba(79,70,229,0.45)] border border-cyan-100/50 font-black flex items-center gap-2 hover:scale-105 transition-transform"><i className="ph-fill ph-heart text-xl text-rose-200"></i><span>مبادرة التصوير المجاني</span><i className="ph-fill ph-sparkle text-amber-200"></i></button>
 
                                                 {bookingData.isFreeSchool && (
-                                                    <div className="bg-blue-950/30 border border-blue-500/30 p-3 rounded-lg text-center text-blue-300 text-sm font-bold animate-fadeIn">
-                                                        <i className="ph-fill ph-heart text-pink-500"></i> تم تفعيل التصوير المدرسي المجاني. أهلاً بك!
-                                                    </div>
+                                                    <div className="fixed top-20 left-5 z-[130] max-w-xs bg-gradient-to-br from-blue-900 to-slate-900 border border-cyan-300/50 p-4 rounded-2xl text-center text-blue-100 text-sm font-bold animate-fadeIn shadow-2xl"><i className="ph-fill ph-heart text-pink-400 text-2xl"></i><p className="mt-1">بطاقة شكر</p><p className="text-xs text-blue-100/80 mt-1">شكراً لثقتك بنا. التصوير المجاني حق إنساني وواجبنا أن نشاركك ذكرياتك بكل حب.</p><button type="button" onClick={()=>setBookingData({...bookingData,isFreeSchool:false})} className="mt-2 text-xs text-cyan-200 underline">إغلاق البطاقة</button></div>
                                                 )}
 
+                                                {showBookingReview && <div className="fixed inset-0 z-[160] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4"><div className="w-full max-w-lg bg-slate-900 border border-purple-500/40 rounded-3xl p-6 shadow-2xl"><h3 className="text-xl font-black text-white mb-4">مراجعة تفاصيل الحجز قبل التسجيل</h3><div className="space-y-2 text-sm text-slate-200 bg-slate-950 p-4 rounded-xl"><p>الاسم: {bookingData.name}</p><p>الرقم القومي: {bookingData.nationalId}</p><p>الهاتف: {bookingData.phone}</p><p>موعد التصوير: {bookingData.date} - {bookingData.time}</p><p>الخدمات: {bookingData.extraServices.map(x=>`${x.name} × ${x.qty}`).join('، ') || 'تصوير مجاني'}</p><p>الاسم على الصورة: {bookingData.writeName ? bookingData.photoName : 'لا'}</p><p>الإجمالي: {expectedTotalPrice} ج.م</p></div><div className="grid grid-cols-2 gap-3 mt-4"><button type="button" onClick={()=>setShowBookingReview(false)} className="bg-slate-700 text-white py-3 rounded-xl font-bold">تعديل الطلب</button><button type="button" onClick={()=>{setShowBookingReview(false); const form=document.querySelector('#customer-booking-form'); if(form) form.requestSubmit();}} className="bg-purple-600 text-white py-3 rounded-xl font-bold">تأكيد الحجز وحفظه</button></div></div></div>}
                                                 <button type="submit" disabled={bookingData.extraServices.length === 0 && !bookingData.isFreeSchool} className="w-full bg-gradient-to-l from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] text-lg flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     تأكيد الحجز المبدئي
                                                 </button>
@@ -1196,17 +1206,17 @@
             return (
               <nav className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 text-white sticky top-0 z-50 shadow-2xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex justify-between items-center h-20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">
+                  <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 py-3 sm:py-0 min-h-20">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">
                         {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}
                       </div>
                       <div className="flex flex-col">
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1>
+                        <h1 className="text-base sm:text-2xl truncate font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1>
                         <span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
                         <div className="relative">
                             <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-300 hover:text-yellow-400 transition-colors bg-slate-900 rounded-full border border-slate-800">
                                 <i className="ph-fill ph-bell text-xl"></i>
@@ -1233,7 +1243,7 @@
                             )}
                         </div>
                         <div className="hidden lg:flex items-center space-x-1 space-x-reverse bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                            {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>{btn.icon}{btn.label}</button>))}
+                            {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>{btn.icon}{btn.label}</button>))}
                             <div className="w-px h-6 bg-slate-700 mx-2"></div>
                             <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all text-red-400 hover:text-white hover:bg-red-900/50" title="تسجيل الخروج وإقفال النظام"><i className="ph ph-sign-out text-lg"></i> خروج</button>
                         </div>
@@ -1241,7 +1251,7 @@
                   </div>
                   <div className="lg:hidden pb-4 overflow-x-auto hide-scrollbar">
                     <div className="flex items-center gap-2 min-w-max">
-                      {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'}`}>{btn.icon}{btn.label}</button>))}
+                      {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'}`}>{btn.icon}{btn.label}</button>))}
                       <button onClick={onLogout} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-900 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50"><i className="ph ph-sign-out text-lg"></i> خروج</button>
                     </div>
                   </div>
@@ -1276,21 +1286,27 @@
                                 receiptNo: appt.receiptNo,
                                 dateTime: new Date().toISOString(),
                                 clientName: appt.clientName,
+                                nationalId: appt.nationalId || '',
+                                branch: appt.branch || '',
+                                photoName: appt.photoName || '',
+                                identityConfirmed: !!appt.identityConfirmed,
                                 phone: appt.phone,
                                 photoNo: [{number: 'بدون', note: appt.photoType || 'حجز أونلاين', needsName: false}],
                                 writeNameOnPhoto: appt.writeName || false,
-                                requirements: appt.details || appt.photoType || 'تصوير استوديو',
-                                total: appt.price || 0,
-                                paid: appt.price || 0,
-                                electronicPaid: appt.paymentMethod === 'electronic' ? (appt.price || 0) : 0,
-                                remaining: 0,
+                                requirements: appt.details || '',
+                                appointmentConfirmed: appt.status === 'confirmed',
+                                confirmationMessage: appt.confirmationMessage || '',
+                                total: appt.status === 'confirmed' ? (appt.approvedPrice || appt.price || 0) : 0,
+                                paid: appt.approvedPaid || 0,
+                                electronicPaid: 0,
+                                remaining: Math.max(0, (appt.status === 'confirmed' ? (appt.approvedPrice || appt.price || 0) : 0) - (appt.approvedPaid || 0)),
                                 rewardDiscount: 0,
                                 status: 3, 
                                 month: new Date().getMonth() + 1,
                                 year: new Date().getFullYear(),
                                 photosLink: '',
                                 selectedPromos: [],
-                                payments: [{ amount: appt.price || 0, method: appt.paymentMethod || 'cash', date: new Date().toISOString() }]
+                                payments: appt.approvedPaid > 0 ? [{ amount: appt.approvedPaid, method: appt.paymentMethod || 'cash', date: new Date().toISOString() }] : []
                             };
                             await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
                             await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, id));
@@ -1301,7 +1317,13 @@
                     }
                 }
                 
-                await setDoc(doc(db, `artifacts/${appId}/public/data/appointments`, id), { status: newStatus }, { merge: true });
+                const appt = appointments.find(a => a.id === id);
+                const approval = newStatus === 'confirmed' && appt ? { approvedPrice: appt.requestedPrice || appt.price || 0, price: appt.requestedPrice || appt.price || 0, paymentStatus: 'confirmed_by_studio', confirmedAt: new Date().toISOString(), confirmationMessage: 'تم تأكيد موعدك بنجاح، وننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.' } : {};
+                if (newStatus === 'confirmed' && appt) {
+                    const msg = `مرحباً أ. ${appt.clientName || ''} 👋\nيسعدنا إبلاغك بأنه تم تأكيد موعد التصوير الخاص بك يوم ${formatDateOnly(appt.date)} الساعة ${appt.time} في ${settings.studioName}.\nننتظرك بكل ترحاب، وشكراً لاختيارك لنا. 📸✨`;
+                    openWhatsApp(appt.phone, msg);
+                }
+                await setDoc(doc(db, `artifacts/${appId}/public/data/appointments`, id), { status: newStatus, ...approval }, { merge: true });
             };
 
             const handleDelete = async (id) => {
@@ -1349,6 +1371,7 @@
                                           <div>
                                               <h3 className="font-bold text-slate-200 text-lg flex items-center gap-2"><i className="ph-fill ph-user-circle text-purple-400 text-xl"></i> {appt.clientName}</h3>
                                               <p className="text-sm text-slate-400 font-mono mt-1 flex items-center gap-1 cursor-pointer hover:text-white transition-colors" onClick={(e) => copyToClipboard(appt.phone, e)}><i className="ph-fill ph-phone text-xs"></i> {appt.phone}</p>
+                                              <div className="flex flex-wrap gap-2 mt-2"><button type="button" onClick={(e)=>copyToClipboard(appt.clientName || '',e)} className="text-xs bg-slate-900 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg"><i className="ph ph-copy ml-1"></i> نسخ الاسم</button><button type="button" onClick={(e)=>copyToClipboard(appt.nationalId || '',e)} className="text-xs bg-amber-950/30 text-amber-200 border border-amber-900/40 px-2 py-1 rounded-lg"><i className="ph ph-identification-card ml-1"></i> الرقم القومي: {appt.nationalId || 'غير مسجل'}</button></div>
                                           </div>
                                           <span className="bg-slate-800 text-slate-400 text-[10px] px-2 py-1.5 rounded-lg font-mono border border-slate-700 shadow-inner">#{appt.receiptNo}</span>
                                       </div>
@@ -1371,13 +1394,14 @@
                                           {settings.appointmentSettings?.showPrice !== false && (
                                               <div className="flex justify-between items-center border-t border-slate-800/50 pt-2 mt-2">
                                                   <span className="text-slate-500 text-xs flex items-center gap-1"><i className="ph-fill ph-coins"></i> إجمالي التكلفة:</span>
-                                                  <span className="font-black text-yellow-400">{appt.price > 0 ? `${appt.price} ج.م` : (appt.isFreeSchool ? 'مجاناً (مدرسي)' : 'يحدد بالاستوديو')}</span>
+                                                  <span className="font-black text-yellow-400">{appt.status === 'confirmed' && appt.approvedPrice ? `${appt.approvedPrice} ج.م (معتمد)` : appt.requestedPrice > 0 ? `${appt.requestedPrice} ج.م — بانتظار اعتماد الاستوديو` : (appt.isFreeSchool ? 'مجاناً (مدرسي)' : 'يحدد بالاستوديو')}</span>
                                               </div>
                                           )}
                                       </div>
                                       
                                       <div className="flex flex-wrap gap-2 mt-1">
-                                          {appt.writeName && <div className="text-xs text-red-400 font-bold flex items-center gap-1 bg-red-950/30 px-2 py-1.5 rounded-lg border border-red-900/30"><i className="ph-fill ph-text-t text-base"></i> طباعة الاسم</div>}
+                                          {appt.branch && <div className="text-xs text-purple-300 font-bold flex items-center gap-1 bg-purple-950/30 px-2 py-1.5 rounded-lg border border-purple-900/30">الشعبة / المسار: {appt.branch}</div>}
+                                          {appt.writeName && <div className="text-xs text-red-400 font-bold flex items-center gap-1 bg-red-950/30 px-2 py-1.5 rounded-lg border border-red-900/30"><i className="ph-fill ph-text-t text-base"></i> طباعة الاسم: {appt.photoName || appt.clientName} — الرقم القومي: {appt.nationalId || 'غير مسجل'}</div>}
                                           {appt.requireFemalePhotographer && <div className="text-xs text-pink-400 font-bold flex items-center gap-1 bg-pink-950/30 px-2 py-1.5 rounded-lg border border-pink-900/30"><i className="ph-fill ph-camera text-base"></i> طلب مصورة سيدة</div>}
                                           {appt.isFreeSchool && <div className="text-xs text-blue-400 font-bold flex items-center gap-1 bg-blue-950/30 px-2 py-1.5 rounded-lg border border-blue-900/30"><i className="ph-fill ph-heart text-base"></i> صور مدرسية (مجاناً)</div>}
                                       </div>
@@ -1794,12 +1818,14 @@
               delete updated.paymentType;
               const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+              const msg = `مرحباً ${displayName || ''} 👋\nتم تسجيل دفعة جديدة على الإيصال رقم #${updated.receiptNo}.\nالمبلغ المسجل الآن: ${amount} ج.م عبر ${method === 'electronic' ? 'دفع إلكتروني' : 'الدفع النقدي'}.\nإجمالي المدفوع حتى الآن: ${updated.paid} ج.م\nالمتبقي: ${updated.remaining} ج.م\nشكراً لتعاملكم معنا. 📸`;
+              openWhatsApp(updated.phone, msg);
               await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
               setPayModal(null);
             };
             const displayName = payModal.type === 'wedding' ? `${payModal.groomName || ''} و ${payModal.brideName || ''}`.trim() || 'بدون اسم' : payModal.clientName;
             return (
-              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 m-auto animate-fadeIn" onClick={() => setPayModal(null)}>
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[140] p-4 m-auto animate-fadeIn" onClick={() => setPayModal(null)}>
                 <div className="bg-slate-900 p-5 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-sm relative m-auto" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setPayModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                   <h3 className="text-xl font-black mb-4 border-b border-slate-800 pb-3 text-center text-slate-100 flex items-center justify-center gap-2">
@@ -1855,200 +1881,42 @@
             );
         };
 
-        const TxnDetailsModal = ({ txnDetailsModal, setTxnDetailsModal, setReceiptImageModal, db, allRecords, settings }) => {
-            if (!txnDetailsModal) return null;
-            const isWedding = txnDetailsModal.type === 'wedding';
-            const displayName = isWedding ? `${txnDetailsModal.groomName || ''} و ${txnDetailsModal.brideName || ''}`.trim() : txnDetailsModal.clientName;
-            const reqsText = getReqsText(txnDetailsModal);
-            const customerHistory = allRecords ? allRecords.filter(t => t.phone === txnDetailsModal.phone && t.id !== txnDetailsModal.id).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)) : [];
-            const rewards = getCustomerRewards(txnDetailsModal.phone, allRecords, settings);
-
+        const VisitHistoryModal = ({ phone, allRecords, onClose }) => {
+            if (!phone) return null;
+            const records = (allRecords || []).filter(record => record.phone === phone).sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+            const customerName = records[0]?.type === 'wedding'
+                ? `${records[0]?.groomName || ''} و ${records[0]?.brideName || ''}`.trim()
+                : (records[0]?.clientName || 'العميل');
             return (
-              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4 animate-fadeIn" onClick={() => setTxnDetailsModal(null)}>
-                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 w-full max-w-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setTxnDetailsModal(null)} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400 transition-colors"><i className="ph ph-x text-2xl"></i></button>
-                  <h3 className="text-2xl font-black mb-6 border-b border-slate-800 pb-4 text-slate-100 flex items-center gap-2">{isWedding ? <i className="ph ph-heart text-pink-500"></i> : <i className="ph ph-files text-blue-500"></i>} تفاصيل {isWedding ? 'حجز زفاف' : 'الإيصال'} #{txnDetailsModal.receiptNo}</h3>
-                  <div className="space-y-5">
-                    <div className="flex justify-between items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-                       <div>
-                           <p className="text-slate-500 text-xs mb-1">الاسم (اضغط للنسخ)</p>
-                           <p className="font-bold text-lg text-slate-100 cursor-pointer flex items-center gap-2" onClick={(e) => copyToClipboard(displayName, e)} title="اضغط للنسخ">
-                               {displayName} <i className="ph ph-copy text-slate-500 hover:text-white transition-colors text-base"></i>
-                           </p>
-                       </div>
-                       <div className="text-left">
-                           <p className="text-slate-500 text-xs mb-1">رقم الهاتف (اضغط للنسخ)</p>
-                           <p className="font-mono text-slate-300 cursor-pointer hover:text-white" onClick={(e) => copyToClipboard(txnDetailsModal.phone, e)}><i className="ph ph-copy text-slate-500 mr-1"></i>{txnDetailsModal.phone}</p>
-                       </div>
+                <div className="fixed inset-0 z-[80] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+                    <div className="w-full max-w-md max-h-[82vh] overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-3 border-b border-slate-800 p-4">
+                            <div className="min-w-0"><p className="text-yellow-400 text-xs font-bold flex items-center gap-2"><i className="ph-fill ph-clock-counter-clockwise"></i> سجل زيارات العميل</p><h3 className="text-white font-black truncate mt-1">{customerName}</h3><p className="text-slate-500 text-xs font-mono mt-1" dir="ltr">{phone}</p></div>
+                            <button onClick={onClose} className="shrink-0 rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white"><i className="ph ph-x text-xl"></i></button>
+                        </div>
+                        <div className="p-4 space-y-2 overflow-y-auto max-h-[62vh] custom-scrollbar">
+                            {records.map((record, index) => { const name = record.type === 'wedding' ? `${record.groomName || ''} و ${record.brideName || ''}`.trim() : record.clientName; return <div key={record.id || index} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-3"><div className="min-w-0"><p className={`text-xs font-black ${record.type === 'wedding' ? 'text-pink-300' : 'text-blue-300'}`}>{record.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</p><p className="text-slate-300 text-sm font-bold truncate mt-1">{name || 'بدون اسم'}</p><p className="text-slate-500 text-[11px] mt-1">{formatDateOnly(record.dateTime)} • إيصال #{record.receiptNo}</p></div><div className="text-left shrink-0"><p className="text-white font-black text-sm">{record.total || 0} ج.م</p><p className={`text-[10px] mt-1 ${record.remaining > 0 ? 'text-red-300' : 'text-emerald-300'}`}>{record.remaining > 0 ? `متبقي ${record.remaining}` : 'مدفوع بالكامل'}</p></div></div>; })}
+                        </div>
+                        <div className="border-t border-slate-800 px-4 py-3 text-center text-xs text-slate-500">إجمالي الزيارات: {records.length}</div>
                     </div>
-                    
-                    {isWedding && txnDetailsModal.bookedBy && (
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/30">
-                                <i className="ph-fill ph-user-focus text-xl"></i>
-                            </div>
-                            <div>
-                                <p className="text-slate-500 text-xs mb-1">مصدر الحجز</p>
-                                <p className="font-bold text-slate-200">{txnDetailsModal.bookedBy === 'employee' ? `الموظف: ${txnDetailsModal.employeeName}` : 'الاستوديو'}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {isWedding && (
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-2 gap-4">
-                            <div><p className="text-slate-500 text-xs mb-1">موعد الزفاف</p><p className="font-bold text-slate-200">{formatDateOnly(txnDetailsModal.weddingDate)}</p></div>
-                            <div><p className="text-slate-500 text-xs mb-1">اللوكيشن</p><p className="font-bold text-slate-200">{txnDetailsModal.location}</p></div>
-                            <div><p className="text-slate-500 text-xs mb-1">الميك أب</p><p className="font-bold text-slate-200">{txnDetailsModal.makeupArtist}</p></div>
-                            <div><p className="text-slate-500 text-xs mb-1">وقت الخروج</p><p className="font-bold text-slate-200">{txnDetailsModal.leaveTime}</p></div>
-                            <div className="col-span-2 border-t border-slate-800 pt-3 mt-1"><p className="text-slate-500 text-xs mb-1">العنوان</p><p className="font-bold text-slate-200">{txnDetailsModal.groomAddress}</p></div>
-                        </div>
-                    )}
-                    
-                    {txnDetailsModal.boundDeviceId && (
-                         <div className="bg-orange-950/30 border border-orange-900/50 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                             <div>
-                                 <p className="text-orange-400 text-sm font-bold flex items-center gap-1"><i className="ph-fill ph-lock-key"></i> حماية الرابط فعّالة</p>
-                                 <p className="text-xs text-orange-300 mt-1 leading-relaxed">الرابط مغلق على جهاز العميل الحالي. اضغط فك الحماية إذا أراد العميل الدخول من جهاز آخر.</p>
-                             </div>
-                             <button onClick={async () => {
-                                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                                 const targetCol = txnDetailsModal.type === 'wedding' ? 'weddings' : 'transactions';
-                                 await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txnDetailsModal.id), { boundDeviceId: null }, { merge: true });
-                                 setTxnDetailsModal({...txnDetailsModal, boundDeviceId: null});
-                                 alert("تم فك الحماية بنجاح. يمكن للعميل الآن فتح الرابط من جهاز جديد.");
-                             }} className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-md w-full sm:w-auto">
-                                 فك الحماية (Reset)
-                             </button>
-                         </div>
-                    )}
-
-                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800"><p className="text-slate-500 text-xs mb-2">المطلوب (الخدمات والمنتجات)</p><p className="text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">{reqsText}</p></div>
-                    
-                    {txnDetailsModal.photoNo && (Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                            <span className="text-slate-500 text-sm mb-3 block"><i className="ph ph-images text-blue-500 text-lg align-middle"></i> أرقام الصور للطباعة:</span>
-                            <div className="flex flex-wrap gap-2">
-                                {Array.isArray(txnDetailsModal.photoNo) ? txnDetailsModal.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => {
-                                    return (
-                                        <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-xl border shadow-inner ${p.needsName ? 'bg-red-950/20 border-red-900/40' : 'bg-slate-900 border-slate-700'}`}>
-                                            <span className="font-black text-blue-400 bg-blue-950/30 px-2 py-1 rounded border border-blue-900/30 cursor-pointer hover:bg-blue-900/50 transition-colors" dir="ltr" onClick={(e) => copyToClipboard(p.number, e)} title="نسخ الرقم">{p.number}</span>
-                                            {p.needsName && <span className="text-xs text-red-400 font-bold bg-red-950/50 px-2 py-1 rounded flex items-center gap-1"><i className="ph-fill ph-text-t"></i> يكتب اسم</span>}
-                                            {p.note && <span className="text-xs text-slate-400 border-t border-slate-800 pt-1.5 mt-0.5 cursor-pointer hover:text-white transition-colors" onClick={(e) => copyToClipboard(p.note, e)} title="نسخ التفاصيل"><i className="ph ph-text-aa text-slate-500 ml-1"></i> {p.note}</span>}
-                                        </div>
-                                    )
-                                }) : <span className="font-bold text-slate-200 cursor-pointer hover:text-white" dir="ltr" onClick={(e) => copyToClipboard(txnDetailsModal.photoNo, e)}>{txnDetailsModal.photoNo}</span>}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                       <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-link text-blue-500 text-lg"></i> رابط خارجي لتحميل الصور (لإرساله للعميل)</p>
-                       <div className="flex gap-2">
-                          <input type="url" placeholder="ضع رابط جوجل درايف أو الموقع هنا..." className="flex-1 p-2.5 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none text-sm focus:border-blue-500" defaultValue={txnDetailsModal.photosLink || ''} id="photosLinkInput" />
-                          <button onClick={async () => {
-                              const link = document.getElementById('photosLinkInput').value.trim();
-                              const updated = {...txnDetailsModal, photosLink: link};
-                              const targetCol = updated.type === 'wedding' ? 'weddings' : 'transactions';
-                              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, updated.id), updated);
-                              setTxnDetailsModal(updated);
-                              alert("تم حفظ رابط الصور بنجاح!");
-                          }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg text-sm font-bold transition-colors">حفظ</button>
-                       </div>
-                       {txnDetailsModal.photosLink && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> تم إرفاق الرابط. العميل سيتمكن من تحميل صوره عبر رابط التتبع.</p>}
-                    </div>
-
-                    <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 grid grid-cols-2 gap-4 relative overflow-hidden mt-4">
-                       <div className={`absolute top-0 right-0 w-1 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
-                       <div><p className="text-slate-500 text-xs mb-1">الإجمالي</p><p className="font-bold text-slate-100">{txnDetailsModal.total} ج.م</p></div>
-                       <div><p className="text-slate-500 text-xs mb-1">إجمالي المدفوع</p><p className="font-bold text-green-400">{txnDetailsModal.paid} ج.م</p></div>
-                       
-                       <div className="col-span-2 grid grid-cols-2 gap-4 bg-slate-900 p-3 rounded-lg border border-slate-700">
-                           <div>
-                               <p className="text-slate-500 text-xs mb-1 flex items-center gap-1"><i className="ph ph-money"></i> الدفع النقدي</p>
-                               <p className="font-bold text-emerald-400">{(txnDetailsModal.paid || 0) - (txnDetailsModal.electronicPaid || 0)} ج.م</p>
-                           </div>
-                           <div>
-                               <p className="text-slate-500 text-xs mb-1 flex items-center gap-1"><i className="ph ph-wallet"></i> الدفع الإلكتروني</p>
-                               <p className="font-bold text-indigo-400">{txnDetailsModal.electronicPaid || 0} ج.م</p>
-                           </div>
-                       </div>
-                       
-                       {txnDetailsModal.rewardDiscount > 0 && (
-                           <div className="col-span-2 bg-yellow-950/30 p-2 rounded-lg border border-yellow-500/30 text-center">
-                               <p className="text-yellow-400 text-sm font-bold">تم استخدام خصم نقاط مكافآت: {txnDetailsModal.rewardDiscount} ج.م</p>
-                           </div>
-                       )}
-
-                       <div className="col-span-2 pt-4 mt-2 border-t border-slate-800 flex justify-between items-center">
-                          <span className="text-slate-400 text-sm">الباقي المستحق:</span>
-                          <span className={`font-black text-xl ${txnDetailsModal.remaining > 0 ? 'text-red-400' : 'text-green-400'}`}>{txnDetailsModal.remaining} ج.م</span>
-                       </div>
-                    </div>
-                    
-                    {/* رصيد مكافآت العميل */}
-                    <div className="bg-yellow-950/20 p-4 rounded-xl border border-yellow-500/30 mt-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-yellow-400 text-sm font-bold flex items-center gap-2"><i className="ph-fill ph-gift text-lg"></i> رصيد مكافآت العميل المتاح</p>
-                            <p className="text-xs text-yellow-200/70 mt-1">يتم حسابه تلقائياً بناءً على إعدادات النظام</p>
-                        </div>
-                        <span className="text-xl font-black text-yellow-400">{rewards.balance} ج.م</span>
-                    </div>
-
-                    {(txnDetailsModal.clientRating > 0 || txnDetailsModal.clientFeedback) && (
-                        <div className="bg-yellow-950/20 p-4 rounded-xl border border-yellow-500/30 mt-4">
-                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph-fill ph-star text-lg"></i> تقييم ورأي العميل</p>
-                           {txnDetailsModal.clientRating > 0 && <div className="flex gap-1 mb-2 text-yellow-500 text-xl" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < txnDetailsModal.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</div>}
-                           {txnDetailsModal.clientFeedback && <p className="text-slate-300 text-sm leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800">"{txnDetailsModal.clientFeedback}"</p>}
-                        </div>
-                    )}
-
-                    {txnDetailsModal.pendingReceipt && (
-                        <div className="bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/30 mt-4 cursor-pointer hover:bg-indigo-900/40 transition-colors shadow-sm" onClick={() => setReceiptImageModal(txnDetailsModal.pendingReceipt)}>
-                           <p className="text-indigo-300 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-image text-lg"></i> صورة التحويل الإلكتروني المرفقة للمراجعة</p>
-                           <img src={txnDetailsModal.pendingReceipt} alt="Receipt" className="w-full max-h-64 object-contain rounded-lg border border-indigo-500/50" />
-                        </div>
-                    )}
-
-                    {txnDetailsModal.confirmedReceipts?.length > 0 && (
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                           <p className="text-slate-500 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph ph-check-circle text-green-500 text-lg"></i> صور التحويلات المؤكدة</p>
-                           <div className="flex flex-wrap gap-3">
-                               {txnDetailsModal.confirmedReceipts.map((imgUrl, idx) => <img key={idx} src={imgUrl} alt="Confirmed Receipt" className="w-24 h-24 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" onClick={() => setReceiptImageModal(imgUrl)} />)}
-                           </div>
-                        </div>
-                    )}
-
-                    {customerHistory.length > 0 && (
-                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 mt-4 shadow-inner">
-                           <p className="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2"><i className="ph-fill ph-clock-counter-clockwise text-lg"></i> سجل زيارات العميل السابقة ({customerHistory.length})</p>
-                           <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                               {customerHistory.map(hist => (
-                                   <div key={hist.id} className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-between items-center text-xs cursor-pointer hover:border-blue-500/50 hover:bg-slate-900 transition-all" onClick={() => setTxnDetailsModal(hist)} title="اضغط لفتح تفاصيل الإيصال">
-                                       <div><span className={`font-bold ml-2 ${hist.type === 'wedding' ? 'text-pink-400' : 'text-blue-400'}`}>{hist.type === 'wedding' ? 'حجز زفاف' : 'جلسة تصوير'}</span><span className="text-slate-500 font-mono">{formatDateOnly(hist.dateTime)}</span></div>
-                                       <div className="text-left font-bold text-slate-300 flex items-center gap-2"><span>{hist.total} ج.م</span><i className="ph ph-caret-left text-slate-500"></i></div>
-                                   </div>
-                               ))}
-                           </div>
-                        </div>
-                    )}
-                    <div className="text-xs text-slate-500 text-center mt-4">تاريخ التسجيل: {formatDate(txnDetailsModal.dateTime)}</div>
-                  </div>
                 </div>
-              </div>
             );
         };
 
-        const TransactionCard = ({ txn, onDelete, onEdit, onPayRemaining, onViewReceipt, sendInvoice, updateStatus, onViewDetails, settings, allRecords }) => {
+        const TransactionCard = ({ txn, onDelete, onEdit, onPayRemaining, onViewReceipt, sendInvoice, updateStatus, onViewHistory, settings, allRecords, db }) => {
             const [showWaMenu, setShowWaMenu] = useState(false);
+            const [showDetails, setShowDetails] = useState(false);
             const [confirmDelete, setConfirmDelete] = useState(false);
             const [actionError, setActionError] = useState('');
+            const [showPhotosLinkInput, setShowPhotosLinkInput] = useState(false);
+            const [photosLinkDraft, setPhotosLinkDraft] = useState(txn.photosLink || '');
             
             const currentStatus = txn.status || 0;
             const cashPaid = (txn.paid || 0) - (txn.electronicPaid || 0);
             const isWedding = txn.type === 'wedding';
             const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
             
+            const printName = txn.photoName || (txn.writeNameOnPhoto ? txn.clientName : '');
             const statusesToUse = getTransactionStatuses(txn);
             const visitCount = allRecords ? allRecords.filter(t => t.phone === txn.phone).length : 1;
             const isRepeat = visitCount > 1;
@@ -2058,8 +1926,11 @@
             const isPastPayment = !isCreatedToday && hasPaymentToday;
 
             const hasPhotoNeedingName = txn.writeNameOnPhoto || (Array.isArray(txn.photoNo) && txn.photoNo.some(p => typeof p === 'object' && p.needsName));
+            const clientEditFields = [['name','الاسم'],['nationalId','الرقم القومي'],['branch','الشعبة']].filter(([key]) => txn.clientFieldChanges?.[key]);
+            const latestClientEdit = clientEditFields.map(([key]) => txn.clientFieldChanges[key]).sort((a,b) => new Date(b.at) - new Date(a.at))[0];
             
-            const hasPhotos = txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true);
+            const rewards = getCustomerRewards(txn.phone, allRecords, settings);
+            const cardPhotoItems = Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map(p => typeof p === 'object' ? p : { number: p, note: '' }) : (txn.photoNo ? [{ number: txn.photoNo, note: '' }] : []);
 
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
@@ -2067,7 +1938,29 @@
             };
 
             return (
-              <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-6 justify-between hover:border-slate-700 transition-all cursor-pointer group" onClick={() => onViewDetails && onViewDetails(txn)} title="اضغط لعرض التفاصيل">
+              <>
+                <div onClick={() => setShowDetails(true)} className="bg-slate-900 px-3 py-3 sm:px-4 rounded-2xl shadow-sm border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80 transition-all cursor-pointer group">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isWedding ? 'bg-pink-500/15 text-pink-300 border border-pink-500/30' : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-user'} text-xl`}></i></div>
+                      <div className="min-w-0 flex-1"><div className="flex items-center gap-2 min-w-0"><h3 className="text-sm sm:text-base font-black text-white truncate">{displayName || 'عميل بدون اسم'}</h3>{isRepeat && <span className="shrink-0 text-[9px] text-yellow-300 bg-yellow-950/40 border border-yellow-500/20 px-1.5 py-0.5 rounded">مميز</span>}</div><div className="flex flex-wrap items-center gap-1.5 mt-1 text-[10px] text-slate-400"><span className="font-mono bg-slate-950 px-1.5 py-1 rounded border border-slate-800">إيصال #{txn.receiptNo || '—'}</span>{cardPhotoItems.slice(0,3).map((photo,idx)=><span key={idx} className="font-mono bg-slate-950 px-1.5 py-1 rounded border border-slate-800">صورة {photo.number}</span>)}{cardPhotoItems.length > 3 && <span className="text-slate-500">+{cardPhotoItems.length-3}</span>}</div></div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0" onClick={e => e.stopPropagation()}>
+                      {!isWedding && txn.pickupDate && <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 px-2 py-1.5 rounded-lg"><i className="ph-fill ph-calendar-check"></i>{(() => { const d=getDiffDays(txn.pickupDate); return d===0?'اليوم':d>0?`بعد ${d} يوم`:`متأخر ${Math.abs(d)}`; })()}</span>}
+                      <span className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border ${currentStatus === statusesToUse[statusesToUse.length-1].id ? 'text-emerald-300 bg-emerald-950/30 border-emerald-500/20' : 'text-blue-300 bg-blue-950/30 border-blue-500/20'}`}>{statusesToUse.find(x => x.id === currentStatus)?.label || 'قيد التنفيذ'}</span>
+                      {txn.viewedByClient ? <span className="text-blue-300 bg-blue-950/30 border border-blue-500/20 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph-fill ph-eye"></i> تمت المشاهدة</span> : <span className="text-slate-500 bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title="لم يفتح العميل الرابط بعد"><i className="ph ph-eye-slash"></i> لم يُشاهد</span>}
+                      <button onClick={(e) => { e.stopPropagation(); sendInvoice(); }} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><i className="ph ph-receipt"></i><span>إرسال الفاتورة</span></button>
+                      <div className="relative"><button onClick={(e) => { e.stopPropagation(); setShowWaMenu(v => !v); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><i className="ph ph-whatsapp-logo"></i><span>واتساب</span></button>{showWaMenu && <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-40 p-1 flex flex-col overflow-hidden animate-fadeIn"><button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-blue-300 hover:bg-slate-800 font-bold border-b border-slate-800">رابط التتبع للعميل</button>{txn.photosLink && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, `أهلاً ${displayName} 👋
+صورك جاهزة للتحميل بجودة عالية! يمكنك تحميلها وحفظها من هذا الرابط:
+${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-green-400 hover:bg-slate-800 font-bold border-b border-slate-800">إرسال رابط الصور</button>}<button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('ready', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800">إشعار جاهزية الطلب</button><button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800">تذكير بالمتبقي</button></div>}</div>
+                      <button onClick={(e) => { e.stopPropagation(); setShowDetails(true); }} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700" title="عرض التفاصيل"><i className="ph ph-caret-left"></i></button>
+                    </div>
+                  </div>
+                </div>
+                {showDetails && <div className="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-5 animate-fadeIn" onClick={() => setShowDetails(false)}>
+                  <div className="w-full max-w-6xl max-h-[96vh] overflow-y-auto custom-scrollbar rounded-2xl sm:rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <div className="relative"><button onClick={() => setShowDetails(false)} className="absolute top-3 left-3 z-30 w-10 h-10 rounded-full bg-slate-950/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-red-900/70 flex items-center justify-center shadow-xl" title="إغلاق التفاصيل"><i className="ph ph-x text-xl"></i></button>
+              <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 sm:gap-6 justify-between hover:border-slate-700 transition-all group">
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-3">
                       <div className="flex justify-between items-start">
@@ -2081,57 +1974,46 @@
                            {txn.selectedPromos?.length > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-gift text-sm"></i> محدد له عرض</span>}
                            {isRepeat && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})</span>}
                            {txn.clientRating > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5</span>}
-                           {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}
+                           {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}{!isWedding && txn.pickupDate && (() => { const days=getDiffDays(txn.pickupDate); const label=days===0?'الاستلام اليوم':days>0?`الاستلام بعد ${days} يوم${days===1?'':'اً'}`:`موعد الاستلام متأخر ${Math.abs(days)} يوم`; return <span className="text-white flex items-center gap-1 text-[10px] sm:text-xs font-black bg-emerald-700 px-2 py-1 rounded border border-emerald-400/50" title={`موعد الاستلام: ${formatDateOnly(txn.pickupDate)}`}><i className="ph-fill ph-calendar-check"></i> {label}</span>; })()}
                            {isPastPayment && <span className="text-purple-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-purple-950/30 px-2 py-1 rounded border border-purple-900/50"><i className="ph-fill ph-clock-counter-clockwise text-sm"></i> سداد من يوم سابق</span>}
-                           <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>
+                           {isWedding && <><span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>{cardPhotoItems.map((photo,idx)=><button key={idx} onClick={(e)=>{e.stopPropagation();copyToClipboard(photo.number,e)}} className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono" title="اضغط لنسخ رقم الصورة">صورة {photo.number}</button>)}</>}
                         </div>
                       </div>
 
-                      {hasPhotos && (
-                          <div className="flex flex-wrap gap-2 mt-2 bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50">
-                              {hasPhotoNeedingName && <span className="text-red-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-red-950/30 px-2 py-1 rounded border border-red-900/50 animate-pulse ml-2"><i className="ph-fill ph-warning-circle text-sm"></i> تنبيه: كتابة اسم</span>}
-                              
-                              <span className="text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-images text-blue-500"></i> أرقام الصور:</span>
-                              
-                              {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, idx) => (
-                                  <div key={idx} 
-                                       onClick={(e) => { e.stopPropagation(); if(p.note) copyToClipboard(p.note, e); else copyToClipboard(p.number, e); }}
-                                       className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-transform hover:scale-105 shadow-sm border ${p.needsName ? 'bg-red-950/40 text-red-300 border-red-900/50' : 'bg-slate-800 text-blue-300 border-slate-700 hover:border-slate-500'}`}
-                                       title={`اضغط لنسخ ${p.note ? 'الاسم' : 'الرقم'}`}
-                                  >
-                                      <span className="font-mono bg-black/30 px-1.5 rounded text-white">{p.number}</span>
-                                      {p.note && <span className="text-yellow-400 max-w-[80px] truncate">{p.note}</span>}
-                                  </div>
-                              )) : (
-                                  <span className="text-blue-400 font-bold text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 cursor-pointer hover:bg-slate-700" onClick={(e) => copyToClipboard(txn.photoNo, e)}>{txn.photoNo}</span>
-                              )}
+                      {!isWedding && <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800/70">
+                        <div className="bg-emerald-950/40 border border-emerald-500/25 px-3 py-2 rounded-lg min-w-0"><p className="text-emerald-300 text-[10px] font-bold mb-1"><i className="ph-fill ph-calendar-check ml-1"></i>موعد الاستلام</p><p className="text-white text-xs font-black">{txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'غير محدد'}</p></div>
+                        <div className="bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg min-w-0"><p className="text-slate-400 text-[10px] font-bold mb-1"><i className="ph ph-receipt ml-1"></i>رقم الإيصال</p><button onClick={(e)=>{e.stopPropagation();copyToClipboard(String(txn.receiptNo || ''),e)}} className="text-white text-xs font-black font-mono" title="اضغط لنسخ رقم الإيصال">#{txn.receiptNo}</button></div>
+                        <div className="bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg min-w-0"><p className="text-blue-200 text-[10px] font-bold mb-1"><i className="ph-fill ph-images ml-1"></i>أرقام الصور</p>{cardPhotoItems.length ? <div className="flex flex-col gap-1.5">{cardPhotoItems.map((photo,idx)=><div key={idx} className="flex items-center justify-between gap-2"><button onClick={(e)=>{e.stopPropagation();copyToClipboard(photo.number,e)}} className="bg-slate-950 text-white text-[10px] px-2 py-1 rounded border border-blue-500/30 font-mono" title="اضغط لنسخ رقم الصورة">{photo.number}{photo.important ? ' · مهم' : ''}</button><span className="text-[9px] text-slate-400 truncate">{photo.serviceType || photo.service || 'خدمة تصوير'}</span></div>)}</div> : <span className="text-slate-500 text-xs">—</span>}</div>
+                      </div>}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-sm">
+                        {!isWedding && (txn.writeNameOnPhoto || txn.photoName || txn.nationalId) && <div className="bg-gradient-to-br from-indigo-950/50 to-slate-950 border border-indigo-500/25 p-3 rounded-xl min-w-0">
+                          <p className="text-indigo-200 text-xs font-black mb-2"><i className="ph-fill ph-identification-card ml-1"></i>البيانات المنفصلة للطباعة</p>
+                          {printName && <button onClick={(e)=>{e.stopPropagation();copyToClipboard(printName,e)}} className="block max-w-full text-right bg-slate-900/90 px-2.5 py-1.5 mb-2 rounded-lg text-white text-xs font-bold break-words">الاسم على الصورة: {printName} <i className="ph ph-copy"></i></button>}
+                          {txn.nationalId && <button onClick={(e)=>{e.stopPropagation();copyToClipboard(txn.nationalId,e)}} className="block max-w-full text-right bg-red-950/70 border border-red-500/20 px-2.5 py-1.5 rounded-lg text-red-100 text-xs font-black break-all">الرقم القومي: {txn.nationalId} <i className="ph ph-copy"></i></button>}
+                          {txn.branch && <button onClick={(e)=>{e.stopPropagation();copyToClipboard(txn.branch,e)}} className="block max-w-full text-right mt-3 bg-purple-950/70 border border-purple-500/20 px-2.5 py-1.5 rounded-lg text-purple-100 text-xs font-bold break-words">الشعبة / المسار: {txn.branch} <i className="ph ph-copy"></i></button>}
+                          {hasPhotoNeedingName && <span className="inline-block text-amber-300 text-[10px] font-bold mt-2"><i className="ph-fill ph-warning-circle ml-1"></i>مراجعة كتابة الاسم</span>}
+                        </div>}
+                        <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl min-w-0">
+                          <p className="text-slate-300 text-xs font-black mb-2"><i className="ph ph-calendar-blank ml-1 text-blue-400"></i>بيانات إنشاء الإيصال</p>
+                          <div className="space-y-2 text-xs">
+                            {txn.phone && <p className="text-slate-300 break-all">الهاتف: <b className="font-mono">{txn.phone}</b></p>}
+                            <p className="text-slate-400">التاريخ: <b className="text-slate-200">{formatDateOnly(txn.dateTime)}</b></p>
+                            <p className="text-slate-400">الوقت: <b className="text-slate-200">{formatTimeOnly(txn.dateTime)}</b></p>
+                            {isWedding && txn.weddingDate && <p className="text-pink-300">موعد الزفاف: <b>{formatDateOnly(txn.weddingDate)}</b></p>}
                           </div>
-                      )}
-
-                      <div className="text-sm text-slate-400 flex flex-wrap gap-x-4">
-                        {txn.phone && <span>📞 {txn.phone}</span>}
-                        <span>⏱️ {formatDate(txn.dateTime)}</span>
-                        {isWedding && txn.weddingDate && <span className="text-pink-400">💍 {formatDateOnly(txn.weddingDate)}</span>}
-                      </div>
-                      
-                      <div className="flex flex-col gap-3 pt-2 text-sm">
-                        <div className="flex flex-wrap gap-2 items-center bg-slate-950 p-3 rounded-xl border border-slate-800/50 mt-1">
-                          <span className="text-slate-300">الإجمالي: <b className="text-white">{txn.total}</b></span>
-                          <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>
-                          <span className="text-green-400">المدفوع: <b className="text-green-300">{txn.paid}</b></span>
-                          {(cashPaid > 0 || txn.electronicPaid > 0) && <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>}
-                          {cashPaid > 0 && <span className="text-emerald-400 text-xs bg-emerald-950/30 px-2 py-1 rounded border border-emerald-900/50 flex items-center gap-1"><i className="ph ph-money text-base"></i> نقدي: {cashPaid}</span>}
-                          {txn.electronicPaid > 0 && <span className="text-indigo-400 text-xs bg-indigo-950/30 px-2 py-1 rounded border border-indigo-900/50 flex items-center gap-1"><i className="ph ph-wallet text-base"></i> إلكتروني: {txn.electronicPaid}</span>}
-                          <div className="hidden sm:block w-px h-4 bg-slate-700 mx-1"></div>
-                          
-                          <div className="flex items-center gap-2">
-                              <span className={txn.remaining > 0 ? "text-red-400" : "text-green-400"}>الباقي: <b>{txn.remaining}</b></span>
-                              {txn.remaining > 0 && (
-                                 <button onClick={(e) => { e.stopPropagation(); onPayRemaining(txn); }} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30 text-[10px] px-2 py-0.5 rounded transition-colors flex items-center gap-1 shadow-sm">
-                                    <i className="ph-bold ph-plus"></i> سداد
-                                 </button>
-                              )}
+                          {clientEditFields.length > 0 && <div className="mt-3 pt-3 border-t border-slate-800/80">
+                            <div className="flex items-center gap-2 mb-2"><i className="ph-fill ph-user-gear text-amber-300"></i><p className="text-amber-200 text-[10px] font-black">سجل تعديل العميل</p></div>
+                            <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-950/20 px-2.5 py-2 text-[10px] text-amber-100"><span className="truncate">{clientEditFields.map(([,label]) => label).join('، ')}</span><span className="mr-auto shrink-0 text-amber-300/80">{formatDate(latestClientEdit.at)}</span></div>
+                          </div>}
+                        </div>
+                        <div className="bg-blue-950/30 border border-blue-500/30 p-3 rounded-xl min-w-0 flex flex-col justify-between">
+                          <div><p className="text-blue-200 text-xs font-black mb-2"><i className="ph-fill ph-currency-circle-dollar ml-1"></i>ملخص المبلغ</p><p className="text-white text-2xl font-black">{txn.total}<span className="text-xs text-slate-400 mr-1">ج.م الإجمالي</span></p></div>
+                          <div className="grid grid-cols-2 gap-2 mt-3 text-[10px]">
+                            <div className="bg-slate-950/70 p-2 rounded-lg"><span className="text-green-300">المدفوع</span><p className="text-white font-bold">{txn.paid} ج.م</p></div>
+                            <div className="bg-slate-950/70 p-2 rounded-lg"><span className={txn.remaining > 0 ? 'text-red-300' : 'text-emerald-300'}>الباقي</span><p className="text-white font-bold">{txn.remaining} ج.م</p></div>
                           </div>
+                          {(cashPaid > 0 || txn.electronicPaid > 0) && <div className="flex flex-wrap gap-1.5 mt-2">{cashPaid > 0 && <span className="text-emerald-300 text-[10px] bg-emerald-950/40 px-2 py-1 rounded">نقدي: {cashPaid}</span>}{txn.electronicPaid > 0 && <span className="text-indigo-300 text-[10px] bg-indigo-950/40 px-2 py-1 rounded">إلكتروني: {txn.electronicPaid}</span>}</div>}
+                          {txn.remaining > 0 && <button onClick={(e) => { e.stopPropagation(); onPayRemaining(txn); }} className="mt-2 bg-red-500/20 text-red-300 hover:bg-red-500 hover:text-white border border-red-500/30 text-[10px] px-2 py-1 rounded-lg transition-colors flex items-center justify-center gap-1"><i className="ph-bold ph-plus"></i> سداد</button>}
                         </div>
                       </div>
 
@@ -2170,7 +2052,7 @@
                     {showWaMenu && (
                       <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-10 p-1 flex flex-col overflow-hidden animate-fadeIn">
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding, allRecords)); setShowWaMenu(false);}} className="text-right px-3 py-2.5 text-sm text-blue-300 hover:bg-slate-700 font-bold border-b border-slate-700">📍 رابط التتبع للعميل</button>
-                        {txn.photosLink && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, `أهلاً ${displayName} 👋\nصورك جاهزة للتحميل بجودة عالية! يمكنك تحميلها وحفظها من هذا الرابط:\n${window.location.href.split('?')[0]}?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-green-400 hover:bg-slate-700 font-bold border-b border-slate-700 flex items-center gap-2"><i className="ph ph-download-simple"></i> إرسال رابط الصور</button>}
+                        {txn.photosLink && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, `أهلاً ${displayName} 👋\nصورك جاهزة للتحميل بجودة عالية! يمكنك تحميلها وحفظها من هذا الرابط:\n${txn.photosLink}`); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-green-400 hover:bg-slate-700 font-bold border-b border-slate-700 flex items-center gap-2"><i className="ph ph-download-simple"></i> إرسال رابط الصور</button>}
                         {isRepeat && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('vipDiscount', txn, settings, isWedding, allRecords)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-pink-400 hover:bg-slate-700 font-bold">🎁 إرسال هدية خصم (VIP)</button>}
                         {isRepeat ? <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcomeBack', txn, settings, isWedding, allRecords)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700 font-bold">🌟 ترحيب بالعودة</button> : <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('welcome', txn, settings, isWedding, allRecords)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">👋 رسالة ترحيب</button>}
                         <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('ready', txn, settings, isWedding, allRecords)); setShowWaMenu(false);}} className="text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">🎉 الشغل خلص</button>
@@ -2180,6 +2062,14 @@
                   </div>
 
                   {onEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(txn); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-2"><i className="ph ph-pencil-simple text-xl"></i> تعديل البيانات</button>}
+
+                  <div className="mt-3 grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
+                        <div className="rounded-xl border border-yellow-500/25 bg-yellow-950/20 px-3 py-2 min-w-0"><p className="text-yellow-300 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-gift"></i> رصيد المكافآت المتاح</p><p className="text-white font-black text-sm mt-1">{rewards.balance} ج.م</p></div>
+                        <button onClick={() => onViewHistory && onViewHistory(txn.phone)} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-right hover:border-yellow-500/50 transition-colors min-w-0"><span className="text-slate-400 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-clock-counter-clockwise text-yellow-400"></i> سجل الزيارات</span><span className="text-white font-black text-sm mt-1 block">{visitCount} زيارة</span></button>
+                        <button onClick={async () => { const nextEnabled = txn.linkProtectionEnabled === false; const targetCol = isWedding ? 'weddings' : 'transactions'; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; const update = nextEnabled ? { linkProtectionEnabled: true } : { linkProtectionEnabled: false, boundDeviceId: null }; await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), update, { merge: true }); }} className={`rounded-xl border px-3 py-2 text-right transition-colors min-w-0 ${txn.linkProtectionEnabled === false ? 'border-slate-700 bg-slate-950 hover:border-orange-500/50' : 'border-orange-500/30 bg-orange-950/20 hover:bg-orange-900/30'}`}><span className={`text-[10px] font-bold flex items-center gap-1 ${txn.linkProtectionEnabled === false ? 'text-slate-400' : 'text-orange-300'}`}><i className={`ph-fill ${txn.linkProtectionEnabled === false ? 'ph-lock-key-open' : 'ph-lock-key'}`}></i> حماية الرابط</span><span className="text-white font-black text-sm mt-1 block">{txn.linkProtectionEnabled === false ? 'غير مفعّلة' : (txn.boundDeviceId ? 'مفعّلة' : 'تُفعّل عند أول فتح')}</span></button>
+                        <div className="relative min-w-0"><button onClick={() => setShowPhotosLinkInput(v => !v)} className="w-full h-full rounded-xl border border-blue-500/30 bg-blue-950/20 px-3 py-2 text-right hover:bg-blue-900/30 transition-colors"><span className="text-blue-300 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-google-drive-logo"></i> إرسال رابط الصور</span><span className="text-white font-black text-sm mt-1 block truncate">{txn.photosLink ? 'تعديل الرابط' : 'إضافة رابط'}</span></button>{showPhotosLinkInput && <div className="absolute z-20 top-full left-0 right-0 mt-2 rounded-xl border border-blue-500/40 bg-slate-900 p-2 shadow-2xl"><input type="url" value={photosLinkDraft} onChange={e => setPhotosLinkDraft(e.target.value)} placeholder="الصق رابط الصور..." className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white outline-none focus:border-blue-500" /><div className="flex gap-2 mt-2"><button onClick={async () => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; const targetCol = isWedding ? 'weddings' : 'transactions'; await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { photosLink: photosLinkDraft.trim() }, { merge: true }); setShowPhotosLinkInput(false); }} className="flex-1 rounded-lg bg-blue-600 py-2 text-[11px] font-bold text-white">حفظ</button><button onClick={() => setShowPhotosLinkInput(false)} className="rounded-lg bg-slate-800 px-3 py-2 text-[11px] font-bold text-slate-300">إلغاء</button></div></div>}</div>
+                      </div>
+
                   
                   {confirmDelete ? (
                       <div className="flex flex-col gap-2 mt-auto pt-2">
@@ -2192,7 +2082,12 @@
                   ) : <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-auto"><i className="ph ph-trash text-xl"></i> حذف الإيصال</button>}
                 </div>
               </div>
-            );
+
+                    </div>
+                  </div>
+                </div>}
+              </>
+            )
         };
 
         const TopCustomers = ({ allRecords, onCustomerClick }) => {
@@ -2347,9 +2242,9 @@
 
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
-            const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [txnDetailsModal, setTxnDetailsModal] = useState(null);
+            const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
 
@@ -2363,7 +2258,7 @@
             };
 
             const handleEdit = (txn) => {
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', phone: txn.phone || '', photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]), writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0) });
+                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', phone: txn.phone || '', photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]), writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0) });
                 setIsEditing(true); setShowAddModal(true);
             };
 
@@ -2384,7 +2279,7 @@
               if (!isEditing && allRecords) { let isDuplicate = true; while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) { finalReceiptNo++; } else { isDuplicate = false; } } }
               
               const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, phone: formData.phone, photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== ''), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
+              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', phone: formData.phone, photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== '').map(p => ({...p, number: p.number.trim(), important: Boolean(p.important)})), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
@@ -2396,7 +2291,7 @@
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
               setCustomerRewards({ earned: 0, used: 0, balance: 0 });
               setIsEditing(false); setShowAddModal(false);
             };
@@ -2456,7 +2351,7 @@
               <div className="space-y-6">
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
+                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
                   {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>الديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
                   <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث بالاسم، هاتف، إيصال، رقم الصورة..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
                   <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
@@ -2465,7 +2360,7 @@
                   </div>
                 </div>
 
-                {!isFiltering && <TopCustomers allRecords={allRecords} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setTxnDetailsModal(custTxns[0]); }} />}
+                {!isFiltering && <TopCustomers allRecords={allRecords} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setHistoryPhone(phone); }} />}
                 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
@@ -2476,7 +2371,7 @@
                     </div>
                   </h2>
                   <div className="space-y-4">
-                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, false, allRecords))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
+                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, false, allRecords))} updateStatus={updateTxnStatus} onViewHistory={(phone) => setHistoryPhone(phone)} db={db} settings={settings} allRecords={allRecords} />)}
                   </div>
                 </div>
 
@@ -2488,7 +2383,7 @@
                             <div className="relative mb-6 shrink-0 group"><div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"><i className="ph ph-magnifying-glass text-slate-400 group-focus-within:text-red-400 text-xl transition-colors"></i></div><input type="text" placeholder="ابحث باسم العميل، رقم الهاتف..." className="w-full p-4 pr-12 border-2 border-slate-800 bg-slate-950/50 text-white placeholder-slate-500 rounded-2xl focus:border-red-500/50 focus:bg-slate-900 outline-none text-sm transition-all shadow-inner" value={debtSearch} onChange={(e) => setDebtSearch(e.target.value)} /></div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                                 {filteredDebts.length === 0 ? <p className="text-center text-slate-500 py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد ديون مطابقة للبحث.</p> : filteredDebts.map(txn => (
-                                    <div key={txn.id} onClick={() => setTxnDetailsModal(txn)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
+                                    <div key={txn.id} onClick={() => setHistoryPhone(txn.phone)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
                                         <div>
                                             <span className={`font-bold text-sm ${txn.type === 'wedding' ? 'text-pink-300' : 'text-slate-200'}`}>{txn.type === 'wedding' ? (txn.groomName + ' و ' + txn.brideName) : txn.clientName}</span>
                                             <div className="text-xs text-slate-500 mt-1 font-mono flex items-center gap-2"><span>📞 {txn.phone}</span><span>|</span><span>#{txn.receiptNo}</span></div>
@@ -2509,7 +2404,7 @@
                 )}
 
                 {showAddModal && (
-                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[130] p-4">
                     <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto">
                       <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل العملية' : 'إضافة عملية جديدة'}</h2>
@@ -2517,32 +2412,33 @@
                         <div className="bg-blue-900/30 p-3 rounded-xl flex justify-between items-center text-sm font-bold text-blue-300 border border-blue-800/50"><span>رقم الإيصال:</span><span className="text-lg">#{isEditing ? formData.receiptNo : settings.nextReceiptNo}</span></div>
                         {loyaltyAlert && <div className="bg-yellow-950/40 border border-yellow-500/50 text-yellow-400 p-3 rounded-xl text-sm font-bold shadow-inner">{loyaltyAlert}</div>}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                            <input type="text" placeholder="اسم العميل" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
-                            <input type="tel" placeholder="رقم الهاتف" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} />
+                            <div><label className="block text-[11px] text-slate-500 mb-1">الاسم الأساسي للإيصال (يُسجّل من الاستوديو)</label><input type="text" placeholder="اسم العميل" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} /></div>
+                            <div><label className="block text-[11px] text-slate-500 mb-1">رقم الهاتف</label><input type="tel" placeholder="رقم الهاتف" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} /></div>
                         </div>
+                        <div className="bg-gradient-to-l from-purple-950/60 to-slate-950 p-4 rounded-xl border border-purple-500/40 mb-4"><label className="flex items-center gap-3 font-bold text-purple-200 cursor-pointer"><input type="checkbox" checked={formData.writeNameOnPhoto || false} onChange={e=>setFormData({...formData,writeNameOnPhoto:e.target.checked})} className="w-5 h-5 accent-purple-500"/> أرغب في كتابة اسمي على الصورة</label>{formData.writeNameOnPhoto && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3"><input value={formData.photoName || ''} onChange={e=>setFormData({...formData,photoName:e.target.value})} placeholder="الاسم المطلوب كتابته على الصورة" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/><input value={formData.nationalId || ''} onChange={e=>setFormData({...formData,nationalId:e.target.value.replace(/\D/g,'').slice(0,14)})} maxLength="14" placeholder="الرقم القومي الظاهر بجوار الاسم" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/><input value={formData.branch || ''} onChange={e=>setFormData({...formData,branch:e.target.value})} placeholder="الشعبة / المسار" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/></div>}</div>
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
                             <label className="text-sm font-bold text-slate-400 mb-3 block"><i className="ph ph-images text-blue-400 text-lg align-middle"></i> أرقام الصور والتفاصيل (اختياري):</label>
                             <div className="flex flex-col gap-3 w-full">
                                 {formData.photoNo.map((pObj, idx) => (
-                                <div key={idx} className={`flex flex-col sm:flex-row items-stretch sm:items-center bg-slate-900 border rounded-xl overflow-hidden transition-colors shadow-inner w-full ${pObj.needsName ? 'border-red-500/50 focus-within:border-red-400' : 'border-slate-700 focus-within:border-blue-500'}`}>
+                                <div key={idx} className={`flex flex-col sm:flex-row items-stretch sm:items-center bg-slate-900 border rounded-xl overflow-hidden transition-colors shadow-inner w-full ${pObj.important ? 'border-amber-500/60 focus-within:border-amber-400' : (pObj.needsName ? 'border-red-500/50 focus-within:border-red-400' : 'border-slate-700 focus-within:border-blue-500')}`}>
                                     <div className="flex items-center w-full sm:w-auto">
-                                        <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400'}`}>صورة {idx + 1}</span>
+                                        <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.important ? 'bg-amber-950/50 text-amber-300' : (pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400')}`}>صورة {idx + 1}</span>
                                         <input type="text" placeholder="رقم..." className="w-full sm:w-20 p-2.5 bg-slate-950 text-white text-center outline-none text-sm font-bold border-b sm:border-b-0 sm:border-l border-slate-700" value={pObj.number} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].number = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
                                     </div>
                                     <div className="flex flex-1 items-center">
-                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
-                                        <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].needsName = !newArr[idx].needsName; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}><i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i><span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span></button>
+                                        <input type="text" placeholder="ملاحظات للصورة (اختياري)..." className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; newArr[idx].important = Boolean(e.target.value.trim()); setFormData({...formData, photoNo: newArr}); }} />
+                                        <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].important = !newArr[idx].important; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.important ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`} title="تحديد ملاحظة الصورة كمهمة"><i className={`${pObj.important ? 'ph-fill' : 'ph'} ph-star text-sm`}></i><span className="text-[10px] font-bold">{pObj.important ? 'مهم' : 'تحديد مهم'}</span></button>
                                         {formData.photoNo.length > 1 && <button type="button" onClick={() => { const newArr = formData.photoNo.filter((_, i) => i !== idx); setFormData({...formData, photoNo: newArr}); }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0"><i className="ph ph-x font-bold text-sm"></i></button>}
                                     </div>
                                 </div>
                                 ))}
-                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false}]})} className="self-start bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1"><i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى</button>
+                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false, important: false}]})} className="self-start bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1"><i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى</button>
                             </div>
                         </div>
 
                         <PromoSelector settings={settings} selectedPromos={formData.selectedPromos} onChange={(selected) => setFormData({...formData, selectedPromos: selected})} />
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
                           {settings.services.map((srv, idx) => { const srvObj = typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv; return <QuickServiceCard key={`srv-${idx}`} srvObj={srvObj} onAdd={handleAddService} colorTheme="blue" />; })}
                         </div>
 
@@ -2551,18 +2447,18 @@
                           {settings.products && settings.products.map((prod, idx) => { const prodObj = typeof prod === 'string' ? {name: prod, price: 0, desc: ''} : prod; return <QuickServiceCard key={`prod-${idx}`} srvObj={prodObj} onAdd={handleAddService} colorTheme="purple" />; })}
                         </div>
 
-                        <textarea placeholder="المطلوب بالتفصيل..." rows="2" className="w-full p-3 mt-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} />
-                        
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                            <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+                            <div><label className="block text-xs font-bold text-slate-400 mb-1">موعد الاستلام المتوقع</label><input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupDate:e.target.value})} className="w-full h-[46px] p-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500" /></div>
+                            <div><label className="block text-xs font-bold text-slate-400 mb-1">المطلوب بالتفصيل</label><textarea placeholder="اكتب تفاصيل ومتطلبات العملية..." rows="3" className="w-full h-[46px] md:h-full min-h-[46px] p-3 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm custom-scrollbar resize-y" value={formData.requirements} onChange={e => setFormData({...formData, requirements: e.target.value})} /></div>
+                            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-center gap-2">
                                 <div>
                                     <h4 className="text-sm font-bold text-yellow-400 flex items-center gap-1"><i className="ph-fill ph-gift text-lg"></i> رصيد المكافآت للعميل</h4>
                                     <p className="text-xs text-slate-500">رصيد متاح: {customerRewards.balance} ج.م</p>
                                 </div>
                                 {!isEditing && customerRewards.balance > 0 && (
-                                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg hover:border-yellow-500 transition-colors">
-                                        <input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500" />
-                                        <span className="text-sm font-bold text-slate-300">استخدام الرصيد كخصم</span>
+                                    <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg hover:border-yellow-500 transition-colors w-fit max-w-full">
+                                        <input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500 shrink-0" />
+                                        <span className="text-xs font-bold text-slate-300">استخدام الرصيد كخصم</span>
                                     </label>
                                 )}
                             </div>
@@ -2584,7 +2480,7 @@
                 )}
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} settings={settings} />
+                <VisitHistoryModal phone={historyPhone} allRecords={allRecords} onClose={() => setHistoryPhone(null)} />
             </div>
             );
         };
@@ -2592,7 +2488,7 @@
         const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
-            const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [txnDetailsModal, setTxnDetailsModal] = useState(null);
+            const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             const [loyaltyAlert, setLoyaltyAlert] = useState('');
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
             const [formData, setFormData] = useState({ groomName: '', brideName: '', phone: '', groomAddress: '', weddingDate: '', location: '', makeupArtist: '', leaveTime: '', sessionType: '', casualShootDate: '', packages: [], addons: [], selectedPromos: [], photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, total: '', paid: '', paymentMethod: 'cash', photosLink: '', useReward: false, rewardDiscount: 0, bookedBy: 'studio', employeeName: '' });
@@ -2715,7 +2611,7 @@
                   </div>
                 </div>
 
-                {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={setTxnDetailsModal} onDayClick={handleDayClick} />}
+                {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={(txn) => setHistoryPhone(txn.phone)} onDayClick={handleDayClick} />}
                 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
@@ -2726,7 +2622,7 @@
                     </div>
                   </h2>
                   <div className="space-y-4">
-                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true, allRecords))} updateStatus={updateTxnStatus} onViewDetails={setTxnDetailsModal} settings={settings} allRecords={allRecords} />)}
+                    {filteredWeds.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : filteredWeds.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, true, allRecords))} updateStatus={updateTxnStatus} onViewHistory={(phone) => setHistoryPhone(phone)} db={db} settings={settings} allRecords={allRecords} />)}
                   </div>
                 </div>
 
@@ -2738,7 +2634,7 @@
                             <div className="relative mb-6 shrink-0 group"><div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"><i className="ph ph-magnifying-glass text-slate-400 group-focus-within:text-red-400 text-xl transition-colors"></i></div><input type="text" placeholder="ابحث باسم العريس أو العروسة، رقم الهاتف..." className="w-full p-4 pr-12 border-2 border-slate-800 bg-slate-950/50 text-white placeholder-slate-500 rounded-2xl focus:border-red-500/50 focus:bg-slate-900 outline-none text-sm transition-all shadow-inner" value={debtSearch} onChange={(e) => setDebtSearch(e.target.value)} /></div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                                 {filteredDebts.length === 0 ? <p className="text-center text-slate-500 py-6 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا توجد ديون مطابقة للبحث.</p> : filteredDebts.map(txn => (
-                                    <div key={txn.id} onClick={() => setTxnDetailsModal(txn)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
+                                    <div key={txn.id} onClick={() => setHistoryPhone(txn.phone)} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-950 rounded-2xl border border-slate-800 gap-4 hover:border-red-500/30 transition-all shadow-sm mb-3 cursor-pointer">
                                         <div>
                                             <span className="font-bold text-sm text-pink-300">{`${txn.groomName || ''} و ${txn.brideName || ''}`}</span>
                                             <div className="text-xs text-slate-500 mt-1 font-mono flex items-center gap-2"><span>📞 {txn.phone}</span><span>|</span><span>#{txn.receiptNo}</span></div>
@@ -2759,7 +2655,7 @@
                 )}
 
                 {showAddModal && (
-                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[130] p-4">
                     <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-800 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto custom-scrollbar m-auto">
                       <button onClick={() => { setShowAddModal(false); setLoyaltyAlert(''); }} className="absolute top-4 left-4 p-2 text-slate-500 hover:text-red-400"><i className="ph ph-x text-xl"></i></button>
                       <h2 className="text-xl font-black mb-6 text-slate-100 border-b border-slate-800 pb-3">{isEditing ? 'تعديل الحجز' : 'حجز زفاف جديد'}</h2>
@@ -2857,14 +2753,15 @@
                                         <span className={`px-3 py-2.5 font-bold text-xs border-l border-slate-700 whitespace-nowrap ${pObj.needsName ? 'bg-red-950/50 text-red-400' : 'bg-slate-800 text-slate-400'}`}>صورة {idx + 1}</span>
                                         <input type="text" placeholder="رقم..." className="w-full sm:w-20 p-2.5 bg-slate-950 text-white text-center outline-none text-sm font-bold border-b sm:border-b-0 sm:border-l border-slate-700" value={pObj.number} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].number = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
                                     </div>
-                                    <div className="flex flex-1 items-center">
-                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
+                                    <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center min-w-0">
+                                        <select value={pObj.serviceType || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].serviceType = e.target.value; setFormData({...formData, photoNo: newArr}); }} className="w-full sm:w-36 shrink-0 p-2.5 bg-slate-950 text-blue-200 outline-none text-[11px] font-bold border-b sm:border-b-0 sm:border-r border-slate-700"><option value="">نوع الخدمة...</option>{(settings.services || []).map((srv, si) => { const srvName = typeof srv === 'string' ? srv : srv.name; return <option key={si} value={srvName}>{srvName}</option>; })}</select>
+                                        <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 min-w-0 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
                                         <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].needsName = !newArr[idx].needsName; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}><i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i><span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span></button>
                                         {formData.photoNo.length > 1 && <button type="button" onClick={() => { const newArr = formData.photoNo.filter((_, i) => i !== idx); setFormData({...formData, photoNo: newArr}); }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0"><i className="ph ph-x font-bold text-sm"></i></button>}
                                     </div>
                                 </div>
                                 ))}
-                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', needsName: false}]})} className="self-start bg-pink-900/30 hover:bg-pink-800/50 text-pink-400 px-4 py-2 rounded-xl border border-pink-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1"><i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى</button>
+                                <button type="button" onClick={() => setFormData({...formData, photoNo: [...formData.photoNo, {number: '', note: '', serviceType: '', needsName: false}]})} className="self-start bg-pink-900/30 hover:bg-pink-800/50 text-pink-400 px-4 py-2 rounded-xl border border-pink-500/30 transition-colors text-sm font-bold flex items-center gap-2 mt-1"><i className="ph ph-plus-circle text-lg"></i> إضافة صورة أخرى</button>
                             </div>
                         </div>
 
@@ -2901,7 +2798,7 @@
                 )}
                 
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
-                <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} settings={settings} />
+                <VisitHistoryModal phone={historyPhone} allRecords={allRecords} onClose={() => setHistoryPhone(null)} />
             </div>
             );
         };
@@ -3559,6 +3456,10 @@
                                 <label className="block font-bold text-sm text-slate-400 mb-2">تعليمات تظهر للعميل أثناء الحجز (اختياري):</label>
                                 <textarea value={settings.appointmentSettings?.detailsText || ''} onChange={e => setSettings({...settings, appointmentSettings: {...(settings.appointmentSettings || {}), detailsText: e.target.value}})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg focus:border-purple-500 outline-none resize-y" rows="2" placeholder="مثال: يرجى الحضور بملابس مناسبة أو الحضور قبل الموعد بـ 10 دقائق..."></textarea>
                             </div>
+                            <div className="md:col-span-2">
+                                <label className="block font-bold text-sm text-slate-400 mb-2 flex items-center gap-2"><i className="ph-fill ph-clock text-indigo-400"></i> مواعيد عمل الاستوديو (تظهر للعميل):</label>
+                                <input type="text" value={settings.workingHours || ''} onChange={e => setSettings({...settings, workingHours: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg focus:border-indigo-500 outline-none" placeholder="مثال: يومياً من 10 صباحاً حتى 10 مساءً" />
+                            </div>
                         </div>
                     </div>
                     
@@ -3706,9 +3607,12 @@
           const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
           const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
           const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
+          const [showOrderDetails, setShowOrderDetails] = useState(false);
+          const [showConfirmData, setShowConfirmData] = useState(false);
+          const [editingConfirmData, setEditingConfirmData] = useState(false);
           
           const [receiptImageModal, setReceiptImageModal] = useState(null);
-          const [txnDetailsModal, setTxnDetailsModal] = useState(null);
+          const [historyPhone, setHistoryPhone] = useState(null);
           
           // Promotional details state
           const [showPromoDetails, setShowPromoDetails] = useState(false);
@@ -3717,16 +3621,19 @@
           const [activeClientTab, setActiveClientTab] = useState('stages'); // 'stages' or 'archive'
           
           const [showClientPaymentPopup, setShowClientPaymentPopup] = useState(false);
+          const [clientPaymentAmount, setClientPaymentAmount] = useState('');
           const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [appointments, setAppointments] = useState([]);
+          const [appointmentNotice, setAppointmentNotice] = useState(null);
+          const previousAppointmentsRef = useRef([]);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
-            appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
+            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
 
           const [currentUrl, setCurrentUrl] = useState(window.location.search);
@@ -3803,6 +3710,7 @@
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
                     if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5; // Default 5%
                     
+                    if (!data.workingHours) data.workingHours = 'يومياً من 10 صباحاً حتى 10 مساءً';
                     if (!data.appointmentSettings) {
                         data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
                     }
@@ -3838,16 +3746,19 @@
             const unsubAppts = onSnapshot(collection(db, basePath, 'appointments'), (snapshot) => {
               const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
               data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-              
-              // التنبيه الصوتي للمواعيد الجديدة
-              if (appointments.length > 0) {
-                  const hasNew = data.some(newData => 
-                      newData.status === 'pending' && 
-                      !appointments.some(oldData => oldData.id === newData.id)
-                  );
-                  if (hasNew) playNotificationSound();
+              // Keep one live listener; compare snapshots via ref without restarting subscription.
+              const previousAppointments = previousAppointmentsRef.current;
+              if (previousAppointments.length > 0) {
+                  const previousIds = new Set(previousAppointments.map(item => item.id));
+                  const newPending = data.find(item => item.status === 'pending' && !previousIds.has(item.id));
+                  if (newPending) {
+                      playNotificationSound();
+                      setAppointmentNotice({ name: newPending.clientName || 'عميل جديد', phone: newPending.phone || '', id: newPending.id });
+                      setTimeout(() => setAppointmentNotice(null), 9000);
+                      if (settings.enableNotifications) showBrowserNotification('حجز تصوير جديد', `طلب جديد من ${newPending.clientName || 'عميل جديد'}`);
+                  }
               }
-              
+              previousAppointmentsRef.current = data;
               setAppointments(data);
             }, (err) => {
               console.error("Appointments error", err);
@@ -3863,7 +3774,7 @@
             }
 
             return () => { unsubTxns(); unsubWeds(); unsubInv(); unsubSettings(); unsubAppts(); };
-          }, [user, isTracking, isClientPortal, appointments]);
+          }, [user, isTracking, isClientPortal]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
           const uniqueCustomersCount = useMemo(() => new Set(allRecords.map(t => t.phone).filter(Boolean)).size, [allRecords]);
@@ -3895,7 +3806,7 @@
           }, [unreadFeedbackCount, settings.enableNotifications]);
 
           const handleViewFeedback = (txn) => {
-              setTxnDetailsModal(txn);
+              setHistoryPhone(txn.phone);
               if (!txn.adminReadFeedback) {
                   const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                   const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
@@ -3927,12 +3838,12 @@
                       // نظام حماية الجهاز: ربط رابط التتبع بمتصفح العميل لأول مرة فقط
                       const currentDeviceId = getRobustDeviceId();
                       
-                      if (!currentTxn.boundDeviceId) {
+                      if (currentTxn.linkProtectionEnabled !== false && !currentTxn.boundDeviceId) {
                           // لم يتم ربط الجهاز من قبل، نربطه الآن
                           const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                           const targetCol = trackType === 'w' ? 'weddings' : 'transactions';
                           setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, currentTxn.id), { boundDeviceId: currentDeviceId }, { merge: true }).catch(console.error);
-                      } else if (currentTxn.boundDeviceId !== currentDeviceId) {
+                      } else if (currentTxn.linkProtectionEnabled !== false && currentTxn.boundDeviceId !== currentDeviceId) {
                           // الجهاز الحالي لا يطابق الجهاز المرتبط
                           setClientViewError('access_denied');
                           return;
@@ -3980,7 +3891,9 @@
 
           if (isTracking) {
               const targetArr = trackType === 'w' ? weddings : transactions;
-              const txn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
+              const appointmentTarget = trackType === 't' ? appointments.find(a => (a.phone||'').trim() === trackPhone.trim() && a.receiptNo && a.receiptNo.toString() === trackReceipt.trim()) : null;
+              const storedTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
+              const txn = storedTxn || (appointmentTarget ? { ...appointmentTarget, dateTime: appointmentTarget.createdAt, photoName: appointmentTarget.fullName || appointmentTarget.photoName || '', total: appointmentTarget.approvedPrice || appointmentTarget.price || 0, paid: appointmentTarget.approvedPaid || 0, remaining: Math.max(0, (appointmentTarget.approvedPrice || appointmentTarget.price || 0) - (appointmentTarget.approvedPaid || 0)), paymentPending: appointmentTarget.status !== 'confirmed', requestedPrice: appointmentTarget.requestedPrice || 0, requirements: appointmentTarget.details || '', appointmentConfirmed: appointmentTarget.status === 'confirmed', confirmationMessage: appointmentTarget.confirmationMessage || '', photoNo: [], status: 0 } : null);
 
               if (!isTargetLoaded) {
                   return (
@@ -4021,6 +3934,11 @@
               // حساب رصيد المكافآت
               const rewardsInfo = getCustomerRewards(txn.phone, allRecords, settings);
               const availableRewards = rewardsInfo.balance;
+              const trackingPhotoItems = Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map(p => typeof p === 'object' ? p : { number: p }) : (txn.photoNo ? [{ number: txn.photoNo }] : []);
+              const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
+              const instantPrintName = instantPrintService?.name || 'طباعة فورية';
+              const instantPrintCost = Number(instantPrintService?.price || settings.appointmentSettings?.instantPrintPrice || 90);
+              const instantPrintTotalDue = Math.max(0, Number(txn.remaining) || 0) + instantPrintCost;
 
               const handleProfilePicUpload = async (e) => {
                   const file = e.target.files[0];
@@ -4053,6 +3971,23 @@
                       console.error("Error uploading profile pic", err);
                       setIsUploadingProfilePic(false);
                   }
+              };
+
+              const handleInstantPrintRequest = () => {
+                  const paymentNumber = settings.vodafoneCashNumber || 'رقم الدفع المسجل لدى الاستوديو';
+                  const msg = `مرحباً ${settings.studioName || 'ستوديو المراكبي'}،
+أرغب في طلب طباعة فورية للصور الخاصة بي.
+
+رقم الإيصال: #${txn.receiptNo}
+الاسم: ${txn.photoName || txn.clientName || displayName || 'العميل'}
+الخدمة: ${instantPrintName}
+تكلفة الطباعة الفورية: ${formatCurrency(instantPrintCost)}
+المتبقي الحالي على الإيصال: ${formatCurrency(Number(txn.remaining) || 0)}
+إجمالي المطلوب لإتمام الطباعة الفورية: ${formatCurrency(instantPrintTotalDue)}
+
+سأقوم بالسداد عند الاستلام، أو من خلال إنستاباي / المحفظة الإلكترونية على رقم: ${paymentNumber}
+برجاء تأكيد الطلب وموعد جاهزية الطباعة. شكراً لحضراتكم.`;
+                  openWhatsApp(settings.studioPhone || '01201260040', msg);
               };
 
               const handleShareTracking = async () => {
@@ -4115,6 +4050,16 @@
                           </div>
                       </div>
 
+                      <div className="w-full max-w-md mb-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 shadow-lg overflow-hidden">
+                          <button type="button" onClick={() => { setShowConfirmData(v => !v); setEditingConfirmData(false); }} className="w-full p-4 flex items-center gap-3 text-right hover:bg-indigo-900/30 transition-colors">
+                              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center shrink-0"><i className={`ph-fill ${txn.identityConfirmed ? 'ph-check-circle' : 'ph-identification-card'} text-xl`}></i></div>
+                              <div className="flex-1 min-w-0"><p className="text-indigo-100 font-black text-sm">تأكيد بيانات الإيصال</p><p className="text-[11px] text-slate-400 mt-1 truncate">{txn.identityConfirmed ? `تم التأكيد: ${txn.photoName || txn.clientName || 'الاسم'} • ${txn.nationalId || 'بدون رقم قومي'} • ${txn.branch || 'بدون شعبة'}` : 'راجع الاسم والرقم القومي قبل الطباعة'}</p></div>
+                              <i className={`ph-bold ph-caret-${showConfirmData ? 'up' : 'down'} text-indigo-300 text-lg`}></i>
+                          </button>
+                          {showConfirmData && <div className="border-t border-indigo-500/20 p-4 animate-fadeIn">
+                              {!editingConfirmData && txn.identityConfirmed ? <div className="flex items-start justify-between gap-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl p-3"><div className="min-w-0 flex-1"><p className="text-emerald-300 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> البيانات معتمدة</p><div className="mt-3 rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2"><p className="text-[10px] text-slate-500 font-bold mb-1">الاسم على الصورة</p><p className="text-white text-sm font-bold truncate">{txn.photoName || txn.clientName || '—'}</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">الرقم القومي</p><p className="text-slate-300 text-xs font-mono truncate" dir="ltr">{txn.nationalId || '—'}</p></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-3"><p className="text-[10px] text-slate-500 font-bold mb-1">الشعبة / المسار</p><p className="text-purple-300 text-xs font-bold truncate">{txn.branch || '—'}</p></div></div></div><button type="button" onClick={() => setEditingConfirmData(true)} className="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0" title="تعديل البيانات"><i className="ph ph-pencil-simple"></i></button></div> : <div className="space-y-3"><p className="text-xs text-slate-300 leading-relaxed">يمكنك تعديل الاسم المنفصل للطباعة والرقم القومي والشعبة ثم حفظها. الاسم الأساسي للإيصال ثابت من الاستوديو.</p><div className="space-y-3"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الاسم المنفصل المطلوب كتابته على الصورة</label><input id="client-confirm-name" defaultValue={txn.photoName || txn.clientName || ''} placeholder="الاسم المطلوب كتابته على الصورة" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الرقم القومي للصورة</label><input id="client-confirm-national-id" defaultValue={txn.nationalId || ''} inputMode="numeric" maxLength="14" placeholder="الرقم القومي (14 رقمًا)" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-4"><label className="text-xs text-slate-400 font-bold block mb-1">الشعبة / المسار</label><input id="client-confirm-branch" defaultValue={txn.branch || ''} placeholder="الشعبة / المسار" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div></div></div><p className="text-[11px] leading-relaxed text-amber-200 bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl"><i className="ph-fill ph-warning-circle ml-1"></i>تأكد من صحة الاسم والرقم القومي قبل الحفظ، لأن إعادة الطباعة بسبب بيانات خاطئة تكون على مسؤولية العميل.</p><label className="flex items-start gap-2 text-xs text-indigo-100 bg-slate-950/80 p-3 rounded-xl"><input id="client-confirm-consent" type="checkbox" defaultChecked={txn.identityConfirmed} className="mt-0.5 accent-indigo-500" /><span>أؤكد صحة البيانات وأوافق على كتابتها على الصورة.</span></label><div className="flex gap-2"><button type="button" onClick={async()=>{const name=document.getElementById('client-confirm-name').value.trim(); const nationalId=document.getElementById('client-confirm-national-id').value.trim(); const branch=document.getElementById('client-confirm-branch').value.trim(); if(!name || !/^\d{14}$/.test(nationalId)){alert('يرجى إدخال الاسم والرقم القومي المكوّن من 14 رقمًا.');return;} const consent=document.getElementById('client-confirm-consent'); if(!consent || !consent.checked){alert('يرجى تأكيد صحة البيانات والموافقة على كتابتها على الصورة.');return;} const editedAt=new Date().toISOString(); const previousValues={name:txn.photoName || txn.clientName || '', nationalId:txn.nationalId || '', branch:txn.branch || ''}; const nextValues={name, nationalId, branch}; const clientFieldChanges={...(txn.clientFieldChanges || {})}; Object.keys(nextValues).forEach(key=>{if(nextValues[key] !== previousValues[key]) clientFieldChanges[key]={at:editedAt, previous:previousValues[key], value:nextValues[key]};}); const targetCol=isWedding?'weddings':'transactions'; const appId=typeof __app_id!=='undefined'?__app_id:'studio-marakby'; await setDoc(doc(db,`artifacts/${appId}/public/data/${targetCol}`,txn.id),{nationalId,photoName:name,branch,writeNameOnPhoto:true,identityConfirmed:true,clientFieldChanges},{merge:true}); setShowConfirmData(false); setEditingConfirmData(false); alert('تم حفظ بيانات الإيصال بنجاح.');}} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2"><i className="ph ph-check"></i> حفظ البيانات</button>{editingConfirmData && <button type="button" onClick={() => { setEditingConfirmData(false); setShowConfirmData(false); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 rounded-xl font-bold">إلغاء</button>}</div></div>}
+                          </div>}
+                      </div>
                       {/* 2. بطاقة تتبع الطلب ورصيد المكافآت المدمجة */}
                       <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
@@ -4136,6 +4081,10 @@
                               </div>
                           </div>
 
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-sm">
+                              <div className="bg-slate-950/80 border border-slate-700 rounded-xl p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className="ph-fill ph-phone text-emerald-400"></i> رقم الهاتف</p><p className="text-slate-200 font-bold font-mono truncate" dir="ltr" title={txn.phone || '—'}>{txn.phone || '—'}</p><span className="text-[9px] text-slate-500">للتواصل والمتابعة</span></div>
+                              <div className="bg-slate-950/80 border border-slate-700 rounded-xl p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className="ph-fill ph-calendar-blank text-yellow-400"></i> تاريخ ووقت الإيصال</p><p className="text-slate-200 font-bold text-xs leading-relaxed">{formatDate(txn.dateTime) || '—'}</p><span className="text-[9px] text-slate-500">وقت التسجيل</span></div>
+                          </div>
                           {/* Rewards Mini-Banner */}
                           {availableRewards > 0 && (
                               <div className="bg-purple-950/30 border border-purple-500/20 p-3 rounded-xl mb-5 flex items-start gap-3 shadow-inner">
@@ -4148,35 +4097,23 @@
                               </div>
                           )}
 
-                          {isWedding && txn.weddingDate && (
-                              <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm">
-                                  <span className="text-slate-400">موعد الزفاف:</span>
-                                  <span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span>
-                              </div>
-                          )}
+                          {isWedding && txn.weddingDate && <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm"><span className="text-slate-400">موعد الزفاف:</span><span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span></div>}
 
-                          {txn.photoNo && (Array.isArray(txn.photoNo) ? txn.photoNo.some(p => typeof p === 'object' ? p.number : p) : true) && (
-                              <div className="bg-slate-950/80 p-4 rounded-xl mb-4 border border-blue-500/30 flex flex-col gap-3 shadow-inner">
-                                  <span className="text-slate-300 font-bold flex items-center gap-1.5"><i className="ph-fill ph-images text-blue-400 text-xl"></i> أرقام الصور المحددة لك:</span>
-                                  <div className="flex flex-wrap gap-2">
-                                      {Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map((p, i) => (
-                                          <span key={i} className="font-black text-blue-400 bg-blue-950/50 px-4 py-2 rounded-lg border border-blue-900/50 text-center shadow-sm" dir="ltr">
-                                              {typeof p === 'object' ? p.number : p}
-                                          </span>
-                                      )) : <span className="font-black text-blue-300 bg-blue-950/50 px-4 py-2 rounded-lg border border-blue-900/50 text-center shadow-sm" dir="ltr">{txn.photoNo}</span>}
+                          <div className="rounded-2xl border border-slate-700 bg-slate-950/70 overflow-hidden mb-4 shadow-inner">
+                              <button type="button" onClick={() => setShowOrderDetails(v => !v)} className="w-full p-3 sm:p-4 flex items-center gap-3 text-right hover:bg-slate-800/70 transition-colors"><div className={`w-10 h-10 rounded-xl ${isWedding ? 'bg-pink-500/15 text-pink-300 border-pink-400/30' : 'bg-blue-500/15 text-blue-300 border-blue-400/30'} border flex items-center justify-center shrink-0`}><i className="ph-fill ph-list-dashes text-xl"></i></div><div className="flex-1 min-w-0"><p className="text-slate-200 font-black text-sm">الخدمات والتفاصيل المطلوبة</p><p className="text-[11px] text-slate-500 mt-1 truncate">اضغط لعرض الخدمات والأرقام والبيانات المرتبطة بالطلب</p></div>{!isWedding && txn.pickupDate && <span className="shrink-0 flex items-center gap-1 bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 rounded-xl px-2 py-1 text-[10px] font-black" title="موعد التسليم"><i className="ph-fill ph-calendar-check"></i>{(() => { const days = getDiffDays(txn.pickupDate); return days === 0 ? 'اليوم' : days > 0 ? `بعد ${days} يوم` : `متأخر ${Math.abs(days)}`; })()}</span>}<i className={`ph-bold ph-caret-${showOrderDetails ? 'up' : 'down'} text-slate-400 text-lg shrink-0`}></i></button>
+                              {showOrderDetails && <div className="border-t border-slate-800 p-3 sm:p-4 space-y-3 animate-fadeIn">
+                                  {!isWedding && txn.pickupDate && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><div className="flex items-center gap-3 bg-emerald-950/30 border border-emerald-500/25 rounded-xl p-3"><i className="ph-fill ph-calendar-check text-emerald-300 text-xl"></i><div><p className="text-[10px] text-emerald-200/70 font-bold">تاريخ الاستلام</p><p className="text-white text-sm font-black">{formatDateOnly(txn.pickupDate)}</p></div></div><div className="flex items-center gap-3 bg-indigo-950/30 border border-indigo-500/25 rounded-xl p-3"><i className="ph-fill ph-clock text-indigo-300 text-xl"></i><div><p className="text-[10px] text-indigo-200/70 font-bold">مواعيد عمل الاستوديو</p><p className="text-white text-xs font-bold leading-relaxed">{settings.workingHours || 'يومياً من 10 صباحاً حتى 10 مساءً'}</p></div></div></div>}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div className="sm:col-span-2 bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className={`ph-fill ph-list-dashes ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i> الخدمات والطلبات</p><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs || 'لا يوجد تفاصيل'}</p></div>
+                                      {trackingPhotoItems.length > 0 && <div className="bg-blue-950/30 rounded-xl border border-blue-500/25 p-3 min-w-0"><p className="text-blue-200 text-xs font-black mb-2 flex items-center gap-1"><i className="ph-fill ph-images"></i> أرقام الصور المحددة</p><div className="flex flex-wrap gap-2">{trackingPhotoItems.map((photo, i) => <span key={i} className="inline-flex items-center gap-2 font-bold text-blue-100 bg-slate-950 px-3 py-2 rounded-lg border border-blue-500/30 text-xs"><span className="text-blue-300" dir="ltr">#{photo.number}</span><span className="text-slate-400">{photo.serviceType || photo.service || 'خدمة تصوير'}</span></span>)}</div></div>}
+
                                   </div>
-                              </div>
-                          )}
+                              </div>}
+                          </div>
 
-                          {displayReqs && displayReqs !== 'لا يوجد تفاصيل' && (
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col gap-2 text-sm shadow-inner mb-4">
-                                  <span className="text-slate-300 font-bold flex items-center gap-1.5">
-                                      <i className={`ph-fill ph-list-dashes text-lg ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i>
-                                      الخدمات والتفاصيل المطلوبة:
-                                  </span>
-                                  <p className="text-slate-400 font-medium whitespace-pre-wrap leading-relaxed">{displayReqs}</p>
-                              </div>
-                          )}
+                          {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
+                          {txn.appointmentConfirmed && <div className="mb-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-seal-check text-emerald-300 text-2xl shrink-0"></i><div><p className="text-emerald-200 font-black text-sm">تم تأكيد موعدك بنجاح</p><p className="text-emerald-100/80 text-xs leading-relaxed mt-1">{txn.confirmationMessage || 'ننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.'}</p></div></div>}
+                          {!isWedding && <div className="mb-3 bg-blue-950/30 border border-blue-500/30 rounded-xl p-3 space-y-3"><div className="flex items-center gap-3"><i className="ph-fill ph-calendar-check text-blue-300 text-xl"></i><div className="min-w-0"><p className="text-[10px] text-blue-200/70 font-bold">موعد استلام الصور</p><p className="text-white text-sm font-black">{txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'يتم تحديده مع الاستوديو'}</p></div></div><div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة الإضافية: <span className="text-amber-300 font-black">{formatCurrency(instantPrintCost)}</span> • الإجمالي المطلوب: <span className="text-amber-300 font-black">{formatCurrency(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">يمكنك السداد عند الاستلام أو عبر إنستاباي / المحفظة الإلكترونية.</p></div></div>}
 
                           {/* Financial Summary */}
                           <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
@@ -4221,17 +4158,20 @@
 
                                   {!showClientPaymentPopup ? (
                                       <button 
-                                          onClick={() => setShowClientPaymentPopup(true)}
+                                          onClick={() => { setClientPaymentAmount(String(txn.remaining)); setShowClientPaymentPopup(true); }}
                                           className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] shadow-lg border border-green-500/50"
                                       >
                                           <i className="ph-fill ph-paper-plane-right text-xl"></i> قمت بالتحويل، إرسال الإيصال
                                       </button>
                                   ) : (
                                       <div className="animate-fadeIn mt-4 border-t border-slate-800 pt-4">
+                                          <label className="block text-xs text-slate-300 mb-2 font-bold">المبلغ الذي تريد سداده الآن (يمكنك دفع جزء من المتبقي)</label>
+                                          <input type="number" min="1" max={txn.remaining} value={clientPaymentAmount} onChange={e => setClientPaymentAmount(Math.min(parseFloat(e.target.value) || 0, parseFloat(txn.remaining) || 0))} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white font-black text-center outline-none focus:border-green-500 mb-3" />
+                                          <p className="text-[10px] text-slate-500 mb-3">سيتم اعتماد المبلغ من الاستوديو وتحديث الرصيد بعد المراجعة.</p>
                                           <p className="text-xs text-slate-300 mb-3 font-bold">أين قمت بدفع المبلغ؟ (اختر طريقة السداد)</p>
                                           <div className="grid grid-cols-2 gap-3 mb-4">
                                               <button onClick={() => {
-                                                  const msg = `مرحباً، لقد قمت بسداد المبلغ المتبقي (${txn.remaining} ج.م) للإيصال رقم #${txn.receiptNo} **نقداً داخل الاستوديو**.\nيرجى مراجعة وتأكيد السداد في النظام.`;
+                                                  const msg = `مرحباً، لقد قمت بسداد مبلغ ${clientPaymentAmount || txn.remaining} ج.م من المتبقي (${txn.remaining} ج.م) للإيصال رقم #${txn.receiptNo} **نقداً داخل الاستوديو**.\nيرجى مراجعة وتأكيد السداد في النظام.`;
                                                   openWhatsApp(settings.studioPhone || '01201260040', msg);
                                               }} className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl border border-slate-700 flex flex-col items-center gap-2 transition-colors">
                                                   <i className="ph-fill ph-money text-2xl text-emerald-400"></i>
@@ -4239,7 +4179,7 @@
                                               </button>
                                               
                                               <button onClick={() => {
-                                                  const msg = `مرحباً، لقد قمت بتحويل مبلغ ${txn.remaining} ج.م لسداد المتبقي من الإيصال رقم #${txn.receiptNo} عبر **محفظة إلكترونية / إنستاباي**.\nمرفق صورة إيصال التحويل للتأكيد.`;
+                                                  const msg = `مرحباً، لقد قمت بتحويل مبلغ ${clientPaymentAmount || txn.remaining} ج.م من المتبقي من الإيصال رقم #${txn.receiptNo} عبر **محفظة إلكترونية / إنستاباي**.\nمرفق صورة إيصال التحويل للتأكيد.`;
                                                   openWhatsApp(settings.studioPhone || '01201260040', msg);
                                               }} className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl border border-slate-700 flex flex-col items-center gap-2 transition-colors">
                                                   <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl"></i>
@@ -4253,22 +4193,6 @@
                               </div>
                           )}
                       </div>
-                      
-                      {/* Share & Earn Feature */}
-                      <button onClick={handleShareTracking} className="w-full max-w-md relative overflow-hidden group bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white p-3 sm:p-4 rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-between border border-emerald-400/50 text-right mb-6">
-                          <div className="flex items-center gap-3 sm:gap-4 relative z-10 w-full">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform border border-white/20">
-                                  <i className="ph-fill ph-share-network text-xl sm:text-2xl text-white animate-pulse"></i>
-                              </div>
-                              <div className="flex-1">
-                                  <h3 className="font-black text-sm sm:text-base text-white mb-0.5">شارك واكسب 🎁</h3>
-                                  <p className="text-[10px] sm:text-xs font-bold text-emerald-50 leading-snug">شارك رابط الاستوديو مع أصدقائك، واكسب خصم أو مكافأة!</p>
-                              </div>
-                          </div>
-                          <i className="ph-bold ph-caret-left text-white/50 text-xl relative z-10 shrink-0 mr-2"></i>
-                          {/* Animated Shine Effect */}
-                          <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out z-0"></div>
-                      </button>
 
                       {/* 3. البطاقة الإعلانية (Promotional Card) */}
                       {clientPromotions.length > 0 && (
@@ -4519,6 +4443,7 @@
             <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
               {authError && <div className="bg-red-600 text-white text-center py-1 font-bold text-xs">{authError}</div>}
               {isTracking ? null : <Navigation activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} onLogout={handleLogout} feedbacks={feedbacks} unreadCount={unreadFeedbackCount} onViewFeedback={handleViewFeedback} />}
+              {appointmentNotice && !isTracking && <div className="fixed top-24 left-3 right-3 sm:left-auto sm:right-6 z-[100] sm:w-96 bg-gradient-to-l from-yellow-500 to-amber-500 text-slate-950 rounded-2xl shadow-2xl border border-yellow-200 p-4 animate-fadeIn cursor-pointer" onClick={() => { setActiveTab('appointments'); setAppointmentNotice(null); }}><div className="flex items-start gap-3"><div className="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center shrink-0"><i className="ph-fill ph-bell-ringing text-2xl"></i></div><div className="min-w-0"><p className="font-black text-sm">حجز تصوير جديد</p><p className="text-xs font-bold mt-1 truncate">{appointmentNotice.name} {appointmentNotice.phone && `— ${appointmentNotice.phone}`}</p><p className="text-[10px] mt-2 font-bold opacity-75">اضغط لعرض الحجوزات الجديدة</p></div><button onClick={(e) => { e.stopPropagation(); setAppointmentNotice(null); }} className="text-slate-900/70 hover:text-slate-950"><i className="ph ph-x"></i></button></div></div>}
               <main className={`max-w-7xl mx-auto ${isTracking ? '' : 'p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
@@ -4532,7 +4457,7 @@
                 )}
               </main>
               
-              <TxnDetailsModal txnDetailsModal={txnDetailsModal} setTxnDetailsModal={setTxnDetailsModal} setReceiptImageModal={setReceiptImageModal} db={db} allRecords={allRecords} settings={settings} />
+              <VisitHistoryModal phone={historyPhone} allRecords={allRecords} onClose={() => setHistoryPhone(null)} />
               <ReceiptModal imageUrl={receiptImageModal} onClose={() => setReceiptImageModal(null)} />
             </div>
           );
