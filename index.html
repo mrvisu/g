@@ -89,6 +89,37 @@
         import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
+        // Floating, non-blocking confirmation and validation cards.
+        (() => {
+            const nativeAlert = window.alert.bind(window);
+            window.alert = (message) => {
+                try {
+                    const text = String(message ?? '');
+                    const kind = /خطأ|تعذر|فشل|غير صحيح|لا يمكن/i.test(text) ? 'error' : (/يرجى|تنبيه|تحذير|تأكد/i.test(text) ? 'warning' : (/تم|نجاح|حفظ|نسخ/i.test(text) ? 'success' : 'info'));
+                    const themes = {
+                        success: {bg:'linear-gradient(135deg,#052e2b,#064e3b)',border:'rgba(52,211,153,.5)',iconBg:'rgba(16,185,129,.2)',color:'#6ee7b7',icon:'✓',title:'تم بنجاح'},
+                        warning: {bg:'linear-gradient(135deg,#422006,#713f12)',border:'rgba(251,191,36,.48)',iconBg:'rgba(245,158,11,.2)',color:'#fde68a',icon:'!',title:'تنبيه'},
+                        error: {bg:'linear-gradient(135deg,#450a0a,#7f1d1d)',border:'rgba(248,113,113,.5)',iconBg:'rgba(239,68,68,.2)',color:'#fca5a5',icon:'×',title:'تعذّر إتمام العملية'},
+                        info: {bg:'linear-gradient(135deg,#172554,#1e3a8a)',border:'rgba(96,165,250,.45)',iconBg:'rgba(59,130,246,.2)',color:'#93c5fd',icon:'i',title:'معلومة'}
+                    };
+                    const theme = themes[kind];
+                    const previous = document.getElementById('studio-floating-notice');
+                    if (previous) previous.remove();
+                    const card = document.createElement('div');
+                    card.id = 'studio-floating-notice'; card.setAttribute('role', kind === 'error' ? 'alert' : 'status'); card.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite'); card.setAttribute('dir', 'rtl');
+                    card.style.cssText = `position:fixed;top:max(16px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-8px);z-index:99999;width:min(92vw,460px);padding:13px 15px;border-radius:18px;background:${theme.bg};border:1px solid ${theme.border};box-shadow:0 18px 55px rgba(0,0,0,.42);color:#f8fafc;display:flex;align-items:flex-start;gap:11px;font:600 13px/1.65 Cairo,system-ui,sans-serif;opacity:0;transition:opacity .2s ease,transform .2s ease;backdrop-filter:blur(14px);`;
+                    const icon=document.createElement('span'); icon.textContent=theme.icon; icon.setAttribute('aria-hidden','true'); icon.style.cssText=`flex:0 0 32px;height:32px;border-radius:11px;display:grid;place-items:center;background:${theme.iconBg};color:${theme.color};font-size:18px;font-weight:900;`;
+                    const content=document.createElement('div'); content.style.cssText='flex:1;min-width:0;display:flex;flex-direction:column;gap:2px';
+                    const title=document.createElement('strong'); title.textContent=theme.title; title.style.cssText=`font-size:11px;color:${theme.color};font-weight:900`;
+                    const body=document.createElement('span'); body.textContent=text; body.style.cssText='overflow-wrap:anywhere'; content.append(title,body);
+                    const close=document.createElement('button'); close.type='button'; close.textContent='×'; close.setAttribute('aria-label','إغلاق التنبيه'); close.style.cssText='width:30px;height:30px;border:0;border-radius:9px;background:rgba(15,23,42,.35);color:#cbd5e1;font-size:21px;line-height:1;cursor:pointer;flex:0 0 30px';
+                    let timer; const dismiss=()=>{clearTimeout(timer);card.style.opacity='0';card.style.transform='translate(-50%,-8px)';setTimeout(()=>card.remove(),220)};
+                    close.onclick=dismiss; card.append(icon,content,close); document.body.appendChild(card);
+                    requestAnimationFrame(()=>{card.style.opacity='1';card.style.transform='translate(-50%,0)'});
+                    timer=setTimeout(dismiss, kind === 'error' ? 6000 : 4500);
+                } catch(error) { nativeAlert(message); }
+            };
+        })();
 
         // --- Safe Storage Wrappers (Cookies + LocalStorage) ---
         const getSafeLocal = (key) => { try { return localStorage.getItem(key); } catch(e) { return null; } };
@@ -226,7 +257,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "*ستوديو {studio}* 📸\nأهلاً بك أ. {name}، شكرًا لاختياركم لنا ✨\n\n*🧾 تفاصيل الفاتورة*\n━━━━━━━━━━━━━━━━\n*رقم الإيصال:* #{receipt}\n*الرقم القومي:* {national_id}\n*تاريخ التسجيل:* {date}\n*وقت التسجيل:* {time}\n*موعد استلام الصور:* {pickup_date}\n━━━━━━━━━━━━━━━━\n*🛠️ الخدمات والتفاصيل المطلوبة:*\n{services}\n━━━━━━━━━━━━━━━━\n*💰 الملخص المالي*\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م {payment_note}\nالمتبقي: {remaining} ج.م\nرصيد المكافآت: {reward_balance} ج.م\n━━━━━━━━━━━━━━━━\n📍 لمراجعة حالة الطلب والبيانات قبل الطباعة: \n{track_url}\n\nنسعد بخدمتكم دائمًا،\n*فريق {studio}* ✨",
+          invoice: "*━━━━━━━━━━━━━━━━━━*\n*📸 {studio}*\n*فاتورة إلكترونية | إيصال رقم #{receipt}*\n*━━━━━━━━━━━━━━━━━━*\n\nمرحبًا أ. {name}،\nشكرًا لثقتكم بنا. فيما يلي تفاصيل طلبكم:\n\n*🗓️ بيانات الطلب*\n• تاريخ التسجيل: {date} — {time}\n• موعد استلام الصور: *{pickup_date}*\n• الرقم القومي: {national_id}\n\n*🛠️ الخدمات والتفاصيل*\n{services}\n\n*💳 الملخص المالي*\n• إجمالي الفاتورة: *{total} ج.م*\n• المبلغ المدفوع: *{paid} ج.م* {payment_note}\n• المبلغ المتبقي: *{remaining} ج.م*\n• رصيد المكافآت: *{reward_balance} ج.م*\n\n*🔎 متابعة الطلب والإيصال*\n{track_url}\n\nلأي استفسار يسعدنا تواصلكم معنا.\n*مع خالص التحية، فريق {studio}*\n*━━━━━━━━━━━━━━━━━━*",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -252,6 +283,14 @@
         const db = getFirestore(app);
 
         // --- Helper Functions ---
+        const normalizeCustomerPhone = (value) => {
+            if (!value) return '';
+            let digits = String(value).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '');
+            if (digits.startsWith('002')) digits = digits.slice(2);
+            if (digits.startsWith('20') && digits.length >= 12) digits = '0' + digits.slice(2);
+            else if (digits.length === 10 && digits.startsWith('1')) digits = '0' + digits;
+            return digits;
+        };
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
         const formatDateOnly = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('ar-EG') : '';
         const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : '';
@@ -379,6 +418,7 @@
             msg = msg.replace(/{portal_url}/g, portalUrl).replace(/{products_url}/g, productsUrl).replace(/{booking_url}/g, bookingUrl).replace(/{archive_url}/g, archiveUrl);
             if (templateKey === 'invoice') {
                 if (txn.pickupDate && !msg.includes(formatDateOnly(txn.pickupDate))) msg += `\n\n📦 موعد استلام الصور: ${formatDateOnly(txn.pickupDate)}`;
+                else if (!txn.pickupDate && !msg.includes('موعد استلام الصور')) msg += '\n\n📦 موعد استلام الصور: يتم تحديده مع الاستوديو';
                 msg += `\n\n🌟 *بوابتك الرقمية مع ${settings.studioName || 'الاستوديو'}*\nتابع منتجاتنا وعروضنا الجديدة، واحجز موعدك، وراجع أرشيف طلباتك في أي وقت من خلال الروابط التالية:\n🛍️ بوابة المنتجات والعروض: ${productsUrl}\n📅 حجز موعد تصوير: ${bookingUrl}\n🗂️ الأرشيف وطلباتك: ${archiveUrl}\n\nنسعد دائمًا بزيارتك وخدمتك بكل حب ✨`;
             }
             return msg;
@@ -542,7 +582,7 @@
             );
         };
 
-        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, studioLikes, onLikeStudio, navigateTo }) => {
+        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, recordsLoaded, studioLikes, onLikeStudio, navigateTo }) => {
             const [searchQuery, setSearchQuery] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
@@ -570,7 +610,7 @@
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
-            const avgRating = useMemo(() => reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.clientRating, 0) / reviews.length).toFixed(1) : 0, [reviews]);
+            const avgRating = useMemo(() => { const rated = reviews.filter(r => Number(r.clientRating) >= 1 && Number(r.clientRating) <= 5); return rated.length ? (rated.reduce((sum, r) => sum + Number(r.clientRating), 0) / rated.length).toFixed(1) : 0; }, [reviews]);
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -825,7 +865,7 @@
                             {/* Statistics Row */}
                             <div className="flex justify-center items-center gap-4 sm:gap-6 w-full border-t border-slate-800/80 pt-5 mt-2 bg-slate-950/30 rounded-2xl p-4 shadow-inner">
                                 <div className="flex flex-col items-center">
-                                    <span className="text-xl sm:text-2xl font-black text-white mb-1">{uniqueCustomersCount}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-white mb-1">{recordsLoaded ? uniqueCustomersCount : <span className="inline-block w-7 h-5 rounded bg-slate-700 animate-pulse align-middle" aria-label="جاري التحميل"></span>}</span>
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-users"></i> عميل</span>
                                 </div>
                                 <div className="w-px h-8 bg-slate-800"></div>
@@ -840,7 +880,7 @@
                                 </div>
                                 <div className="w-px h-8 bg-slate-800"></div>
                                 <div className="flex flex-col items-center">
-                                    <span className="text-xl sm:text-2xl font-black text-amber-400 mb-1 flex items-center gap-1">{avgRating} <i className="ph-fill ph-star text-sm sm:text-base"></i></span>
+                                    <span className="text-xl sm:text-2xl font-black text-amber-400 mb-1 flex items-center gap-1">{recordsLoaded ? avgRating : <span className="inline-block w-7 h-5 rounded bg-slate-700 animate-pulse" aria-label="جاري التحميل"></span>} <i className="ph-fill ph-star text-sm sm:text-base"></i></span>
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-bold flex items-center gap-1">من {reviews.length} تقييم</span>
                                 </div>
                             </div>
@@ -968,16 +1008,21 @@
                                         <p className="text-sm text-slate-400 text-center mb-6">احجز موعدك الآن وسيتم تجهيز الاستوديو لاستقبالك.</p>
                                         
                                         {bookingSuccess ? (
-                                            <div className="text-center bg-green-950/30 p-6 rounded-2xl border border-green-500/30 animate-fadeIn">
-                                                <i className="ph-fill ph-check-circle text-6xl text-green-500 mb-4"></i>
-                                                <h3 className="text-xl font-bold text-white mb-2">تم الحجز بنجاح!</h3>
-                                                <p className="text-slate-300 mb-3">تم تسجيل طلب حجزك بنجاح، وسيقوم الاستوديو بمراجعة الموعد واعتماده قبل الحضور.</p><div className="bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs font-bold leading-relaxed p-3 rounded-xl mb-4">قيمة الخدمات الظاهرة هي تقديرية فقط، ولا يتم اعتماد المبلغ إلا من الاستوديو. يمكنك دفع المبلغ كاملاً أو جزءاً منه بعد الاعتماد وحتى الاستلام.</div><p className="text-emerald-300 text-xs font-bold mb-4">شكراً لاختيارك لنا، ونسعد بخدمتك دائماً.</p>
-                                                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
-                                                    <p className="text-sm text-slate-400 mb-1">رقم الإيصال / الحجز:</p>
-                                                    <p className="text-2xl font-black text-blue-400 tracking-widest" dir="ltr">#{bookingSuccess.receiptNo}</p>
+                                            <div className="text-right bg-gradient-to-b from-emerald-950/70 via-slate-900 to-slate-950 p-4 sm:p-6 rounded-3xl border border-emerald-400/30 shadow-2xl shadow-emerald-950/30 animate-fadeIn">
+                                                <div className="text-center pb-4 border-b border-emerald-500/20">
+                                                    <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center"><i className="ph-fill ph-check-circle text-4xl text-emerald-300"></i></div>
+                                                    <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-200 border border-emerald-400/25 px-3 py-1 rounded-full text-[11px] font-black mb-2"><i className="ph-fill ph-seal-check"></i> تم استلام طلب الحجز</span>
+                                                    <h3 className="text-xl sm:text-2xl font-black text-white">حجزك قيد المراجعة</h3>
+                                                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mt-2">سيقوم الاستوديو بمراجعة الموعد والتواصل معك لتأكيده قبل الحضور.</p>
                                                 </div>
-                                                <p className="text-xs text-yellow-400 font-bold mb-4 bg-yellow-950/40 p-2 rounded-lg border border-yellow-900/50"><i className="ph-fill ph-warning-circle"></i> يرجى الاحتفاظ برقم الإيصال لمتابعة طلبك لاحقاً.</p>
-                                                <button onClick={() => { setShowBookingModal(false); setBookingSuccess(null); }} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors">إغلاق</button>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-4">
+                                                    <div className="sm:col-span-2 rounded-2xl bg-slate-950/80 border border-blue-400/25 p-3.5 flex items-center justify-between gap-3"><div><p className="text-[10px] text-slate-400 font-bold">رقم الحجز / الإيصال</p><p className="text-xs text-blue-100 mt-1">احتفظ به لمتابعة طلبك</p></div><span className="text-2xl font-black tracking-wider text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl" dir="ltr">#{bookingSuccess.receiptNo}</span></div>
+                                                    <div className="rounded-2xl bg-slate-950/70 border border-slate-700 p-3"><p className="text-[10px] text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-calendar text-indigo-300"></i> الموعد المقترح</p><p className="text-white text-sm font-black mt-1">{bookingSuccess.date ? formatDateOnly(bookingSuccess.date) : '—'}</p><p className="text-indigo-200 text-xs mt-1" dir="ltr">{bookingSuccess.time || '—'}</p></div>
+                                                    <div className="rounded-2xl bg-slate-950/70 border border-slate-700 p-3"><p className="text-[10px] text-slate-400 font-bold flex items-center gap-1"><i className="ph-fill ph-user text-purple-300"></i> بيانات التواصل</p><p className="text-white text-sm font-black mt-1 truncate">{bookingSuccess.clientName || '—'}</p><p className="text-slate-300 text-xs mt-1" dir="ltr">{bookingSuccess.phone || '—'}</p></div>
+                                                    <div className="sm:col-span-2 rounded-2xl bg-slate-950/70 border border-slate-700 p-3"><p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mb-2"><i className="ph-fill ph-camera text-amber-300"></i> الخدمات المطلوبة</p><p className="text-slate-100 text-sm font-bold leading-relaxed">{bookingSuccess.isFreeSchool ? 'مبادرة التصوير المجاني' : (bookingSuccess.extraServices || []).map(x => `${x.name}${x.qty > 1 ? ` × ${x.qty}` : ''}`).join('، ') || 'لم تُحدد خدمات'}</p><div className="flex justify-between items-center gap-2 mt-3 pt-2 border-t border-slate-800 text-xs"><span className="text-slate-400">الإجمالي التقديري</span><span className="text-amber-300 font-black">{formatCurrency(bookingSuccess.requestedPrice || 0)}</span></div></div>
+                                                </div>
+                                                <div className="bg-amber-950/40 border border-amber-400/25 text-amber-100 text-[11px] font-bold leading-relaxed p-3 rounded-xl mb-4"><i className="ph-fill ph-info ml-1 text-amber-300"></i> قيمة الخدمات تقديرية وغير معتمدة حتى مراجعة الاستوديو. سيتم التواصل معك لتأكيد الموعد والمبلغ.</div>
+                                                <button onClick={() => { setShowBookingModal(false); setBookingSuccess(null); }} className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-black py-3 rounded-xl transition-colors flex items-center justify-center gap-2"><i className="ph ph-check"></i> تم، إغلاق</button>
                                             </div>
                                         ) : (
                                             <form id="customer-booking-form" onSubmit={handleBookAppointment} className="space-y-4">
@@ -1109,10 +1154,10 @@
                                                     )}
                                                 </div>
                                                 
-                                                <button type="button" onClick={() => setBookingData({...bookingData, isFreeSchool: !bookingData.isFreeSchool})} className="fixed top-5 left-5 z-[120] rounded-full bg-gradient-to-r from-violet-700 via-indigo-600 to-cyan-600 text-white px-5 py-3 shadow-[0_12px_35px_rgba(79,70,229,0.45)] border border-cyan-100/50 font-black flex items-center gap-2 hover:scale-105 transition-transform"><i className="ph-fill ph-heart text-xl text-rose-200"></i><span>مبادرة التصوير المجاني</span><i className="ph-fill ph-sparkle text-amber-200"></i></button>
+                                                <button type="button" onClick={() => setBookingData({...bookingData, isFreeSchool: !bookingData.isFreeSchool})} className="w-full relative z-0 rounded-2xl bg-gradient-to-r from-violet-800 via-indigo-700 to-cyan-700 text-white px-5 py-3 shadow-lg shadow-indigo-950/40 border border-cyan-200/30 font-black flex items-center justify-center gap-2 hover:brightness-110 transition"><i className="ph-fill ph-heart text-xl text-rose-200"></i><span>مبادرة التصوير المجاني</span><i className="ph-fill ph-sparkle text-amber-200"></i></button>
 
                                                 {bookingData.isFreeSchool && (
-                                                    <div className="fixed top-20 left-5 z-[130] max-w-xs bg-gradient-to-br from-blue-900 to-slate-900 border border-cyan-300/50 p-4 rounded-2xl text-center text-blue-100 text-sm font-bold animate-fadeIn shadow-2xl"><i className="ph-fill ph-heart text-pink-400 text-2xl"></i><p className="mt-1">بطاقة شكر</p><p className="text-xs text-blue-100/80 mt-1">شكراً لثقتك بنا. التصوير المجاني حق إنساني وواجبنا أن نشاركك ذكرياتك بكل حب.</p><button type="button" onClick={()=>setBookingData({...bookingData,isFreeSchool:false})} className="mt-2 text-xs text-cyan-200 underline">إغلاق البطاقة</button></div>
+                                                    <div className="relative z-0 w-full bg-gradient-to-br from-blue-900 to-slate-900 border border-cyan-300/50 p-4 rounded-2xl text-center text-blue-100 text-sm font-bold animate-fadeIn shadow-xl"><i className="ph-fill ph-heart text-pink-400 text-2xl"></i><p className="mt-1">بطاقة شكر</p><p className="text-xs text-blue-100/80 mt-1">شكراً لثقتك بنا. التصوير المجاني حق إنساني وواجبنا أن نشاركك ذكرياتك بكل حب.</p><button type="button" onClick={()=>setBookingData({...bookingData,isFreeSchool:false})} className="mt-2 text-xs text-cyan-200 underline">إغلاق البطاقة</button></div>
                                                 )}
 
                                                 {showBookingReview && <div className="fixed inset-0 z-[160] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4"><div className="w-full max-w-lg bg-slate-900 border border-purple-500/40 rounded-3xl p-6 shadow-2xl"><h3 className="text-xl font-black text-white mb-4">مراجعة تفاصيل الحجز قبل التسجيل</h3><div className="space-y-2 text-sm text-slate-200 bg-slate-950 p-4 rounded-xl"><p>الاسم: {bookingData.name}</p><p>الرقم القومي: {bookingData.nationalId}</p><p>الهاتف: {bookingData.phone}</p><p>موعد التصوير: {bookingData.date} - {bookingData.time}</p><p>الخدمات: {bookingData.extraServices.map(x=>`${x.name} × ${x.qty}`).join('، ') || 'تصوير مجاني'}</p><p>الاسم على الصورة: {bookingData.writeName ? bookingData.photoName : 'لا'}</p><p>الإجمالي: {expectedTotalPrice} ج.م</p></div><div className="grid grid-cols-2 gap-3 mt-4"><button type="button" onClick={()=>setShowBookingReview(false)} className="bg-slate-700 text-white py-3 rounded-xl font-bold">تعديل الطلب</button><button type="button" onClick={()=>{setShowBookingReview(false); const form=document.querySelector('#customer-booking-form'); if(form) form.requestSubmit();}} className="bg-purple-600 text-white py-3 rounded-xl font-bold">تأكيد الحجز وحفظه</button></div></div></div>}
@@ -1750,7 +1795,7 @@
                     <div key={idx} className="bg-slate-800 p-4 rounded-xl flex flex-col gap-3 border border-slate-700 relative group hover:border-purple-500/50 transition-colors">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col"><span className="text-slate-200 text-base font-black flex items-center gap-2"><i className="ph ph-package text-purple-400"></i> {prod.name}</span>{prod.desc && <span className="text-xs text-slate-400 mt-1">{prod.desc}</span>}</div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>handleEditClick(item, idx)} className="text-blue-400 hover:bg-slate-700 p-1.5 rounded-lg transition-colors"><i className="ph ph-pencil-simple text-base"></i></button><button onClick={()=>onRemove(idx)} className="text-red-400 hover:bg-slate-700 p-1.5 rounded-lg transition-colors"><i className="ph ph-trash text-base"></i></button></div>
+                        <div className="flex items-center gap-1"><button onClick={()=>handleEditClick(item, idx)} aria-label="تعديل المنتج" title="تعديل المنتج" className="text-blue-300 hover:bg-slate-700 p-2 rounded-lg transition-colors"><i className="ph ph-pencil-simple text-base"></i></button><button onClick={()=>onRemove(idx)} aria-label="حذف المنتج" title="حذف المنتج" className="text-red-300 hover:bg-slate-700 p-2 rounded-lg transition-colors"><i className="ph ph-trash text-base"></i></button></div>
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs font-bold">
                           <span className="bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-1">سعر البيع: <b className="text-purple-400">{prod.price} ج.م</b></span>
@@ -2501,8 +2546,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
                             <div className="bg-slate-950 p-4 rounded-xl border border-blue-500/25 flex flex-col gap-3 shadow-inner hover:border-blue-500/50 transition-colors">
-                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-lg"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1">حدد اليوم المقترح لاستلام الصور</p></div></div>
-                                <input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupDate:e.target.value})} className="w-full h-11 px-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors text-sm font-bold" />
+                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-lg"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1">اختر شهر التسليم المتوقع</p></div></div>
+                                <input type="month" value={(formData.pickupDate || '').slice(0,7)} onChange={e=>setFormData({...formData,pickupDate:e.target.value ? `${e.target.value}-01` : ''})} className="w-full h-11 px-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors text-sm font-bold" />
                             </div>
                             <div className="bg-slate-950 p-4 rounded-xl border border-indigo-500/25 flex flex-col gap-3 shadow-inner hover:border-indigo-500/50 transition-colors">
                                 <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-clipboard-text text-lg"></i></div><div><label className="block text-sm font-black text-indigo-200">المطلوب بالتفصيل</label><p className="text-[10px] text-slate-500 mt-1">أضف أي ملاحظات أو طلبات خاصة</p></div></div>
@@ -3757,19 +3802,28 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               }, (err) => { console.error(collectionName + ' error', err); loadedSetter(true); });
             };
 
+            // استخدم نسخة محلية سريعة لقوالب المنتجات أثناء انتظار لقطة Firebase، ثم حدّثها بالبيانات الأحدث.
+            try {
+                const cachedProducts = getSafeLocal(`studio_products_${appId}`);
+                if (cachedProducts) {
+                    const parsedProducts = JSON.parse(cachedProducts);
+                    if (Array.isArray(parsedProducts)) setSettings(prev => ({ ...prev, products: parsedProducts }));
+                }
+            } catch (cacheError) { console.warn('Products cache unavailable', cacheError); }
             const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
                 if (docSnap.exists()) {
                     let data = docSnap.data();
                     if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
                     if (!data.products) data.products = DEFAULT_PRODUCTS;
                     else data.products = data.products.map(p => typeof p === 'string' ? { name: p, price: 0, wholesalePrice: 0, totalQty: 0, desc: '' } : { name: p.name, price: p.price || 0, wholesalePrice: p.wholesalePrice || 0, totalQty: p.totalQty || 0, desc: p.desc || '' });
+                    try { setSafeLocal(`studio_products_${appId}`, JSON.stringify(data.products)); } catch (cacheError) { console.warn('Products cache could not be saved', cacheError); }
                     if (!data.weddingPackages) data.weddingPackages = DEFAULT_WEDDING_PACKAGES;
                     if (!data.addonTemplates) data.addonTemplates = DEFAULT_ADDON_TEMPLATES;
                     if (!data.expenseCategories || data.expenseCategories.length < 5) data.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
                     if (!data.promotions) data.promotions = DEFAULT_PROMOTIONS;
                     if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
                     else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
-                    if (data.waTemplates.invoice && !data.waTemplates.invoice.includes('{track_url}')) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
+                    if (data.waTemplates.invoice && (!data.waTemplates.invoice.includes('{track_url}') || data.waTemplates.invoice.includes('*🧾 تفاصيل الفاتورة*'))) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
@@ -3825,7 +3879,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           }, [user, isTracking, isClientPortal]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
-          const uniqueCustomersCount = useMemo(() => new Set(allRecords.map(t => t.phone).filter(Boolean)).size, [allRecords]);
+          const uniqueCustomersCount = useMemo(() => new Set(allRecords.map(t => normalizeCustomerPhone(t.phone)).filter(Boolean)).size, [allRecords]);
 
           const handleLikeStudio = async () => {
               if (!user) return;
@@ -3844,7 +3898,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           }, [allRecords]);
           const unreadFeedbackCount = feedbacks.filter(r => !r.adminReadFeedback).length;
 
-          const avgRating = useMemo(() => feedbacks.length > 0 ? (feedbacks.reduce((sum, r) => sum + r.clientRating, 0) / feedbacks.length).toFixed(1) : 0, [feedbacks]);
+          const avgRating = useMemo(() => { const rated = feedbacks.filter(r => Number(r.clientRating) >= 1 && Number(r.clientRating) <= 5); return rated.length ? (rated.reduce((sum, r) => sum + Number(r.clientRating), 0) / rated.length).toFixed(1) : 0; }, [feedbacks]);
 
           useEffect(() => {
               if (settings.enableNotifications && unreadFeedbackCount > previousFeedbackCount) {
@@ -3937,7 +3991,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
+              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} recordsLoaded={txnsLoaded && wedsLoaded} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
           }
 
           if (isTracking) {
