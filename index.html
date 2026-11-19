@@ -66,7 +66,7 @@
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
@@ -330,7 +330,7 @@
                 reqs = txn.requirements || 'خدمات تصوير';
             }
 
-            if (txn.photoName) reqs += `\nالاسم المطلوب على الصورة (منفصل عن اسم العميل): ${txn.photoName}\nالرقم القومي: ${txn.nationalId || 'غير مسجل'}`;
+            if (txn.photoName) reqs += `\nالاسم: ${txn.photoName}\nالرقم القومي: ${txn.nationalId || 'غير مسجل'}`;
             const paymentNote = txn.electronicPaid > 0 ? '(تم الدفع إلكترونياً)' : '(تم الدفع كاش)';
             const rewards = getCustomerRewards(txn.phone, allRecords, settings);
 
@@ -3638,6 +3638,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           const [weddings, setWeddings] = useState([]);
           const [expenses, setExpenses] = useState([]);
           const [appointments, setAppointments] = useState([]);
+          const [appointmentsLoaded, setAppointmentsLoaded] = useState(false);
           const [appointmentNotice, setAppointmentNotice] = useState(null);
           const previousAppointmentsRef = useRef([]);
           const [inventory, setInventory] = useState({});
@@ -3700,6 +3701,19 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
             const basePath = `artifacts/${appId}/public/data`;
 
+            // روابط العملاء لا تحتاج تحميل سجلات الإدارة كاملة؛ نقرأ الإيصال المطلوب فقط.
+            const noop = () => {};
+            const listenRecords = (collectionName, setter, loadedSetter, filtered) => {
+              const source = collection(db, basePath, collectionName);
+              const target = filtered ? query(source, where('phone', '==', trackPhone.trim())) : source;
+              return onSnapshot(target, (snapshot) => {
+                const data = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
+                data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+                setter(data);
+                loadedSetter(true);
+              }, (err) => { console.error(collectionName + ' error', err); loadedSetter(true); });
+            };
+
             const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
                 if (docSnap.exists()) {
                     let data = docSnap.data();
@@ -3718,72 +3732,53 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     if (!data.studioLikes) data.studioLikes = 0;
                     if (!data.portalVisits) data.portalVisits = 0;
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
-                    if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5; // Default 5%
-                    
+                    if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5;
                     if (!data.workingHours) data.workingHours = 'يومياً من 10 صباحاً حتى 10 مساءً';
-                    if (!data.appointmentSettings) {
-                        data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
-                    }
-                    
+                    if (!data.appointmentSettings) data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
                     setSettings(data);
                 }
             }, (err) => console.error("Settings error", err));
 
-            const unsubInv = onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
+            const unsubInv = (!isTracking && !isClientPortal) ? onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
               if (docSnap.exists()) setInventory(docSnap.data());
-            }, (err) => console.error("Inventory error", err));
+            }, (err) => console.error("Inventory error", err)) : noop;
 
-            const unsubTxns = onSnapshot(collection(db, basePath, 'transactions'), (snapshot) => {
-              const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-              data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-              setTransactions(data);
-              setTxnsLoaded(true);
-            }, (err) => {
-              console.error("Transactions error", err);
-              setTxnsLoaded(true);
-            });
+            const unsubTxns = isTracking ? (trackType === 't' ? listenRecords('transactions', setTransactions, setTxnsLoaded, true) : noop) : (!isClientPortal ? listenRecords('transactions', setTransactions, setTxnsLoaded, false) : noop);
+            const unsubWeds = isTracking ? (trackType === 'w' ? listenRecords('weddings', setWeddings, setWedsLoaded, true) : noop) : (!isClientPortal ? listenRecords('weddings', setWeddings, setWedsLoaded, false) : noop);
 
-            const unsubWeds = onSnapshot(collection(db, basePath, 'weddings'), (snapshot) => {
-              const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-              data.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-              setWeddings(data);
-              setWedsLoaded(true);
-            }, (err) => {
-              console.error("Weddings error", err);
-              setWedsLoaded(true);
-            });
-            
-            const unsubAppts = onSnapshot(collection(db, basePath, 'appointments'), (snapshot) => {
-              const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            // في رابط التتبع نقرأ حجوزات الهاتف نفسه فقط، أما بوابة الحجز العامة فلا تحتاجها.
+            const appointmentsSource = collection(db, basePath, 'appointments');
+            const appointmentsQuery = isTracking ? query(appointmentsSource, where('phone', '==', trackPhone.trim())) : appointmentsSource;
+            const unsubAppts = (isClientPortal && !isTracking) ? noop : onSnapshot(appointmentsQuery, (snapshot) => {
+              const data = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
               data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-              // Keep one live listener; compare snapshots via ref without restarting subscription.
-              const previousAppointments = previousAppointmentsRef.current;
-              if (previousAppointments.length > 0) {
+              if (!isTracking) {
+                const previousAppointments = previousAppointmentsRef.current;
+                if (previousAppointments.length > 0) {
                   const previousIds = new Set(previousAppointments.map(item => item.id));
                   const newPending = data.find(item => item.status === 'pending' && !previousIds.has(item.id));
                   if (newPending) {
-                      playNotificationSound();
-                      setAppointmentNotice({ name: newPending.clientName || 'عميل جديد', phone: newPending.phone || '', id: newPending.id });
-                      setTimeout(() => setAppointmentNotice(null), 9000);
-                      if (settings.enableNotifications) showBrowserNotification('حجز تصوير جديد', `طلب جديد من ${newPending.clientName || 'عميل جديد'}`);
+                    playNotificationSound();
+                    setAppointmentNotice({ name: newPending.clientName || 'عميل جديد', phone: newPending.phone || '', id: newPending.id });
+                    setTimeout(() => setAppointmentNotice(null), 9000);
+                    if (settings.enableNotifications) showBrowserNotification('حجز تصوير جديد', `طلب جديد من ${newPending.clientName || 'عميل جديد'}`);
                   }
+                }
+                previousAppointmentsRef.current = data;
               }
-              previousAppointmentsRef.current = data;
               setAppointments(data);
-            }, (err) => {
-              console.error("Appointments error", err);
-            });
+              setAppointmentsLoaded(true);
+            }, (err) => { console.error("Appointments error", err); setAppointmentsLoaded(true); });
 
+            let unsubExps = noop;
             if(!isTracking && !isClientPortal) {
-                const unsubExps = onSnapshot(collection(db, basePath, 'expenses'), (snapshot) => {
-                  const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                unsubExps = onSnapshot(collection(db, basePath, 'expenses'), (snapshot) => {
+                  const data = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
                   data.sort((a, b) => new Date(b.date) - new Date(a.date));
                   setExpenses(data);
                 }, (err) => console.error("Expenses error", err));
-                return () => { unsubTxns(); unsubWeds(); unsubExps(); unsubInv(); unsubSettings(); unsubAppts(); };
             }
-
-            return () => { unsubTxns(); unsubWeds(); unsubInv(); unsubSettings(); unsubAppts(); };
+            return () => { unsubTxns(); unsubWeds(); unsubExps(); unsubInv(); unsubSettings(); unsubAppts(); };
           }, [user, isTracking, isClientPortal]);
           
           const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
@@ -3837,7 +3832,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv);
           };
 
-          const isTargetLoaded = trackType === 'w' ? wedsLoaded : txnsLoaded;
+          const isTargetLoaded = trackType === 'w' ? wedsLoaded : (txnsLoaded && appointmentsLoaded);
 
           useEffect(() => {
               if (isTracking && isTargetLoaded) {
@@ -4150,8 +4145,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                                       <div className="flex items-center gap-2"><i className="ph-fill ph-wallet text-xl text-red-400"></i><span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span></div>
                                       <span className="text-red-300 font-black text-lg">{formatCurrency(txn.remaining)}</span>
                                   </div>
-                                  <div className="mb-3 rounded-xl border border-red-500/25 bg-red-950/25 px-3 py-2.5 flex items-center justify-between gap-3"><span className="text-xs text-red-100/80 font-bold">المبلغ المطلوب سداده حاليًا</span><strong className="text-red-300 text-base font-black">{formatCurrency(txn.remaining)}</strong></div>
-                                  <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
+                                                                    <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
                                   
                                   <div className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4">
                                       <div className="flex items-center gap-2">
