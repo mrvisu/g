@@ -338,9 +338,8 @@
                 let addonsText = txn.addons?.length > 0 ? txn.addons.map(a => a.name + (a.notes ? ` (${a.notes})` : '')).join(' + ') : 'لا يوجد';
                 return `الباقات: ${pkgs}\nالسيشن: ${txn.sessionType || 'غير محدد'}\nالكاجوال: ${casualText}\nإضافات: ${addonsText}`;
             }
-            const identity = [`الاسم: ${txn.photoName || txn.fullName || txn.clientName || '—'}`, `الرقم القومي: ${txn.nationalId || '—'}`, `الشعبة / المسار: ${txn.branch || '—'}`];
             const notes = (txn.requirements || '').trim();
-            return [...identity, notes ? `ملاحظات: ${notes}` : ''].filter(Boolean).join('\n');
+            return notes ? `ملاحظات: ${notes}` : '';
         };
 
         const processImage = (file, maxWidth = 800) => {
@@ -387,11 +386,20 @@
                     return `${i + 1}) #${safe(item.number)}${safe(item.note) ? ` — ${item.note}` : ''}`;
                 }).join('، ');
                 const photoBlock = photoNumbers ? `🖼️ أرقام الصور: ${photoNumbers}\n` : '';
-                const hasSeparateData = Boolean(txn.writeNameOnPhoto && (safe(txn.photoName) || safe(txn.nationalId) || safe(txn.branch)));
-                const identityBlock = hasSeparateData ? `\n🪪 *بيانات الطباعة المنفصلة*\n✍️ الاسم على الصورة: ${safe(txn.photoName || txn.clientName)}\n🔢 الرقم القومي: ${safe(txn.nationalId)}\n🎓 الشعبة / المسار: ${safe(txn.branch)}\n` : '';
+                const identityLines = [];
+                if (safe(txn.photoName)) identityLines.push(`✍️ الاسم على الصورة: ${safe(txn.photoName)}`);
+                if (safe(txn.nationalId)) identityLines.push(`🔢 الرقم القومي: ${safe(txn.nationalId)}`);
+                if (safe(txn.branch)) identityLines.push(`🎓 الشعبة / المسار: ${safe(txn.branch)}`);
+                const hasSeparateData = Boolean(txn.writeNameOnPhoto && identityLines.length);
+                const identityBlock = hasSeparateData ? `\n🪪 *بيانات الطباعة المنفصلة*\n${identityLines.join('\n')}\n` : '';
                 const identityNote = hasSeparateData ? `\n\n⚠️ *مراجعة قبل الطباعة:* إذا كان هناك أي خطأ في الاسم أو الرقم القومي أو الشعبة، افتح الرابط أعلاه واضغط «تأكيد بيانات الإيصال» ثم عدّل البيانات واحفظها.` : '';
                 const remaining = Number(txn.remaining) || 0;
-                const accountBlock = `\n💰 *تفاصيل الحساب*\n🧾 إجمالي الحساب: ${formatCurrency(txn.total)}\n✅ المدفوع: ${formatCurrency(txn.paid)}${remaining > 0 ? `\n💳 المتبقي: ${formatCurrency(remaining)}` : `\n🎉 الحالة: تم سداد الحساب بالكامل`}\n`;
+                const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== '';
+                const accountLines = [];
+                if (hasValue(txn.total)) accountLines.push(`🧾 إجمالي الحساب: ${formatCurrency(txn.total)}`);
+                if (hasValue(txn.paid)) accountLines.push(`✅ المدفوع: ${formatCurrency(txn.paid)}`);
+                if (remaining > 0 || (hasValue(txn.total) && hasValue(txn.paid))) accountLines.push(remaining > 0 ? `💳 المتبقي: ${formatCurrency(remaining)}` : '🎉 الحالة: تم سداد الحساب بالكامل');
+                const accountBlock = accountLines.length ? `\n💰 *تفاصيل الحساب*\n${accountLines.join('\n')}\n` : '';
                 const balanceLine = remaining > 0 ? `\n📌 يمكنك سداد المبلغ المتبقي من بطاقة السداد داخل رابط المتابعة.\n` : '';
                 const template = settings.waTemplates.invoice || DEFAULT_WA_TEMPLATES.invoice;
                 return template
@@ -3821,7 +3829,6 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     if (!data.promotions) data.promotions = DEFAULT_PROMOTIONS;
                     if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
                     else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
-                    if (data.waTemplates.invoice && (!data.waTemplates.invoice.includes('{photo_details}') || !data.waTemplates.invoice.includes('{identity_details}') || !data.waTemplates.invoice.includes('{edit_url}'))) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
