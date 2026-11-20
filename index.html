@@ -257,7 +257,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "✨ *فاتورة إلكترونية من {studio}* ✨\n━━━━━━━━━━━━━━━━━━\nأهلًا وسهلًا أ. *{name}*،\nشكرًا لاختياركم لنا، ويسعدنا خدمتكم دائمًا 📸\n\n🧾 *بيانات الإيصال*\n🔹 رقم الإيصال: *#{receipt}*\n🗓️ تاريخ التسجيل: {date} | {time}\n📦 موعد استلام الصور: *{pickup_date}*\n🪪 الرقم القومي: {national_id}\n\n━━━━━━━━━━━━━━━━━━\n📷 *الخدمات المطلوبة*\n{services}\n\n━━━━━━━━━━━━━━━━━━\n💰 *ملخص الحساب*\n🧮 الإجمالي: *{total} ج.م*\n✅ المدفوع: *{paid} ج.م* {payment_note}\n⏳ المتبقي: *{remaining} ج.م*\n🎁 رصيد المكافآت: *{reward_balance} ج.م*\n\n🔗 *تابع طلبك وراجع بيانات الإيصال:*\n{track_url}\n\nنسعد بخدمتكم وننتظر زيارتكم بكل ترحاب 💛\n*فريق {studio}*",
+          invoice: "✨ *فاتورة عميل من {studio}* ✨\n━━━━━━━━━━━━━━━━━━\n👋 أهلاً بك أ. *{name}*\n📸 نورتنا وشرفتنا في *{studio}*\n🧾 رقم الإيصال: *#{receipt}*\n📅 تاريخ إنشاء الإيصال: *{date}*\n{phone_line}{pickup_line}{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n🔗 *رابط متابعة الطلب ومراجعة البيانات:*\n{receipt_url}\n\n📌 من خلال الرابط يمكنك متابعة حالة الطلب، مراجعة بيانات الإيصال، ومعرفة موعد الاستلام أو السداد عند وجود مبلغ متبقٍ.{identity_note}\n\n💛 شكرًا لثقتكم بنا\n📷 *فريق {studio}*",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -371,57 +371,49 @@
         };
 
         const generateWA_Message = (templateKey, txn, settings, isWedding = false, allRecords = []) => {
-            let msg = settings.waTemplates[templateKey] || "";
             const clientName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+            const safe = (value, fallback = '') => String(value ?? '').trim() || fallback;
+            const portalBaseUrl = window.location.href.split('?')[0];
+            const receiptUrl = portalBaseUrl + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
+            const rewards = getCustomerRewards(txn.phone, allRecords, settings);
+            if (templateKey === 'invoice') {
+                const phoneLine = safe(txn.phone) ? `📞 الهاتف: ${txn.phone}\n` : '';
+                const pickupLine = safe(txn.pickupDate) ? `📦 تاريخ استلام الصور: ${formatDateOnly(txn.pickupDate)}\n` : '';
+                const details = safe(txn.requirements || txn.details);
+                const detailsBlock = details ? `📝 تفاصيل الطلب: ${details}\n` : '';
+                const photoItems = Array.isArray(txn.photoNo) ? txn.photoNo : (txn.photoNo ? String(txn.photoNo).split(',').map(number => ({number: number.trim()})) : []);
+                const photoNumbers = photoItems.filter(p => safe(typeof p === 'string' ? p : p?.number)).map((p, i) => {
+                    const item = typeof p === 'string' ? {number: p} : p;
+                    return `${i + 1}) #${safe(item.number)}${safe(item.note) ? ` — ${item.note}` : ''}`;
+                }).join('، ');
+                const photoBlock = photoNumbers ? `🖼️ أرقام الصور: ${photoNumbers}\n` : '';
+                const hasSeparateData = Boolean(txn.writeNameOnPhoto && (safe(txn.photoName) || safe(txn.nationalId) || safe(txn.branch)));
+                const identityBlock = hasSeparateData ? `\n🪪 *بيانات الطباعة المنفصلة*\n✍️ الاسم على الصورة: ${safe(txn.photoName || txn.clientName)}\n🔢 الرقم القومي: ${safe(txn.nationalId)}\n🎓 الشعبة / المسار: ${safe(txn.branch)}\n` : '';
+                const identityNote = hasSeparateData ? `\n\n⚠️ *مراجعة قبل الطباعة:* إذا كان هناك أي خطأ في الاسم أو الرقم القومي أو الشعبة، افتح الرابط أعلاه واضغط «تأكيد بيانات الإيصال» ثم عدّل البيانات واحفظها.` : '';
+                const remaining = Number(txn.remaining) || 0;
+                const accountBlock = `\n💰 *تفاصيل الحساب*\n🧾 إجمالي الحساب: ${formatCurrency(txn.total)}\n✅ المدفوع: ${formatCurrency(txn.paid)}${remaining > 0 ? `\n💳 المتبقي: ${formatCurrency(remaining)}` : `\n🎉 الحالة: تم سداد الحساب بالكامل`}\n`;
+                const balanceLine = remaining > 0 ? `\n📌 يمكنك سداد المبلغ المتبقي من بطاقة السداد داخل رابط المتابعة.\n` : '';
+                const template = settings.waTemplates.invoice || DEFAULT_WA_TEMPLATES.invoice;
+                return template
+                    .replace(/{name}/g, clientName || 'العميل')
+                    .replace(/{receipt}/g, txn.receiptNo || '')
+                    .replace(/{date}/g, formatDate(txn.dateTime) || 'غير محدد')
+                    .replace(/{phone_line}/g, phoneLine)
+                    .replace(/{pickup_line}/g, pickupLine)
+                    .replace(/{details_block}/g, `${detailsBlock}${photoBlock}${accountBlock}${balanceLine}`)
+                    .replace(/{identity_block}/g, identityBlock)
+                    .replace(/{identity_note}/g, identityNote)
+                    .replace(/{receipt_url}/g, receiptUrl)
+                    .replace(/{studio}/g, settings.studioName || 'الاستوديو');
+            }
+
+            let msg = settings.waTemplates[templateKey] || '';
             let reqs = '';
             if (isWedding) {
-                const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : '');
-                if (pkgs) reqs += `الباقات: ${pkgs}\n`;
-                if (txn.weddingDate) reqs += `موعد الزفاف: ${formatDateOnly(txn.weddingDate)}\n`;
-                if (txn.location) reqs += `مكان التصوير: ${txn.location}\n`;
-                if (txn.makeupArtist) reqs += `الميك أب: ${txn.makeupArtist}\n`;
-                if (txn.leaveTime) reqs += `وقت الخروج: ${txn.leaveTime}\n`;
-                if (txn.sessionType) reqs += `نوع السيشن: ${txn.sessionType}\n`;
-                if (txn.casualShootDate) reqs += `تصوير الكاجوال: ${formatDateOnly(txn.casualShootDate)}\n`;
-                if (txn.groomAddress) reqs += `عنوان العريس: ${txn.groomAddress}\n`;
-                if (txn.addons?.length > 0) reqs += `إضافات أخرى: ${txn.addons.map(a => `${a.name}${a.notes ? ' ('+a.notes+')' : ''}`).join(' + ')}\n`;
-            } else {
-                reqs = txn.requirements || 'خدمات تصوير';
-            }
-
-            if (txn.photoName) reqs += `\nالاسم: ${txn.photoName}\nالرقم القومي: ${txn.nationalId || 'غير مسجل'}`;
-            const paymentNote = txn.electronicPaid > 0 ? '(تم الدفع إلكترونياً)' : '(تم الدفع كاش)';
-            const rewards = getCustomerRewards(txn.phone, allRecords, settings);
-
-            msg = msg.replace(/{name}/g, clientName || 'العميل');
-            msg = msg.replace(/{receipt}/g, txn.receiptNo || '');
-            msg = msg.replace(/{national_id}/g, txn.nationalId || 'غير مسجل');
-            msg = msg.replace(/{total}/g, txn.total || 0);
-            msg = msg.replace(/{paid}/g, txn.paid || 0);
-            msg = msg.replace(/{remaining}/g, txn.remaining || 0);
-            msg = msg.replace(/{services}/g, reqs);
-            msg = msg.replace(/{studio}/g, settings.studioName || 'الاستوديو');
-            msg = msg.replace(/{date}/g, formatDateOnly(txn.dateTime));
-            msg = msg.replace(/{time}/g, formatTimeOnly(txn.dateTime));
-            msg = msg.replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو');
-            msg = msg.replace(/{payment_note}/g, paymentNote);
-            msg = msg.replace(/{reward_balance}/g, rewards.balance);
-            msg = msg.replace(/{item_title}/g, 'عرض/منتج');
-            
-            const portalBaseUrl = window.location.href.split('?')[0];
-            const trackUrl = portalBaseUrl + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${isWedding ? 'w' : 't'}`;
-            const portalUrl = portalBaseUrl + '?client=true';
-            const productsUrl = portalBaseUrl + '?client=true&view=products';
-            const bookingUrl = portalBaseUrl + '?client=true&view=booking';
-            const archiveUrl = portalBaseUrl + '?client=true&view=archive';
-            msg = msg.replace(/{track_url}/g, trackUrl);
-            msg = msg.replace(/{portal_url}/g, portalUrl).replace(/{products_url}/g, productsUrl).replace(/{booking_url}/g, bookingUrl).replace(/{archive_url}/g, archiveUrl);
-            if (templateKey === 'invoice') {
-                if (txn.pickupDate && !msg.includes(formatDateOnly(txn.pickupDate))) msg += `\n\n📦 موعد استلام الصور: ${formatDateOnly(txn.pickupDate)}`;
-                else if (!txn.pickupDate && !msg.includes('موعد استلام الصور')) msg += '\n\n📦 موعد استلام الصور: يتم تحديده مع الاستوديو';
-                msg += `\n\n🌟 *بوابتك الرقمية مع ${settings.studioName || 'الاستوديو'}*\nتابع منتجاتنا وعروضنا الجديدة، واحجز موعدك، وراجع أرشيف طلباتك في أي وقت من خلال الروابط التالية:\n🛍️ بوابة المنتجات والعروض: ${productsUrl}\n📅 حجز موعد تصوير: ${bookingUrl}\n🗂️ الأرشيف وطلباتك: ${archiveUrl}\n\nنسعد دائمًا بزيارتك وخدمتك بكل حب ✨`;
-            }
-            return msg;
+                const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : 'بدون باقة محددة');
+                reqs = [`📦 الباقات: ${pkgs}`, `📸 نوع السيشن: ${safe(txn.sessionType, 'غير محدد')}`, txn.weddingDate ? `📅 موعد الزفاف: ${formatDateOnly(txn.weddingDate)}` : '', txn.requirements ? `📝 تفاصيل إضافية: ${txn.requirements.trim()}` : ''].filter(Boolean).join('\n');
+            } else reqs = safe(txn.requirements, 'خدمات تصوير');
+            return msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{national_id}/g, txn.nationalId || 'غير مسجل').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime)).replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو').replace(/{reward_balance}/g, rewards.balance).replace(/{track_url}/g, receiptUrl);
         };
 
         const openWhatsApp = (phone, msg) => {
@@ -3455,7 +3447,17 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               <div className="space-y-8 pb-20">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو وإعدادات النظام</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between mb-3">
+                        <div>
+                            <p className="font-bold text-xs text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={settings.enableNotifications || false} onChange={e => setSettings({...settings, enableNotifications: e.target.checked})} />
+                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                        </label>
+                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label>
                       <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" />
@@ -3484,7 +3486,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     </div>
 
                     {/* إعدادات نظام المكافآت */}
-                    <div className="md:col-span-2 bg-slate-950 p-5 rounded-2xl border border-yellow-500/30">
+                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-2xl border border-yellow-500/30">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
                             <div>
                                 <h3 className="font-bold text-base text-yellow-400 flex items-center gap-2"><i className="ph-fill ph-gift text-xl"></i> إعدادات نظام المكافآت (Cashback)</h3>
@@ -3514,7 +3516,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     </div>
 
                     {/* إعدادات الحجز الأونلاين للمواعيد */}
-                    <div className="md:col-span-2 bg-slate-950 p-5 rounded-2xl border border-purple-500/30">
+                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-2xl border border-purple-500/30">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
                             <div>
                                 <h3 className="font-bold text-base text-purple-400 flex items-center gap-2"><i className="ph-fill ph-calendar-plus text-xl"></i> إعدادات الحجز الأونلاين (للبوابة)</h3>
@@ -3559,7 +3561,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     </div>
                     
                     {/* إعدادات بيانات الدفع للعملاء */}
-                    <div className="md:col-span-2 bg-indigo-950/20 p-5 rounded-2xl border border-indigo-500/30">
+                    <div className="md:col-span-1 bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/30">
                         <div className="mb-4 border-b border-indigo-900/50 pb-3">
                             <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> رقم استلام المدفوعات (للعملاء)</h3>
                             <p className="text-xs text-slate-400 mt-1">هذا الرقم سيظهر للعميل في رابط التتبع الخاص به ليقوم بتحويل المبالغ المتبقية عليه.</p>
@@ -3569,19 +3571,14 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                                 <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-device-mobile text-indigo-400"></i> رقم الهاتف (محافظ / إنستاباي)</label>
                                 <input type="text" placeholder="مثال: 010XXXXXXXX" value={settings.vodafoneCashNumber || ''} onChange={e => setSettings({...settings, vodafoneCashNumber: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono tracking-widest" />
                             </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-link text-cyan-400"></i> رابط الدفع المباشر (إنستاباي)</label>
+                                <input type="url" placeholder="https://..." value={settings.instapayLink || ''} onChange={e => setSettings({...settings, instapayLink: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-cyan-500 font-mono text-sm" dir="ltr" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between mt-2">
-                        <div>
-                            <p className="font-bold text-sm text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
-                            <p className="text-xs text-slate-500 mt-1">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" checked={settings.enableNotifications || false} onChange={e => setSettings({...settings, enableNotifications: e.target.checked})} />
-                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
-                        </label>
-                    </div>
+
                   </div>
                 </div>
                 
@@ -3751,7 +3748,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
           const urlParams = new URLSearchParams(currentUrl);
           const trackPhone = urlParams.get('phone');
           const trackReceipt = urlParams.get('receipt');
-          const trackType = urlParams.get('type') || 't'; 
+          const trackType = urlParams.get('type') || 't';
+          const editIdentity = urlParams.get('edit') === 'identity';
           const isClientPortal = urlParams.get('client') === 'true';
           const isTracking = trackPhone && trackReceipt;
 
@@ -3823,7 +3821,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                     if (!data.promotions) data.promotions = DEFAULT_PROMOTIONS;
                     if (!data.waTemplates) data.waTemplates = DEFAULT_WA_TEMPLATES;
                     else data.waTemplates = { ...DEFAULT_WA_TEMPLATES, ...data.waTemplates };
-                    if (data.waTemplates.invoice && (!data.waTemplates.invoice.includes('{track_url}') || data.waTemplates.invoice.includes('*🧾 تفاصيل الفاتورة*') || data.waTemplates.invoice.includes('*فاتورة إلكترونية | إيصال رقم #{receipt}*'))) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
+                    if (data.waTemplates.invoice && (!data.waTemplates.invoice.includes('{photo_details}') || !data.waTemplates.invoice.includes('{identity_details}') || !data.waTemplates.invoice.includes('{edit_url}'))) data.waTemplates.invoice = DEFAULT_WA_TEMPLATES.invoice;
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
@@ -3937,6 +3935,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                   const currentTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
                   
                   if (currentTxn) {
+                      if (editIdentity) { setShowConfirmData(true); setEditingConfirmData(true); }
                       // نظام حماية الجهاز: ربط رابط التتبع بمتصفح العميل لأول مرة فقط
                       const currentDeviceId = getRobustDeviceId();
                       
@@ -3959,7 +3958,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                       }
                   }
               }
-          }, [isTracking, isTargetLoaded, transactions, weddings, trackPhone, trackReceipt, trackType]);
+          }, [isTracking, isTargetLoaded, transactions, weddings, trackPhone, trackReceipt, trackType, editIdentity]);
 
           if (!authReady) {
               return (
@@ -4185,7 +4184,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                               </div>
                           </div>
 
-                          <div className="bg-slate-950/80 border border-slate-700 rounded-2xl p-3 mb-4 text-sm shadow-inner"><div className="flex items-center gap-2 mb-3"><i className="ph-fill ph-identification-card text-blue-300 text-lg"></i><p className="text-slate-300 text-xs font-black">بيانات التواصل والتسجيل</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="flex items-center gap-3 min-w-0 bg-slate-900/80 rounded-xl border border-slate-800 p-3"><div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-phone"></i></div><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">رقم الهاتف</p><p className="text-slate-200 font-bold font-mono truncate" dir="ltr" title={txn.phone || '—'}>{txn.phone || '—'}</p></div></div><div className="flex items-center gap-3 min-w-0 bg-slate-900/80 rounded-xl border border-slate-800 p-3"><div className="w-8 h-8 rounded-lg bg-yellow-500/15 text-yellow-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-blank"></i></div><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">تاريخ ووقت الإيصال</p><p className="text-slate-200 font-bold text-xs leading-relaxed truncate">{formatDate(txn.dateTime) || '—'}</p></div></div></div></div>
+
                           {/* Rewards Mini-Banner */}
                           {availableRewards > 0 && (
                               <div className="bg-purple-950/30 border border-purple-500/20 p-3 rounded-xl mb-5 flex items-start gap-3 shadow-inner">
@@ -4198,49 +4197,51 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                               </div>
                           )}
 
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                              <div className="bg-gradient-to-br from-amber-950/60 to-slate-900 border border-amber-500/30 rounded-2xl p-4 text-center shadow-inner">
+                                  <p className="text-[11px] text-amber-200/80 font-bold flex items-center justify-center gap-1.5"><i className="ph-fill ph-coins text-amber-300"></i> إجمالي الحساب</p>
+                                  <p className="text-amber-300 text-xl font-black mt-1">{formatCurrency(txn.total)}</p>
+                              </div>
+                              <div className="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 text-center shadow-inner">
+                                  <p className="text-[11px] text-emerald-200/80 font-bold flex items-center justify-center gap-1.5"><i className="ph-fill ph-check-circle text-emerald-300"></i> المدفوع</p>
+                                  <p className="text-emerald-300 text-xl font-black mt-1">{formatCurrency(txn.paid)}</p>
+                              </div>
+                          </div>
+
                           {isWedding && txn.weddingDate && <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm"><span className="text-slate-400">موعد الزفاف:</span><span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span></div>}
 
-                          <div className="rounded-2xl border border-slate-700 bg-slate-950/70 overflow-hidden mb-4 shadow-inner">
-                              <button type="button" onClick={() => setShowOrderDetails(v => !v)} className="w-full p-3 sm:p-4 flex items-center gap-3 text-right hover:bg-slate-800/70 transition-colors"><div className={`w-10 h-10 rounded-xl ${isWedding ? 'bg-pink-500/15 text-pink-300 border-pink-400/30' : 'bg-blue-500/15 text-blue-300 border-blue-400/30'} border flex items-center justify-center shrink-0`}><i className="ph-fill ph-list-dashes text-xl"></i></div><div className="flex-1 min-w-0"><p className="text-slate-200 font-black text-sm">الخدمات والتفاصيل المطلوبة</p><p className="text-[11px] text-slate-500 mt-1 truncate">اضغط لعرض الخدمات والأرقام والبيانات المرتبطة بالطلب</p></div>{!isWedding && txn.pickupDate && <span className="shrink-0 flex items-center gap-1 bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 rounded-xl px-2 py-1 text-[10px] font-black" title="موعد التسليم"><i className="ph-fill ph-calendar-check"></i>{(() => { const days = getDiffDays(txn.pickupDate); return days === 0 ? 'اليوم' : days > 0 ? `بعد ${days} يوم` : `متأخر ${Math.abs(days)}`; })()}</span>}<i className={`ph-bold ph-caret-${showOrderDetails ? 'up' : 'down'} text-slate-400 text-lg shrink-0`}></i></button>
-                              {showOrderDetails && <div className="border-t border-slate-800 p-3 sm:p-4 space-y-3 animate-fadeIn">
-                                  {!isWedding && txn.pickupDate && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><div className="flex items-center gap-3 bg-emerald-950/30 border border-emerald-500/25 rounded-xl p-3"><i className="ph-fill ph-calendar-check text-emerald-300 text-xl"></i><div><p className="text-[10px] text-emerald-200/70 font-bold">تاريخ الاستلام</p><p className="text-white text-sm font-black">{formatDateOnly(txn.pickupDate)}</p></div></div><div className="flex items-center gap-3 bg-indigo-950/30 border border-indigo-500/25 rounded-xl p-3"><i className="ph-fill ph-clock text-indigo-300 text-xl"></i><div><p className="text-[10px] text-indigo-200/70 font-bold">مواعيد عمل الاستوديو</p><p className="text-white text-xs font-bold leading-relaxed">{settings.workingHours || 'يومياً من 10 صباحاً حتى 10 مساءً'}</p></div></div></div>}
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <div className="sm:col-span-2 bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-500 text-[10px] font-bold mb-1 flex items-center gap-1"><i className={`ph-fill ph-list-dashes ${isWedding ? 'text-pink-400' : 'text-blue-400'}`}></i> الخدمات والطلبات</p><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs || 'لا يوجد تفاصيل'}</p></div>
-                                      {trackingPhotoItems.length > 0 && <div className="bg-blue-950/30 rounded-xl border border-blue-500/25 p-3 min-w-0"><p className="text-blue-200 text-xs font-black mb-2 flex items-center gap-1"><i className="ph-fill ph-images"></i> أرقام الصور المحددة</p><div className="flex flex-wrap gap-2">{trackingPhotoItems.map((photo, i) => <span key={i} className="inline-flex items-center gap-2 font-bold text-blue-100 bg-slate-950 px-3 py-2 rounded-lg border border-blue-500/30 text-xs"><span className="text-blue-300" dir="ltr">#{photo.number}</span><span className="text-slate-400">{photo.serviceType || photo.service || 'خدمة تصوير'}</span></span>)}</div></div>}
-
-                                  </div>
+                          {(displayReqs || trackingPhotoItems.length > 0) && <div className="bg-slate-950/80 border border-slate-700 rounded-2xl p-4 mb-4 shadow-inner">
+                              <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-9 h-9 rounded-xl ${isWedding ? 'bg-pink-500/15 text-pink-300 border-pink-400/30' : 'bg-blue-500/15 text-blue-300 border-blue-400/30'} border flex items-center justify-center`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-list-dashes'} text-lg`}></i></div>
+                                  <p className="text-slate-200 text-sm font-black">الخدمات والطلبات</p>
+                              </div>
+                              {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
+                              {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-gradient-to-br from-blue-950/50 to-slate-900 rounded-xl border border-blue-500/25 p-3 min-w-0`}>
+                                  <p className="text-blue-200 text-xs font-black mb-3 flex items-center gap-1.5"><i className="ph-fill ph-images text-base"></i> أرقام الصور المحددة</p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{trackingPhotoItems.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-950/80 border border-blue-500/25 rounded-xl p-3 min-w-0 text-center"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div>
                               </div>}
-                          </div>
+                          </div>}
 
                           {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
                           {txn.appointmentConfirmed && <div className="mb-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-seal-check text-emerald-300 text-2xl shrink-0"></i><div><p className="text-emerald-200 font-black text-sm">تم تأكيد موعدك بنجاح</p><p className="text-emerald-100/80 text-xs leading-relaxed mt-1">{txn.confirmationMessage || 'ننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.'}</p></div></div>}
-                          {!isWedding && <div className="mb-3 bg-blue-950/30 border border-blue-500/30 rounded-xl p-3 space-y-3"><div className="flex items-center gap-3"><i className="ph-fill ph-calendar-check text-blue-300 text-xl"></i><div className="min-w-0"><p className="text-[10px] text-blue-200/70 font-bold">موعد استلام الصور</p><p className="text-white text-sm font-black">{txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'يتم تحديده مع الاستوديو'}</p></div></div><div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة: <span className="text-amber-300 font-black">{formatCurrency(instantPrintCost)}</span> • المدفوع: <span className="text-emerald-300 font-black">{formatCurrency(instantPrintPaid)}</span> • المتبقي: <span className="text-amber-300 font-black">{formatCurrency(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">للسداد، استخدم حقل <span className="text-indigo-300 font-bold">سداد المبلغ المتبقي</span> الموجود أسفل البطاقة.</p></div></div>}
-
-                          {/* Financial Summary */}
-                          <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 flex justify-between items-center shadow-inner">
-                              <span className="text-slate-300 font-bold flex items-center gap-2">
-                                  <i className="ph-fill ph-coins text-yellow-500 text-2xl"></i> إجمالي الحساب
-                              </span>
-                              <span className="text-2xl sm:text-3xl font-black text-yellow-400">{txn.total} <span className="text-sm font-bold">ج.م</span></span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 mb-4">
-                               <div className="bg-green-950/20 p-3 sm:p-4 rounded-xl border border-green-900/30 flex flex-col items-center justify-center gap-1 shadow-sm">
-                                   <span className="text-slate-400 text-xs font-bold">المدفوع</span>
-                                   <span className="text-green-400 font-black text-lg sm:text-xl">{txn.paid} <span className="text-[10px]">ج.م</span></span>
-                               </div>
-                               <div className={`p-3 sm:p-4 rounded-xl border flex flex-col items-center justify-center gap-1 shadow-sm ${txn.remaining > 0 ? 'bg-red-950/20 border-red-900/30' : 'bg-slate-950/50 border-slate-800'}`}>
-                                   <span className="text-slate-400 text-xs font-bold">الباقي المستحق</span>
-                                   <span className={`${txn.remaining > 0 ? 'text-red-400' : 'text-slate-300'} font-black text-lg sm:text-xl`}>{txn.remaining} <span className="text-[10px]">ج.م</span></span>
-                               </div>
-                          </div>
-
+                          {!isWedding && (txn.pickupDate || settings.workingHours) && <div className="mb-3 bg-gradient-to-br from-blue-950/60 via-slate-950 to-indigo-950/50 border border-blue-500/35 rounded-2xl p-4 space-y-3 shadow-inner">
+                              {txn.pickupDate && <div className="flex items-start gap-3">
+                                  <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-2xl"></i></div>
+                                  <div className="min-w-0 flex-1">
+                                      <p className="text-[11px] text-blue-200/80 font-black flex items-center gap-1.5"><i className="ph-fill ph-calendar-star"></i> موعد استلام الصور</p>
+                                      <p className="text-emerald-300 text-base font-black mt-1">{(() => { const days = getDiffDays(txn.pickupDate); return days === 0 ? 'الاستلام اليوم' : days > 0 ? `الاستلام بعد ${days} ${days === 1 ? 'يوم' : 'أيام'}` : `موعد الاستلام كان منذ ${Math.abs(days)} ${Math.abs(days) === 1 ? 'يوم' : 'أيام'}`; })()}</p>
+                                      <p className="text-white text-sm font-bold mt-1 tracking-wide">{new Date(txn.pickupDate).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                  </div>
+                              </div>}
+                              {settings.workingHours && <div className="border-t border-blue-400/20 pt-3 flex items-start gap-3"><i className="ph-fill ph-clock text-indigo-300 text-xl mt-0.5 shrink-0"></i><div><p className="text-[10px] text-indigo-200/80 font-black">مواعيد عمل الاستوديو</p><p className="text-slate-200 text-xs font-bold leading-relaxed mt-1">{settings.workingHours}</p></div></div>}
+                              <div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة: <span className="text-amber-300 font-black">{formatCurrency(instantPrintCost)}</span> • المدفوع: <span className="text-emerald-300 font-black">{formatCurrency(instantPrintPaid)}</span> • المتبقي: <span className="text-amber-300 font-black">{formatCurrency(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">للسداد، استخدم حقل <span className="text-indigo-300 font-bold">سداد المبلغ المتبقي</span> الموجود أسفل البطاقة.</p></div>
+                          </div>}
                           {/* Payment Area if Remaining > 0 */}
                           {txn.remaining > 0 && (
                               <div className="mt-4 bg-slate-950 rounded-2xl border border-red-900/50 p-4 shadow-inner">
                                   <div className="flex items-center justify-between gap-3 mb-3 border-b border-slate-800 pb-3">
                                       <div className="flex items-center gap-2"><i className="ph-fill ph-wallet text-xl text-red-400"></i><span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span></div>
-                                      <span className="text-red-300 font-black text-lg">{formatCurrency(txn.remaining)}</span>
+                                      <span className="inline-flex items-center gap-2 bg-red-500/15 border border-red-400/35 text-red-200 rounded-xl px-3 py-2 text-base font-black shadow-inner"><i className="ph-fill ph-coins text-red-300 text-lg"></i>{formatCurrency(txn.remaining)}</span>
                                   </div>
                                                                     <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
                                   
@@ -4249,10 +4250,13 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                                           <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl"></i>
                                           <div className="flex flex-col">
                                               <span className="text-[10px] text-slate-400">رقم المحفظة / إنستاباي</span>
-                                              <span className="font-mono text-base font-black text-white tracking-widest" dir="ltr">{settings.vodafoneCashNumber || '01126810107'}</span>
+                                              <span className="font-mono text-base font-black text-white tracking-widest" dir="ltr">{settings.vodafoneCashNumber}</span>
                                           </div>
                                       </div>
-                                      <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber || '01126810107', e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md">نسخ</button>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                          {settings.instapayLink && <a href={settings.instapayLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md" title="فتح رابط الدفع إنستاباي"><i className="ph-fill ph-lightning text-base"></i> ادفع</a>}
+                                          <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber, e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md"><i className="ph ph-copy"></i> نسخ</button>
+                                      </div>
                                   </div>
                                   <p className="text-[10px] text-center text-slate-500 mb-4 font-bold bg-slate-900/50 py-1 rounded">يرجى التأكد من ظهور اسم <span className="text-indigo-400">"محمود م ا ا"</span> قبل التحويل.</p>
 
