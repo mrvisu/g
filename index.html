@@ -783,6 +783,7 @@
                 e.preventDefault();
                 if(!showBookingReview) { setShowBookingReview(true); return; }
                 if(!bookingData.clientName || !bookingData.phone || !bookingData.date || !bookingData.time) return;
+                if(bookingData.paymentMethod === 'electronic' && bookingData.paymentType === 'deposit' && !(parseFloat(bookingData.depositAmount) > 0)) { alert('يرجى إدخال قيمة العربون المراد تحويله.'); return; }
                 if(bookingData.writeName && (!bookingData.name.trim() || !/^\d{14}$/.test(bookingData.nationalId || '') || !bookingData.branch.trim())) { alert('للطباعة على الصورة، يرجى إدخال الاسم بالكامل والرقم القومي المكوّن من 14 رقمًا والشعبة / المسار.'); return; }
                 
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -816,6 +817,9 @@
                     date: bookingData.date,
                     time: bookingData.time,
                     paymentMethod: bookingData.paymentMethod,
+                    paymentType: bookingData.paymentType || 'full',
+                    depositAmount: bookingData.paymentType === 'deposit' ? (parseFloat(bookingData.depositAmount) || 0) : 0,
+                    requestedPaymentAmount: bookingData.paymentMethod === 'electronic' ? electronicPaidValue : 0,
                     requestedPrice: expectedTotalPrice,
                     price: 0,
                     approvedPrice: 0,
@@ -1022,6 +1026,7 @@
                                                     <div className="sm:col-span-2 rounded-2xl bg-slate-950/70 border border-slate-700 p-3"><p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mb-2"><i className="ph-fill ph-camera text-amber-300"></i> الخدمات المطلوبة</p><p className="text-slate-100 text-sm font-bold leading-relaxed">{bookingSuccess.isFreeSchool ? 'مبادرة التصوير المجاني' : (bookingSuccess.extraServices || []).map(x => `${x.name}${x.qty > 1 ? ` × ${x.qty}` : ''}`).join('، ') || 'لم تُحدد خدمات'}</p><div className="flex justify-between items-center gap-2 mt-3 pt-2 border-t border-slate-800 text-xs"><span className="text-slate-400">الإجمالي التقديري</span><span className="text-amber-300 font-black">{formatCurrency(bookingSuccess.requestedPrice || 0)}</span></div></div>
                                                 </div>
                                                 <div className="bg-amber-950/40 border border-amber-400/25 text-amber-100 text-[11px] font-bold leading-relaxed p-3 rounded-xl mb-4"><i className="ph-fill ph-info ml-1 text-amber-300"></i> قيمة الخدمات تقديرية وغير معتمدة حتى مراجعة الاستوديو. سيتم التواصل معك لتأكيد الموعد والمبلغ.</div>
+                                                {bookingSuccess.paymentMethod === 'electronic' && <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-3 mb-4"><p className="text-indigo-200 text-xs font-black flex items-center gap-1 mb-2"><i className="ph-fill ph-wallet"></i> السداد الإلكتروني</p><p className="text-slate-300 text-[11px] leading-relaxed mb-3">بعد التحويل، أرسل تأكيد الدفع للاستوديو لمراجعة الحجز.</p><button type="button" onClick={() => { const amount = bookingSuccess.requestedPaymentAmount || bookingSuccess.depositAmount || bookingSuccess.requestedPrice || 0; const msg = `مرحباً فريق ${settings.studioName || 'الاستوديو'}،\nقمت بتحويل مبلغ ${amount} ج.م لحجز موعد تصوير.\nرقم الحجز: #${bookingSuccess.receiptNo}\nاسم العميل: ${bookingSuccess.clientName}\nالهاتف: ${bookingSuccess.phone}\nطريقة الدفع: ${bookingSuccess.paymentType === 'deposit' ? 'عربون' : 'دفع كامل'}\nيرجى مراجعة التحويل وتأكيد الحجز.\nتأكدت من ظهور اسم محمود م ا ا قبل التحويل.`; openWhatsApp(settings.studioPhone || '', msg); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2"><i className="ph-fill ph-whatsapp-logo text-xl"></i> تم الدفع، إرسال الإيصال</button></div>}
                                                 <button onClick={() => { setShowBookingModal(false); setBookingSuccess(null); }} className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-black py-3 rounded-xl transition-colors flex items-center justify-center gap-2"><i className="ph ph-check"></i> تم، إغلاق</button>
                                             </div>
                                         ) : (
@@ -4046,6 +4051,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
               const rewardsInfo = getCustomerRewards(txn.phone, allRecords, settings);
               const availableRewards = rewardsInfo.balance;
               const trackingPhotoItems = Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? p.number : p).map(p => typeof p === 'object' ? p : { number: p }) : (txn.photoNo ? [{ number: txn.photoNo }] : []);
+              const photoItemsWithNotes = trackingPhotoItems.filter(photo => String(photo.note || '').trim());
+              const photoItemsWithoutNotes = trackingPhotoItems.filter(photo => !String(photo.note || '').trim());
               const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
               const instantPrintName = instantPrintService?.name || 'طباعة فورية';
               const instantPrintCost = Number(instantPrintService?.price || settings.appointmentSettings?.instantPrintPrice || 90);
@@ -4225,7 +4232,8 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                               {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
                               {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-gradient-to-br from-blue-950/50 to-slate-900 rounded-xl border border-blue-500/25 p-3 min-w-0`}>
                                   <p className="text-blue-200 text-xs font-black mb-3 flex items-center gap-1.5"><i className="ph-fill ph-images text-base"></i> أرقام الصور المحددة</p>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{trackingPhotoItems.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-950/80 border border-blue-500/25 rounded-xl p-3 min-w-0 text-center"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div>
+                                  {photoItemsWithoutNotes.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{photoItemsWithoutNotes.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-950/80 border border-blue-500/25 rounded-xl p-2.5 min-w-0 text-center"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div>}
+                                  {photoItemsWithNotes.length > 0 && <div className={`${photoItemsWithoutNotes.length > 0 ? 'mt-2' : ''} space-y-2`}>{photoItemsWithNotes.map((photo, i) => <div key={i} className="w-full flex items-start gap-3 bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 text-right"><span className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-200 flex items-center justify-center font-black text-sm font-mono shrink-0" dir="ltr">#{photo.number}</span><div className="min-w-0 flex-1"><p className="text-[10px] text-amber-200/80 font-black mb-1 flex items-center gap-1"><i className="ph-fill ph-note"></i> ملاحظة الصورة</p><p className="text-amber-50 text-xs font-bold leading-relaxed whitespace-pre-wrap break-words">{photo.note}</p></div></div>)}</div>}
                               </div>}
                           </div>}
 
