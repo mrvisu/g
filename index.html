@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mrakby Studio - ستوديو المراكبى</title>
     
@@ -257,7 +258,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "✨ *فاتورة عميل من {studio}* ✨\n━━━━━━━━━━━━━━━━━━\n👋 أهلاً بك أ. *{name}*\n📸 نورتنا وشرفتنا في *{studio}*\n🧾 رقم الإيصال: *#{receipt}*\n📅 تاريخ إنشاء الإيصال: *{date}*\n{phone_line}{pickup_line}{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n🔗 *رابط متابعة الطلب ومراجعة البيانات:*\n{receipt_url}\n\n📌 من خلال الرابط يمكنك متابعة حالة الطلب، مراجعة بيانات الإيصال، ومعرفة موعد الاستلام أو السداد عند وجود مبلغ متبقٍ.{identity_note}\n\n💛 شكرًا لثقتكم بنا\n📷 *فريق {studio}*",
+          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n   🧾 *إيصال عميل إلكتروني*\n   📷 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 *أهلاً بك أ. {name}*\nنورتنا وشرفتنا، ويسعدنا خدمتك دائمًا.\n\n📋 *بيانات الإيصال*\n🔢 رقم الإيصال: *#{receipt}*\n📅 تاريخ الإنشاء: *{date}*\n{phone_line}{pickup_line}\n{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n🔗 *رابط المتابعة والمراجعة*\n{receipt_url}\n\n📌 من خلال الرابط يمكنك متابعة حالة الطلب، مراجعة بيانات الإيصال، ومعرفة موعد الاستلام والسداد عند وجود مبلغ متبقٍ.{identity_note}\n\n💛 شكرًا لثقتك بنا\n📸 *مع تحيات فريق {studio}*\n╰━━━━━━━━━━━━━━━━━━╯",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -401,7 +402,11 @@
                 if (remaining > 0 || (hasValue(txn.total) && hasValue(txn.paid))) accountLines.push(remaining > 0 ? `💳 المتبقي: ${formatCurrency(remaining)}` : '🎉 الحالة: تم سداد الحساب بالكامل');
                 const accountBlock = accountLines.length ? `\n💰 *تفاصيل الحساب*\n${accountLines.join('\n')}\n` : '';
                 const balanceLine = remaining > 0 ? `\n📌 يمكنك سداد المبلغ المتبقي من بطاقة السداد داخل رابط المتابعة.\n` : '';
-                const template = settings.waTemplates.invoice || DEFAULT_WA_TEMPLATES.invoice;
+                const savedInvoiceTemplate = settings.waTemplates?.invoice || '';
+                // استبدال القالب الافتراضي القديم فقط؛ أي قالب مخصص كتبه المستخدم يظل محفوظًا.
+                const template = savedInvoiceTemplate && !savedInvoiceTemplate.includes('✨ *فاتورة عميل من {studio}* ✨')
+                    ? savedInvoiceTemplate
+                    : DEFAULT_WA_TEMPLATES.invoice;
                 return template
                     .replace(/{name}/g, clientName || 'العميل')
                     .replace(/{receipt}/g, txn.receiptNo || '')
@@ -424,12 +429,25 @@
             return msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{national_id}/g, txn.nationalId || 'غير مسجل').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime)).replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو').replace(/{reward_balance}/g, rewards.balance).replace(/{track_url}/g, receiptUrl);
         };
 
-        const openWhatsApp = (phone, msg) => {
-            if(!phone) return;
-            let formattedPhone = phone.trim();
+        const normalizeWhatsAppText = (value) => String(value ?? '')
+            .normalize('NFC')
+            .replace(/\r\n?/g, '\n');
+
+        const buildWhatsAppUrl = (phone, message) => {
+            let formattedPhone = String(phone ?? '').trim().replace(/[^0-9+]/g, '');
+            if (formattedPhone.startsWith('+')) formattedPhone = formattedPhone.slice(1);
             if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
             else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
-            window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+            const normalizedMessage = normalizeWhatsAppText(message);
+            // Encode the complete message exactly once. WhatsApp decodes this query value.
+            // فتح WhatsApp Web مباشرة يتجنب تحويل wa.me الوسيط الذي قد يسلم النص
+            // إلى تطبيق سطح المكتب بترميز مختلف على بعض إصدارات Windows.
+            return `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(normalizedMessage)}`;
+        };
+
+        const openWhatsApp = (phone, msg) => {
+            if(!phone) return;
+            window.open(buildWhatsAppUrl(phone, msg), '_blank', 'noopener,noreferrer');
         };
 
         const addToCalendar = (txn) => {
@@ -1135,11 +1153,18 @@
                                                     {/* تفاصيل الدفع الإلكتروني */}
                                                     {bookingData.paymentMethod === 'electronic' && (
                                                         <div className="bg-indigo-950/40 border border-indigo-500/50 p-4 rounded-xl mt-3 animate-fadeIn shadow-lg">
-                                                            <div className="flex items-center gap-3 mb-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                                                <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl shrink-0"></i>
-                                                                <div>
-                                                                   <p className="text-xs text-slate-400">رقم المحفظة / إنستاباي</p>
-                                                                   <p className="font-mono text-lg text-white font-black tracking-widest">{settings.vodafoneCashNumber || 'الرقم غير محدد'}</p>
+                                                            <div className="flex flex-col gap-3 mb-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl shrink-0"></i>
+                                                                    <div className="min-w-0 flex-1">
+                                                                       <p className="text-xs text-slate-400">رقم المحفظة / إنستاباي</p>
+                                                                       <p className="font-mono text-base sm:text-lg text-white font-black tracking-widest break-all" dir="ltr">{settings.vodafoneCashNumber || 'الرقم غير محدد'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                                    <button type="button" disabled={!settings.vodafoneCashNumber} onClick={(e) => copyToClipboard(settings.vodafoneCashNumber, e)} className="min-w-0 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"><i className="ph ph-copy"></i> نسخ رقم الدفع</button>
+                                                                    {settings.instapayLink ? <a href={settings.instapayLink} target="_blank" rel="noopener noreferrer" className="min-w-0 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"><i className="ph-fill ph-lightning"></i> إنستاباي مباشر</a> : <span className="min-w-0 bg-slate-800 text-slate-500 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700"><i className="ph ph-link-break"></i> الرابط غير مضاف</span>}
+                                                                    <button type="button" onClick={() => { const amount = bookingData.paymentType === 'deposit' ? (bookingData.depositAmount || 0) : (expectedTotalPrice || 0); const msg = `مرحباً فريق ${settings.studioName || 'الاستوديو'}،\nأنا ${bookingData.name || 'العميل'}، قمت بتحويل مبلغ ${amount} ج.م لحجز موعد تصوير.\nالهاتف: ${bookingData.phone || ''}\nطريقة الدفع: ${bookingData.paymentType === 'deposit' ? 'عربون' : 'دفع كامل'}\nتأكدت من ظهور اسم محمود م ا ا قبل التحويل.\nيرجى مراجعة التحويل وتأكيد الحجز.`; openWhatsApp(settings.studioPhone || '', msg); }} className="min-w-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"><i className="ph-fill ph-whatsapp-logo"></i> إرسال الإيصال</button>
                                                                 </div>
                                                             </div>
 
@@ -2050,13 +2075,11 @@
                       <div className="min-w-0 flex-1"><div className="flex items-center gap-2 min-w-0"><h3 className="text-sm sm:text-base font-black text-white truncate">{displayName || 'عميل بدون اسم'}</h3>{isRepeat && <span className="shrink-0 text-[9px] text-yellow-300 bg-yellow-950/40 border border-yellow-500/20 px-1.5 py-0.5 rounded">مميز</span>}</div><div className="flex flex-wrap items-center gap-1.5 mt-1 text-[10px] text-slate-400"><span className="font-mono bg-slate-950 px-1.5 py-1 rounded border border-slate-800">إيصال #{txn.receiptNo || '—'}</span>{cardPhotoItems.slice(0,3).map((photo,idx)=><span key={idx} className="font-mono bg-slate-950 px-1.5 py-1 rounded border border-slate-800">صورة {photo.number}</span>)}{cardPhotoItems.length > 3 && <span className="text-slate-500">+{cardPhotoItems.length-3}</span>}</div></div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:shrink-0" onClick={e => e.stopPropagation()}>
-                      {!isWedding && txn.pickupDate && <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 px-2 py-1.5 rounded-lg"><i className="ph-fill ph-calendar-check"></i>{(() => { const d=getDiffDays(txn.pickupDate); return d===0?'اليوم':d>0?`بعد ${d} يوم`:`متأخر ${Math.abs(d)}`; })()}</span>}
+                      {!isWedding && txn.pickupDate && currentStatus !== statusesToUse[statusesToUse.length - 1].id && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 px-2 py-1.5 rounded-lg"><i className="ph-fill ph-calendar-check"></i>{(() => { const d=getDiffDays(txn.pickupDate); return d===0?'اليوم':d>0?`بعد ${d} يوم`:`متأخر ${Math.abs(d)}`; })()}</span>}
                       <span className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border ${currentStatus === statusesToUse[statusesToUse.length-1].id ? 'text-emerald-300 bg-emerald-950/30 border-emerald-500/20' : 'text-blue-300 bg-blue-950/30 border-blue-500/20'}`}>{statusesToUse.find(x => x.id === currentStatus)?.label || 'قيد التنفيذ'}</span>
+                      {parseFloat(txn.remaining) > 0 ? <span className="inline-flex items-center gap-1.5 text-red-200 bg-red-950/50 border border-red-500/35 px-2 py-1.5 rounded-lg text-[10px] font-black"><i className="ph-fill ph-coins"></i> متبقي: {formatCurrency(txn.remaining)}</span> : <span className="inline-flex items-center gap-1.5 text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 px-2 py-1.5 rounded-lg text-[10px] font-bold"><i className="ph-fill ph-check-circle"></i> مدفوع بالكامل</span>}
                       {txn.viewedByClient ? <span className="text-blue-300 bg-blue-950/30 border border-blue-500/20 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph-fill ph-eye"></i> تمت المشاهدة</span> : <span className="text-slate-500 bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title="لم يفتح العميل الرابط بعد"><i className="ph ph-eye-slash"></i> لم يُشاهد</span>}
                       <button onClick={(e) => { e.stopPropagation(); sendInvoice(); }} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><i className="ph ph-receipt"></i><span>إرسال الفاتورة</span></button>
-                      <div className="relative"><button onClick={(e) => { e.stopPropagation(); setShowWaMenu(v => !v); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><i className="ph ph-whatsapp-logo"></i><span>واتساب</span></button>{showWaMenu && <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-40 p-1 flex flex-col overflow-hidden animate-fadeIn"><button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('tracking', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-blue-300 hover:bg-slate-800 font-bold border-b border-slate-800">رابط التتبع للعميل</button>{txn.photosLink && <button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, `أهلاً ${displayName} 👋
-صورك جاهزة للتحميل بجودة عالية! يمكنك تحميلها وحفظها من هذا الرابط:
-${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-green-400 hover:bg-slate-800 font-bold border-b border-slate-800">إرسال رابط الصور</button>}<button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('ready', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800">إشعار جاهزية الطلب</button><button onClick={(e) => { e.stopPropagation(); openWhatsApp(txn.phone, generateWA_Message('reminder', txn, settings, isWedding, allRecords)); setShowWaMenu(false); }} className="text-right px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800">تذكير بالمتبقي</button></div>}</div>
                       <button onClick={(e) => { e.stopPropagation(); setShowDetails(true); }} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700" title="عرض التفاصيل"><i className="ph ph-caret-left"></i></button>
                     </div>
                   </div>
@@ -2078,7 +2101,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                            {txn.selectedPromos?.length > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-gift text-sm"></i> محدد له عرض</span>}
                            {isRepeat && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})</span>}
                            {txn.clientRating > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5</span>}
-                           {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}{!isWedding && txn.pickupDate && (() => { const days=getDiffDays(txn.pickupDate); const label=days===0?'الاستلام اليوم':days>0?`الاستلام بعد ${days} يوم${days===1?'':'اً'}`:`موعد الاستلام متأخر ${Math.abs(days)} يوم`; return <span className="text-white flex items-center gap-1 text-[10px] sm:text-xs font-black bg-emerald-700 px-2 py-1 rounded border border-emerald-400/50" title={`موعد الاستلام: ${formatDateOnly(txn.pickupDate)}`}><i className="ph-fill ph-calendar-check"></i> {label}</span>; })()}
+                           {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}{!isWedding && txn.pickupDate && currentStatus !== statusesToUse[statusesToUse.length - 1].id && (() => { const days=getDiffDays(txn.pickupDate); const label=days===0?'الاستلام اليوم':days>0?`الاستلام بعد ${days} يوم${days===1?'':'اً'}`:`موعد الاستلام متأخر ${Math.abs(days)} يوم`; return <span className="text-white flex items-center gap-1 text-[10px] sm:text-xs font-black bg-emerald-700 px-2 py-1 rounded border border-emerald-400/50" title={`موعد الاستلام: ${formatDateOnly(txn.pickupDate)}`}><i className="ph-fill ph-calendar-check"></i> {label}</span>; })()}
                            {isPastPayment && <span className="text-purple-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-purple-950/30 px-2 py-1 rounded border border-purple-900/50"><i className="ph-fill ph-clock-counter-clockwise text-sm"></i> سداد من يوم سابق</span>}
                            {isWedding && <><span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>{cardPhotoItems.map((photo,idx)=><button key={idx} onClick={(e)=>{e.stopPropagation();copyToClipboard(photo.number,e)}} className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono" title="اضغط لنسخ رقم الصورة">صورة {photo.number}</button>)}</>}
                         </div>
@@ -4232,7 +4255,7 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                               {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
                               {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-gradient-to-br from-blue-950/50 to-slate-900 rounded-xl border border-blue-500/25 p-3 min-w-0`}>
                                   <p className="text-blue-200 text-xs font-black mb-3 flex items-center gap-1.5"><i className="ph-fill ph-images text-base"></i> أرقام الصور المحددة</p>
-                                  {photoItemsWithoutNotes.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{photoItemsWithoutNotes.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-950/80 border border-blue-500/25 rounded-xl p-2.5 min-w-0 text-center"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div>}
+                                  {photoItemsWithoutNotes.length > 0 && <div className="bg-slate-950/50 border border-blue-500/25 rounded-2xl p-2.5"><div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{photoItemsWithoutNotes.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-900 border border-blue-500/30 rounded-xl p-2.5 min-w-0 text-center shadow-inner"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div></div>}
                                   {photoItemsWithNotes.length > 0 && <div className={`${photoItemsWithoutNotes.length > 0 ? 'mt-2' : ''} space-y-2`}>{photoItemsWithNotes.map((photo, i) => <div key={i} className="w-full flex items-start gap-3 bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 text-right"><span className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-200 flex items-center justify-center font-black text-sm font-mono shrink-0" dir="ltr">#{photo.number}</span><div className="min-w-0 flex-1"><p className="text-[10px] text-amber-200/80 font-black mb-1 flex items-center gap-1"><i className="ph-fill ph-note"></i> ملاحظة الصورة</p><p className="text-amber-50 text-xs font-bold leading-relaxed whitespace-pre-wrap break-words">{photo.note}</p></div></div>)}</div>}
                               </div>}
                           </div>}
@@ -4260,17 +4283,17 @@ ${txn.photosLink}`); setShowWaMenu(false); }} className="text-right px-3 py-2.5 
                                   </div>
                                                                     <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
                                   
-                                  <div className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4">
-                                      <div className="flex items-center gap-2">
-                                          <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl"></i>
-                                          <div className="flex flex-col">
+                                  <div className="flex flex-col gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4 overflow-hidden">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                          <i className="ph-fill ph-device-mobile text-indigo-400 text-2xl shrink-0"></i>
+                                          <div className="flex flex-col min-w-0 flex-1">
                                               <span className="text-[10px] text-slate-400">رقم المحفظة / إنستاباي</span>
-                                              <span className="font-mono text-base font-black text-white tracking-widest" dir="ltr">{settings.vodafoneCashNumber}</span>
+                                              <span className="font-mono text-base font-black text-white tracking-widest break-all" dir="ltr">{settings.vodafoneCashNumber || 'الرقم غير محدد'}</span>
                                           </div>
                                       </div>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                          {settings.instapayLink && <a href={settings.instapayLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md" title="فتح رابط الدفع إنستاباي"><i className="ph-fill ph-lightning text-base"></i> ادفع</a>}
-                                          <button onClick={(e) => copyToClipboard(settings.vodafoneCashNumber, e)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md"><i className="ph ph-copy"></i> نسخ</button>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                                          {settings.instapayLink && <a href={settings.instapayLink} target="_blank" rel="noopener noreferrer" className="w-full inline-flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-md" title="فتح رابط الدفع إنستاباي"><i className="ph-fill ph-lightning text-base"></i> الدفع المباشر عبر إنستاباي</a>}
+                                          <button disabled={!settings.vodafoneCashNumber} onClick={(e) => copyToClipboard(settings.vodafoneCashNumber, e)} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-md"><i className="ph ph-copy"></i> نسخ رقم الدفع</button>
                                       </div>
                                   </div>
                                   <p className="text-[10px] text-center text-slate-500 mb-4 font-bold bg-slate-900/50 py-1 rounded">يرجى التأكد من ظهور اسم <span className="text-indigo-400">"محمود م ا ا"</span> قبل التحويل.</p>
