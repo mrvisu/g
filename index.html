@@ -5,6 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mrakby Studio - ستوديو المراكبى</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="./studio-portal-icon.svg">
     
     <meta property="og:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta property="og:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية. ذكرياتك بأمان معنا.">
@@ -600,7 +602,7 @@
             );
         };
 
-        const ClientPortalScreen = ({ db, settings, transactions, weddings, uniqueCustomersCount, recordsLoaded, studioLikes, onLikeStudio, navigateTo }) => {
+        const ClientPortalScreen = ({ db, settings, transactions, weddings, appointments, uniqueCustomersCount, recordsLoaded, studioLikes, onLikeStudio, navigateTo }) => {
             const [searchQuery, setSearchQuery] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
@@ -625,6 +627,22 @@
             });
             const [bookingSuccess, setBookingSuccess] = useState(null);
             const [showBookingReview, setShowBookingReview] = useState(false);
+            const [installPromptEvent, setInstallPromptEvent] = useState(null);
+
+            useEffect(() => {
+                const onBeforeInstall = (event) => { event.preventDefault(); setInstallPromptEvent(event); };
+                window.addEventListener('beforeinstallprompt', onBeforeInstall);
+                if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+                    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Portal service worker registration failed', err));
+                }
+                return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+            }, []);
+
+            const handleInstallPortal = async () => {
+                if (!installPromptEvent) return;
+                await installPromptEvent.prompt();
+                setInstallPromptEvent(null);
+            };
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
@@ -744,8 +762,14 @@
                     return matchPhone || matchPhoto;
                 });
                 
+                const appointmentMatches = (appointments || []).filter(a => (a.phone || '').trim() === cleanQuery).sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 all.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
                 
+                if (appointmentMatches.length > 0) {
+                    const target = appointmentMatches[0];
+                    navigateTo(`?phone=${encodeURIComponent(target.phone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=t`);
+                    return;
+                }
                 if (all.length > 0) {
                     const target = all[0];
                     navigateTo(`?phone=${encodeURIComponent(target.phone)}&receipt=${encodeURIComponent(target.receiptNo)}&type=${target.type === 'wedding' ? 'w' : 't'}`);
@@ -871,6 +895,7 @@
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center py-10 px-4 text-slate-100 pb-20">
                     <div className="w-full max-w-md animate-fadeIn">
+                        {installPromptEvent && <div className="mb-4 bg-gradient-to-l from-indigo-600/25 via-blue-600/20 to-cyan-500/20 border border-cyan-400/30 rounded-2xl p-3 flex items-center gap-3 shadow-lg shadow-blue-950/20"><div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-300 to-indigo-500 text-white flex items-center justify-center shadow-md"><i className="ph-fill ph-device-mobile-camera text-2xl"></i></div><div className="min-w-0 flex-1"><p className="text-white text-xs font-black">ثبّت بوابة {settings.studioName || 'الاستوديو'} على هاتفك</p><p className="text-blue-100/70 text-[10px] mt-1">افتحها بسرعة وتابع حجوزاتك وإيصالاتك من الشاشة الرئيسية.</p></div><button type="button" onClick={handleInstallPortal} className="shrink-0 bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-3 py-2 rounded-xl text-[10px] font-black">تثبيت</button></div>}
                         <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden flex flex-col items-center text-center group">
                             <div className="absolute top-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
                             
@@ -1394,6 +1419,7 @@
             const [actionError, setActionError] = useState('');
             const [openWaMenuId, setOpenWaMenuId] = useState(null);
             const [deleteModalId, setDeleteModalId] = useState(null); // للتحكم في نافذة الحذف
+            const [completionModal, setCompletionModal] = useState(null);
 
             // للتعرف على المواعيد الجديدة المنشأة مؤخراً
             const [recentIds, setRecentIds] = useState([]);
@@ -1407,52 +1433,58 @@
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                 
                 if (newStatus === 'completed') {
-                    if(window.confirm('هل أنت متأكد من نقل الطلب إلى قسم (عمليات اليوم) كإيصال مكتمل؟')) {
-                        const appt = appointments.find(a => a.id === id);
-                        if(appt) {
-                            const newTxn = {
-                                id: Date.now().toString(),
-                                receiptNo: appt.receiptNo,
-                                dateTime: new Date().toISOString(),
-                                clientName: appt.clientName,
-                                nationalId: appt.nationalId || '',
-                                branch: appt.branch || '',
-                                photoName: appt.photoName || '',
-                                identityConfirmed: !!appt.identityConfirmed,
-                                phone: appt.phone,
-                                photoNo: [{number: 'بدون', note: appt.photoType || 'حجز أونلاين', needsName: false}],
-                                writeNameOnPhoto: appt.writeName || false,
-                                requirements: appt.details || '',
-                                appointmentConfirmed: false,
-                                confirmationMessage: '',
-                                total: appt.status === 'confirmed' ? (appt.approvedPrice || appt.price || 0) : 0,
-                                paid: appt.approvedPaid || 0,
-                                electronicPaid: 0,
-                                remaining: Math.max(0, (appt.status === 'confirmed' ? (appt.approvedPrice || appt.price || 0) : 0) - (appt.approvedPaid || 0)),
-                                rewardDiscount: 0,
-                                status: 3, 
-                                month: new Date().getMonth() + 1,
-                                year: new Date().getFullYear(),
-                                photosLink: '',
-                                selectedPromos: [],
-                                payments: appt.approvedPaid > 0 ? [{ amount: appt.approvedPaid, method: appt.paymentMethod || 'cash', date: new Date().toISOString() }] : []
-                            };
-                            await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
-                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, id));
-                            return;
-                        }
-                    } else {
-                        return; 
+                    const appt = appointments.find(a => a.id === id);
+                    if (appt) {
+                        const suggestedTotal = appt.approvedPrice || appt.requestedPrice || appt.price || 0;
+                        setCompletionModal({
+                            appt,
+                            total: String(suggestedTotal),
+                            paid: String(appt.approvedPaid || 0),
+                            paymentStatus: (appt.approvedPaid || 0) >= suggestedTotal && suggestedTotal > 0 ? 'full' : (appt.approvedPaid > 0 ? 'partial' : 'none'),
+                            paymentMethod: appt.paymentMethod || 'cash'
+                        });
                     }
+                    return;
                 }
                 
                 const appt = appointments.find(a => a.id === id);
-                const approval = newStatus === 'confirmed' && appt ? { approvedPrice: appt.requestedPrice || appt.price || 0, price: appt.requestedPrice || appt.price || 0, paymentStatus: 'confirmed_by_studio', confirmedAt: new Date().toISOString(), confirmationMessage: 'تم تأكيد موعدك بنجاح، وننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.' } : {};
+                const approval = newStatus === 'confirmed' && appt ? { approvedPrice: appt.requestedPrice || appt.price || 0, price: appt.requestedPrice || appt.price || 0, paymentStatus: 'confirmed_by_studio', confirmedAt: new Date().toISOString(), statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${id}-confirmed-${Date.now()}`, confirmationMessage: 'تم تأكيد موعدك بنجاح، وننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.' } : { statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${id}-${newStatus}-${Date.now()}` };
                 if (newStatus === 'confirmed' && appt) {
                     const msg = `مرحباً أ. ${appt.clientName || ''} 👋\nيسعدنا إبلاغك بأنه تم تأكيد موعد التصوير الخاص بك يوم ${formatDateOnly(appt.date)} الساعة ${appt.time} في ${settings.studioName}.\nننتظرك بكل ترحاب، وشكراً لاختيارك لنا. 📸✨`;
                     openWhatsApp(appt.phone, msg);
                 }
                 await setDoc(doc(db, `artifacts/${appId}/public/data/appointments`, id), { status: newStatus, ...approval }, { merge: true });
+            };
+
+            const completeAppointmentWithPayment = async () => {
+                if (!completionModal?.appt) return;
+                const appt = completionModal.appt;
+                const total = Math.max(0, parseFloat(completionModal.total) || 0);
+                const paid = completionModal.paymentStatus === 'full' ? total : completionModal.paymentStatus === 'none' ? 0 : Math.min(total, Math.max(0, parseFloat(completionModal.paid) || 0));
+                if (completionModal.paymentStatus === 'partial' && paid <= 0) { setActionError('أدخل قيمة المدفوع عند اختيار دفع جزء من الحساب.'); return; }
+                if (paid > total) { setActionError('قيمة المدفوع لا يمكن أن تتجاوز إجمالي الحساب.'); return; }
+                const now = new Date().toISOString();
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const newTxn = {
+                    id: Date.now().toString(), receiptNo: appt.receiptNo, dateTime: appt.createdAt || now,
+                    clientName: appt.clientName, nationalId: appt.nationalId || '', branch: appt.branch || '', photoName: appt.photoName || '',
+                    identityConfirmed: !!appt.identityConfirmed, phone: appt.phone,
+                    photoNo: [{ number: 'بدون', note: appt.photoType || 'حجز أونلاين', needsName: false }], writeNameOnPhoto: appt.writeName || false,
+                    requirements: appt.details || '', appointmentConfirmed: appt.status === 'confirmed', confirmationMessage: appt.confirmationMessage || '',
+                    total, paid, electronicPaid: completionModal.paymentMethod === 'electronic' ? paid : 0,
+                    remaining: Math.max(0, total - paid), rewardDiscount: 0, status: 3,
+                    month: new Date().getMonth() + 1, year: new Date().getFullYear(), photosLink: '', selectedPromos: [], statusUpdatedAt: now, statusNotificationId: `${appt.id}-completed-${Date.now()}`,
+                    paymentType: completionModal.paymentStatus, paymentMethod: completionModal.paymentMethod,
+                    payments: paid > 0 ? [{ amount: paid, method: completionModal.paymentMethod, date: now }] : []
+                };
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, appt.id));
+                    setCompletionModal(null); setActionError('');
+                } catch (err) {
+                    console.error('Complete appointment error', err);
+                    setActionError('تعذر حفظ الإيصال، حاول مرة أخرى.');
+                }
             };
 
             const handleDelete = async (id) => {
@@ -1580,6 +1612,24 @@
                               {filtered.length === 0 && <div className="col-span-full flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-950/50 rounded-2xl border border-slate-800 border-dashed"><i className="ph-fill ph-calendar-x text-6xl mb-4 opacity-50"></i><p className="text-lg font-bold">لا توجد حجوزات في هذه القائمة.</p></div>}
                           </div>
                      </div>
+
+                     {/* Completion and payment confirmation modal */}
+                     {completionModal && (
+                        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center z-[120] p-4 animate-fadeIn" onClick={() => setCompletionModal(null)}>
+                           <div className="bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-2xl border border-emerald-500/30 max-w-md w-full relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500"></div>
+                               <div className="flex items-center gap-3 mb-5"><div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 flex items-center justify-center"><i className="ph-fill ph-receipt text-2xl"></i></div><div><h3 className="text-lg font-black text-white">تأكيد الدفع قبل إكمال الحجز</h3><p className="text-xs text-slate-400 mt-1">سيتم تسجيل البيانات داخل إيصال العميل وعمليات اليوم.</p></div></div>
+                               <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-3 mb-4 flex items-center justify-between gap-3"><div><p className="text-[10px] text-slate-500">العميل</p><p className="text-sm font-black text-white">{completionModal.appt.clientName}</p></div><span className="font-mono text-blue-300 font-black">#{completionModal.appt.receiptNo}</span></div>
+                               <label className="block text-xs text-slate-300 font-bold mb-2">إجمالي الحساب المعتمد (ج.م)</label>
+                               <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl p-2 mb-4"><input type="number" min="0" value={completionModal.total} onChange={e => setCompletionModal({...completionModal, total: e.target.value})} className="w-full bg-transparent text-white text-lg font-black text-center outline-none" /><span className="text-slate-500 text-xs">ج.م</span></div>
+                               <p className="text-xs text-slate-300 font-bold mb-2">حالة السداد</p>
+                               <div className="grid grid-cols-3 gap-2 mb-4"><button type="button" onClick={() => setCompletionModal({...completionModal, paymentStatus: 'full', paid: completionModal.total})} className={`p-2.5 rounded-xl border text-[11px] font-black ${completionModal.paymentStatus === 'full' ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>دفع كامل</button><button type="button" onClick={() => setCompletionModal({...completionModal, paymentStatus: 'partial'})} className={`p-2.5 rounded-xl border text-[11px] font-black ${completionModal.paymentStatus === 'partial' ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>دفع جزء</button><button type="button" onClick={() => setCompletionModal({...completionModal, paymentStatus: 'none', paid: '0'})} className={`p-2.5 rounded-xl border text-[11px] font-black ${completionModal.paymentStatus === 'none' ? 'bg-slate-600 text-white border-slate-400' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>لم يدفع</button></div>
+                               {completionModal.paymentStatus === 'partial' && <div className="animate-fadeIn mb-4"><label className="block text-xs text-amber-200 font-bold mb-2">المبلغ المدفوع فعليًا (ج.م)</label><input type="number" min="0" max={completionModal.total || 0} value={completionModal.paid} onChange={e => setCompletionModal({...completionModal, paid: e.target.value})} className="w-full p-3 bg-slate-950 border border-amber-500/40 rounded-xl text-white font-black text-center outline-none focus:border-amber-400" /></div>}
+                               <p className="text-xs text-slate-300 font-bold mb-2">طريقة الدفع</p><div className="grid grid-cols-2 gap-2 mb-5"><button type="button" onClick={() => setCompletionModal({...completionModal, paymentMethod: 'cash'})} className={`p-2.5 rounded-xl border text-xs font-bold ${completionModal.paymentMethod === 'cash' ? 'bg-emerald-700 text-white border-emerald-400' : 'bg-slate-800 text-slate-400 border-slate-700'}`}><i className="ph-fill ph-money ml-1"></i> نقدي</button><button type="button" onClick={() => setCompletionModal({...completionModal, paymentMethod: 'electronic'})} className={`p-2.5 rounded-xl border text-xs font-bold ${completionModal.paymentMethod === 'electronic' ? 'bg-indigo-700 text-white border-indigo-400' : 'bg-slate-800 text-slate-400 border-slate-700'}`}><i className="ph-fill ph-device-mobile ml-1"></i> إلكتروني</button></div>
+                               <div className="flex gap-3"><button type="button" onClick={completeAppointmentWithPayment} className="flex-1 bg-gradient-to-l from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"><i className="ph-fill ph-check-circle"></i> حفظ ونقل لعمليات اليوم</button><button type="button" onClick={() => setCompletionModal(null)} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-4 rounded-xl font-bold">إلغاء</button></div>
+                           </div>
+                        </div>
+                     )}
 
                      {/* Delete Confirmation Modal */}
                      {deleteModalId && (
@@ -2369,12 +2419,18 @@
 
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             const [debtPriorityFilter, setDebtPriorityFilter] = useState('all'); const [debtSort, setDebtSort] = useState('priority');
             
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
+            const [customDeliveryOptions, setCustomDeliveryOptions] = useState([]);
+            const [newDeliveryDays, setNewDeliveryDays] = useState('');
+            const deliveryOptions = [{ key: 'instant', label: 'فوري', days: 0, icon: 'ph-lightning', color: 'emerald' }, { key: 'two-days', label: 'بعد يومين', days: 2, icon: 'ph-calendar-plus', color: 'blue' }, { key: 'four-days', label: 'بعد 4 أيام', days: 4, icon: 'ph-calendar-check', color: 'purple' }, ...customDeliveryOptions];
+            const getLocalDateAfterDays = (days) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + Number(days || 0)); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; };
+            const applyDeliveryOption = (option) => setFormData(prev => ({ ...prev, pickupOption: option.key, pickupDate: getLocalDateAfterDays(option.days) }));
+            const addCustomDeliveryOption = () => { const days = parseInt(newDeliveryDays, 10); if (!Number.isFinite(days) || days < 0 || days > 365) return; const key = `custom-${days}-${Date.now()}`; setCustomDeliveryOptions(prev => [...prev, { key, label: `بعد ${days} ${days === 1 ? 'يوم' : 'يومًا'}`, days, icon: 'ph-clock', color: 'amber' }]); setNewDeliveryDays(''); };
 
             const handleAddService = (srv, qty) => {
               const validQty = parseInt(qty) || 1; const addedText = validQty > 1 ? `${validQty} × ${srv.name}` : srv.name; const addedPrice = (parseFloat(srv.price) || 0) * validQty;
@@ -2386,7 +2442,7 @@
             };
 
             const handleEdit = (txn) => {
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', phone: txn.phone || '', photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]), writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0) });
+                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false} : p) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false})) : [{number: '', note: '', needsName: false}]), writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0) });
                 setIsEditing(true); setShowAddModal(true);
             };
 
@@ -2407,7 +2463,7 @@
               if (!isEditing && allRecords) { let isDuplicate = true; while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) { finalReceiptNo++; } else { isDuplicate = false; } } }
               
               const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', phone: formData.phone, photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== '').map(p => ({...p, number: p.number.trim(), important: Boolean(p.important)})), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
+              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: formData.phone, photoNo: formData.photoNo.filter(p => p.number && p.number.trim() !== '').map(p => ({...p, number: p.number.trim(), important: Boolean(p.important)})), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
@@ -2419,13 +2475,13 @@
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
               setCustomerRewards({ earned: 0, used: 0, balance: 0 });
               setIsEditing(false); setShowAddModal(false);
             };
 
             const handleDelete = async (id) => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await deleteDoc(doc(db, `artifacts/${appId}/public/data/transactions`, id)); };
-            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = transactions.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated); } };
+            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = transactions.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated); } };
             
             const handlePhoneChange = (val) => {
                 setFormData(prev => ({...prev, phone: val}));
@@ -2483,7 +2539,7 @@
               <div className="space-y-6">
                 
                 <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
+                  <button onClick={() => { setIsEditing(false); setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
                   {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>الديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
                   <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث بالاسم، هاتف، إيصال، رقم الصورة..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
                   <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
@@ -2574,8 +2630,11 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
                             <div className="bg-slate-950 p-4 rounded-xl border border-blue-500/25 flex flex-col gap-3 shadow-inner hover:border-blue-500/50 transition-colors">
-                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-lg"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1">اختر يوم التسليم المتوقع من التقويم</p></div></div>
-                                <input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupDate:e.target.value})} className="w-full h-11 px-3 border border-slate-700 bg-slate-900 text-white rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors text-sm font-bold" />
+                                <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-lg"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1">اختر المدة وسيُضاف التاريخ تلقائيًا</p></div></div>
+                                <div className="grid grid-cols-3 gap-2">{deliveryOptions.map(option => <button key={option.key} type="button" onClick={() => applyDeliveryOption(option)} className={`p-2 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-1 ${formData.pickupOption === option.key ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/40 scale-[1.02]' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500/70 hover:text-blue-200'}`}><i className={`ph-fill ${option.icon} text-lg`}></i>{option.label}</button>)}</div>
+                                <div className="flex gap-2"><input type="number" min="0" max="365" value={newDeliveryDays} onChange={e => setNewDeliveryDays(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomDeliveryOption(); } }} placeholder="مدة أخرى بالأيام" className="flex-1 h-10 px-3 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-xl outline-none focus:border-amber-500 text-xs font-bold" /><button type="button" onClick={addCustomDeliveryOption} className="h-10 px-3 bg-amber-600 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1" title="إضافة مدة أخرى"><i className="ph-bold ph-plus"></i> إضافة</button></div>
+                                {formData.pickupDate && <div className="bg-blue-950/40 border border-blue-500/25 rounded-xl px-3 py-2 text-center"><span className="text-[10px] text-slate-400 block">تاريخ التسليم المحسوب</span><strong className="text-blue-200 text-sm">{new Date(`${formData.pickupDate}T12:00:00`).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>}
+                                <div className="flex items-center gap-2"><span className="text-[10px] text-slate-500 whitespace-nowrap">أو تاريخ مخصص:</span><input type="date" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupOption:'custom',pickupDate:e.target.value})} className="flex-1 h-9 px-2 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-xs font-bold" /></div>
                             </div>
                             <div className="bg-slate-950 p-4 rounded-xl border border-indigo-500/25 flex flex-col gap-3 shadow-inner hover:border-indigo-500/50 transition-colors">
                                 <div className="flex items-start gap-3"><div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-clipboard-text text-lg"></i></div><div><label className="block text-sm font-black text-indigo-200">المطلوب بالتفصيل</label><p className="text-[10px] text-slate-500 mt-1">أضف أي ملاحظات أو طلبات خاصة</p></div></div>
@@ -2670,7 +2729,7 @@
             };
 
             const handleDelete = async (id) => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await deleteDoc(doc(db, `artifacts/${appId}/public/data/weddings`, id)); };
-            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = weddings.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, updated.id), updated); } };
+            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = weddings.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, updated.id), updated); } };
             
             const handlePhoneChange = (val) => { 
                 setFormData(prev => ({...prev, phone: val})); 
@@ -3769,6 +3828,8 @@
           settingsRef.current = settings;
 
           const [currentUrl, setCurrentUrl] = useState(window.location.search);
+          const previousClientStatusRef = useRef(null);
+          const notifiedClientStatusRef = useRef(null);
 
           useEffect(() => {
               const handlePopState = () => setCurrentUrl(window.location.search);
@@ -3788,6 +3849,23 @@
           const editIdentity = urlParams.get('edit') === 'identity';
           const isClientPortal = urlParams.get('client') === 'true';
           const isTracking = trackPhone && trackReceipt;
+
+          // إشعار العميل عند تغير حالة الحجز داخل البوابة أو نسخة PWA.
+          useEffect(() => {
+              if (!isTracking || !trackPhone || !trackReceipt) { previousClientStatusRef.current = null; return; }
+              const source = trackType === 'w' ? weddings : transactions;
+              let record = source.find(t => (t.phone || '').trim() === trackPhone.trim() && String(t.receiptNo || '') === String(trackReceipt));
+              if (!record && trackType === 't') record = appointments.find(a => (a.phone || '').trim() === trackPhone.trim() && String(a.receiptNo || '') === String(trackReceipt));
+              if (!record) return;
+              const statusKey = record.status === 'pending' ? 'pending' : record.status === 'confirmed' ? 'confirmed' : record.status === 'completed' ? 'completed' : `${trackType}-${record.status}`;
+              const statusLabel = record.status === 'pending' ? 'حجزك قيد المراجعة' : record.status === 'confirmed' ? 'تم تأكيد حجزك' : (record.status === 'completed' || (trackType === 't' && Number(record.status) === 3)) ? 'تم إكمال طلبك' : (getTransactionStatuses(record).find(x => x.id === record.status)?.label || 'تم تحديث حالة حجزك');
+              if (previousClientStatusRef.current === null) { previousClientStatusRef.current = statusKey; return; }
+              if (previousClientStatusRef.current !== statusKey && notifiedClientStatusRef.current !== statusKey) {
+                  notifiedClientStatusRef.current = statusKey;
+                  if (statusKey !== 'pending' && typeof Notification !== 'undefined' && Notification.permission === 'granted') showBrowserNotification(statusLabel, `${settingsRef.current.studioName || 'الاستوديو'} — إيصال #${record.receiptNo}`);
+              }
+              previousClientStatusRef.current = statusKey;
+          }, [isTracking, trackPhone, trackReceipt, trackType, transactions, weddings, appointments]);
 
           // Desktop notifications logic
           const [previousFeedbackCount, setPreviousFeedbackCount] = useState(0);
@@ -3879,10 +3957,10 @@
             // في رابط التتبع نقرأ حجوزات الهاتف نفسه فقط، أما بوابة الحجز العامة فلا تحتاجها.
             const appointmentsSource = collection(db, basePath, 'appointments');
             const appointmentsQuery = isTracking ? query(appointmentsSource, where('phone', '==', trackPhone.trim())) : appointmentsSource;
-            const unsubAppts = (isClientPortal && !isTracking) ? noop : onSnapshot(appointmentsQuery, (snapshot) => {
+            const unsubAppts = onSnapshot(appointmentsQuery, (snapshot) => {
               const data = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
               data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-              if (!isTracking) {
+              if (!isTracking && !isClientPortal) {
                 // لا نعتبر اللقطة الأولى حجزًا جديدًا، لكن نلتقط أي إضافة لاحقة حتى لو كانت القائمة فارغة عند البداية.
                 if (appointmentsInitializedRef.current) {
                   const newPending = snapshot.docChanges().filter(change => change.type === 'added').map(change => ({ ...change.doc.data(), id: change.doc.id })).find(item => item.status === 'pending');
@@ -4025,7 +4103,7 @@
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} uniqueCustomersCount={uniqueCustomersCount} recordsLoaded={txnsLoaded && wedsLoaded} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
+              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} appointments={appointments} uniqueCustomersCount={uniqueCustomersCount} recordsLoaded={txnsLoaded && wedsLoaded && appointmentsLoaded} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
           }
 
           if (isTracking) {
@@ -4190,6 +4268,8 @@
                           </div>
                       </div>
 
+                      {txn.paymentPending && <div className="w-full max-w-md mb-5 bg-gradient-to-l from-amber-950/70 to-slate-900 border border-amber-400/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-hourglass-medium text-2xl"></i></div><div><p className="text-amber-200 text-sm font-black">حجزك قيد المراجعة</p><p className="text-amber-100/75 text-xs leading-relaxed mt-1">استلمنا طلبك بنجاح. يراجع الاستوديو الموعد والخدمات والمبلغ، وستظهر هنا أي تعديلات أو تأكيدات جديدة تلقائيًا.</p>{typeof Notification !== 'undefined' && Notification.permission !== 'granted' && <button type="button" onClick={async()=>{const result=await Notification.requestPermission(); if(result==='granted') showBrowserNotification('تم تفعيل إشعارات الحجز','سنخبرك عند تأكيد أو إكمال طلبك.');}} className="mt-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-100 px-2.5 py-1.5 rounded-lg font-black"><i className="ph-fill ph-bell-ringing ml-1"></i> تفعيل إشعارات الحالة</button>}</div></div>}
+
                       <div className="w-full max-w-md mb-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 shadow-lg overflow-hidden">
                           <button type="button" onClick={() => { setShowConfirmData(v => !v); setEditingConfirmData(false); }} className="w-full p-4 flex items-center gap-3 text-right hover:bg-indigo-900/30 transition-colors">
                               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center shrink-0"><i className={`ph-fill ${txn.identityConfirmed ? 'ph-check-circle' : 'ph-identification-card'} text-xl`}></i></div>
@@ -4253,7 +4333,7 @@
                                   <p className="text-slate-200 text-sm font-black">الخدمات والطلبات</p>
                               </div>
                               {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
-                              {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-gradient-to-br from-blue-950/50 to-slate-900 rounded-xl border border-blue-500/25 p-3 min-w-0`}>
+                              {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0`}>
                                   <p className="text-blue-200 text-xs font-black mb-3 flex items-center gap-1.5"><i className="ph-fill ph-images text-base"></i> أرقام الصور المحددة</p>
                                   {photoItemsWithoutNotes.length > 0 && <div className="bg-slate-950/50 border border-blue-500/25 rounded-2xl p-2.5"><div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{photoItemsWithoutNotes.map((photo, i) => <div key={i} className="flex flex-col items-center justify-center gap-1 bg-slate-900 border border-blue-500/30 rounded-xl p-2.5 min-w-0 text-center shadow-inner"><span className="w-full text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span>{(photo.serviceType || photo.service) && <span className="w-full text-slate-400 text-[10px] font-bold leading-relaxed truncate">{photo.serviceType || photo.service}</span>}</div>)}</div></div>}
                                   {photoItemsWithNotes.length > 0 && <div className={`${photoItemsWithoutNotes.length > 0 ? 'mt-2' : ''} space-y-2`}>{photoItemsWithNotes.map((photo, i) => <div key={i} className="w-full flex items-start gap-3 bg-amber-950/30 border border-amber-500/30 rounded-xl p-3 text-right"><span className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-200 flex items-center justify-center font-black text-sm font-mono shrink-0" dir="ltr">#{photo.number}</span><div className="min-w-0 flex-1"><p className="text-[10px] text-amber-200/80 font-black mb-1 flex items-center gap-1"><i className="ph-fill ph-note"></i> ملاحظة الصورة</p><p className="text-amber-50 text-xs font-bold leading-relaxed whitespace-pre-wrap break-words">{photo.note}</p></div></div>)}</div>}
