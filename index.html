@@ -89,120 +89,6 @@
             .admin-app main { padding-inline: clamp(1.5rem, 3vw, 4rem); }
         }
 
-        /* Polished, scoped styling for the Administration > Settings screen */
-        .settings-panel {
-            --settings-border: rgba(148, 163, 184, .16);
-            --settings-focus: #a78bfa;
-            --settings-glow: rgba(139, 92, 246, .16);
-            color: #e2e8f0;
-        }
-        .settings-panel > .bg-slate-900,
-        .settings-panel .bg-slate-900.p-6.rounded-2xl {
-            background: linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(10, 16, 30, .98)) !important;
-            border: 1px solid var(--settings-border) !important;
-            border-radius: 1.25rem !important;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, .18), inset 0 1px rgba(255, 255, 255, .025) !important;
-        }
-        .settings-panel h2, .settings-panel h3 {
-            letter-spacing: -.01em;
-            text-wrap: pretty;
-        }
-        .settings-panel h2 { padding-bottom: .9rem; border-color: var(--settings-border) !important; }
-        .settings-panel h3 { line-height: 1.55; }
-        .settings-panel label.block { color: #cbd5e1; line-height: 1.55; }
-        .settings-panel input:not([type="checkbox"]):not([type="file"]),
-        .settings-panel select,
-        .settings-panel textarea {
-            min-width: 0;
-            min-height: 46px;
-            border: 1px solid rgba(100, 116, 139, .55) !important;
-            border-radius: .8rem !important;
-            background-color: rgba(2, 6, 23, .72) !important;
-            color: #f8fafc !important;
-            padding: .72rem .9rem !important;
-            font-size: 16px !important;
-            line-height: 1.5;
-            transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
-        }
-        .settings-panel input:not([type="checkbox"]):not([type="file"]):focus,
-        .settings-panel select:focus,
-        .settings-panel textarea:focus {
-            outline: none !important;
-            border-color: var(--settings-focus) !important;
-            background-color: rgba(2, 6, 23, .96) !important;
-            box-shadow: 0 0 0 3px var(--settings-glow) !important;
-        }
-        .settings-panel input::placeholder,
-        .settings-panel textarea::placeholder { color: #8290a5 !important; opacity: .9; }
-        .settings-panel input[type="file"] {
-            display: block;
-            min-height: 46px;
-            width: 100%;
-            padding: .45rem;
-            border: 1px dashed rgba(148, 163, 184, .38);
-            border-radius: .8rem;
-            background: rgba(2, 6, 23, .55);
-            color: #cbd5e1;
-        }
-        .settings-panel input[type="file"]::file-selector-button {
-            margin-inline-end: .65rem;
-            padding: .5rem .85rem;
-            border: 0;
-            border-radius: .6rem;
-            background: #312e81;
-            color: #e9d5ff;
-            font: inherit;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border {
-            min-height: 48px;
-            border-color: rgba(100, 116, 139, .5) !important;
-            border-radius: .8rem !important;
-            background: rgba(2, 6, 23, .72) !important;
-            transition: border-color .18s ease, box-shadow .18s ease;
-        }
-        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border:focus-within {
-            border-color: var(--settings-focus) !important;
-            box-shadow: 0 0 0 3px var(--settings-glow);
-        }
-        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border input:not([type="checkbox"]) {
-            min-height: 44px;
-            border: 0 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-        }
-        .settings-panel .bg-slate-950\/70.p-2\.5.rounded-xl,
-        .settings-panel .md\:col-span-2.bg-slate-950.p-4.rounded-2xl,
-        .settings-panel .bg-indigo-950\/20.p-4.rounded-2xl {
-            border-radius: 1rem !important;
-            box-shadow: inset 0 1px rgba(255,255,255,.025);
-        }
-        .settings-panel .bg-slate-800.rounded-xl.border,
-        .settings-panel .bg-slate-800.p-4.rounded-xl {
-            border-color: rgba(100, 116, 139, .42) !important;
-            border-radius: .95rem !important;
-        }
-        .settings-panel button { min-height: 42px; border-radius: .8rem; transition: transform .16s ease, filter .16s ease, box-shadow .16s ease; }
-        .settings-panel button:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 2px; }
-        .settings-panel .fixed.bottom-6.left-1\/2 {
-            bottom: max(.75rem, env(safe-area-inset-bottom)) !important;
-            border: 1px solid rgba(196, 181, 253, .35) !important;
-            border-radius: 1.15rem !important;
-            background: rgba(15, 23, 42, .94) !important;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, .5) !important;
-        }
-        @media (max-width: 640px) {
-            .settings-panel { gap: 1rem !important; }
-            .settings-panel > .bg-slate-900,
-            .settings-panel .bg-slate-900.p-6.rounded-2xl { padding: 1rem !important; }
-            .settings-panel .flex.gap-2 > input,
-            .settings-panel .flex.gap-2 > textarea { flex: 1 1 0%; }
-            .settings-panel .fixed.bottom-6.left-1\/2 { width: calc(100% - 1.25rem) !important; padding: .65rem !important; }
-            .settings-panel .fixed.bottom-6.left-1\/2 button { width: 100%; padding: .8rem 1rem !important; }
-            .settings-panel .overflow-y-auto { overscroll-behavior: contain; }
-        }
-
     </style>
 </head>
 <body>
@@ -402,6 +288,8 @@
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
           invoice: "╭━━━━━━━━━━━━━━━━━━╮\n   🧾 *إيصال عميل إلكتروني*\n   📷 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 *أهلاً بك أ. {name}*\nنورتنا وشرفتنا، ويسعدنا خدمتك دائمًا.\n\n📋 *بيانات الإيصال*\n🔢 رقم الإيصال: *#{receipt}*\n📅 تاريخ الإنشاء: *{date}*\n{phone_line}{pickup_line}\n{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n🔗 *رابط المتابعة والمراجعة*\n{receipt_url}\n\n📌 من خلال الرابط يمكنك متابعة حالة الطلب، مراجعة بيانات الإيصال، ومعرفة موعد الاستلام والسداد عند وجود مبلغ متبقٍ.{identity_note}\n\n💛 شكرًا لثقتك بنا\n📸 *مع تحيات فريق {studio}*\n╰━━━━━━━━━━━━━━━━━━╯",
+          unpaidInvoice: "🧾 *ملخص طلب التصوير*\n📷 *{studio}*\n\n👋 أهلاً بك أ. {name}\n🔢 رقم الطلب: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{details_block}{identity_block}\n💰 *تفاصيل الحساب*\nإجمالي الطلب: *{total} ج.م*\nالمدفوع: *0 ج.م*\nالمتبقي: *{remaining} ج.م*\n\n⚠️ *تنبيه الطباعة*\n{deposit_warning}\n\n🔗 *رابط الإيصال والمتابعة والسداد:*\n{receipt_url}\n\n📎 بعد التحويل، من فضلك أرسل صورة التحويل على واتساب لتأكيد الدفع.\n\nشكرًا لتفهمك، ونعتذر عن أي إزعاج.\n📸 *مع تحيات فريق {studio}*",
+          depositWarning: "حرصًا على عدم طباعة صور غير مطلوبة، لا يتم اعتماد أو بدء طباعة الصور قبل دفع عربون. نعتذر عن أي إزعاج، ونشكركم على تفهمكم.",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
           ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
           deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
@@ -545,18 +433,33 @@
                 if (remaining > 0 || (hasValue(txn.total) && hasValue(txn.paid))) accountLines.push(remaining > 0 ? `💳 المتبقي: ${formatCurrency(remaining)}` : '🎉 الحالة: تم سداد الحساب بالكامل');
                 const accountBlock = accountLines.length ? `\n💰 *تفاصيل الحساب*\n${accountLines.join('\n')}\n` : '';
                 const balanceLine = remaining > 0 ? `\n📌 يمكنك سداد المبلغ المتبقي من بطاقة السداد داخل رابط المتابعة.\n` : '';
-                const savedInvoiceTemplate = settings.waTemplates?.invoice || '';
-                // استبدال القالب الافتراضي القديم فقط؛ أي قالب مخصص كتبه المستخدم يظل محفوظًا.
-                const template = savedInvoiceTemplate && !savedInvoiceTemplate.includes('✨ *فاتورة عميل من {studio}* ✨')
-                    ? savedInvoiceTemplate
-                    : DEFAULT_WA_TEMPLATES.invoice;
+                const isUnpaid = (Number(txn.paid) || 0) <= 0;
+                const templateKey = isUnpaid ? 'unpaidInvoice' : 'invoice';
+                const defaultTemplate = DEFAULT_WA_TEMPLATES[templateKey];
+                const savedTemplate = settings.waTemplates?.[templateKey] || '';
+                // أي قالب مخصص محفوظ من الإدارة يظل مستخدمًا، مع توفير القالب الافتراضي تلقائيًا.
+                const template = savedTemplate || defaultTemplate;
+                const paymentLink = receiptUrl;
+                const depositWarningTemplate = settings.waTemplates?.depositWarning || DEFAULT_WA_TEMPLATES.depositWarning;
+                const depositWarning = depositWarningTemplate
+                    .replace(/{name}/g, clientName || 'العميل')
+                    .replace(/{receipt}/g, txn.receiptNo || '')
+                    .replace(/{remaining}/g, remaining)
+                    .replace(/{studio}/g, settings.studioName || 'الاستوديو')
+                    .replace(/{receipt_url}/g, receiptUrl);
+                const detailsContent = isUnpaid ? `${detailsBlock}${photoBlock}` : `${detailsBlock}${photoBlock}${accountBlock}${balanceLine}`;
                 return template
+                    .replace(/{payment_link}/g, paymentLink)
+                    .replace(/{deposit_warning}/g, depositWarning)
+                    .replace(/{total}/g, txn.total || 0)
+                    .replace(/{paid}/g, txn.paid || 0)
+                    .replace(/{remaining}/g, remaining)
                     .replace(/{name}/g, clientName || 'العميل')
                     .replace(/{receipt}/g, txn.receiptNo || '')
                     .replace(/{date}/g, formatDate(txn.dateTime) || 'غير محدد')
                     .replace(/{phone_line}/g, phoneLine)
                     .replace(/{pickup_line}/g, pickupLine)
-                    .replace(/{details_block}/g, `${detailsBlock}${photoBlock}${accountBlock}${balanceLine}`)
+                    .replace(/{details_block}/g, detailsContent)
                     .replace(/{identity_block}/g, identityBlock)
                     .replace(/{identity_note}/g, identityNote)
                     .replace(/{receipt_url}/g, receiptUrl)
@@ -1067,6 +970,7 @@
                                 <a href="https://instagram.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center bg-pink-900/20 border border-pink-500/30 text-pink-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white hover:border-transparent transition-all shadow-md" title="إنستجرام">
                                     <i className="ph-fill ph-instagram-logo text-2xl"></i>
                                 </a>
+                                <PortalInstallButton variant="social" />
                             </div>
 
                         </div>
@@ -1080,7 +984,6 @@
                                             <i className="ph-fill ph-calendar-plus text-2xl"></i> احجز موعد تصوير الآن
                                         </button>
                                     )}
-                                    <PortalInstallButton variant="wide" />
                                     <div className="grid grid-cols-1 gap-3">
                                         <button onClick={() => setShowPhoneInput(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 border border-slate-700 text-sm sm:text-base">
                                             <i className="ph-fill ph-folder-open text-xl text-blue-400"></i> الأرشيف وطلباتك
@@ -3841,6 +3744,7 @@
                   <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-inner">
                      <p className="text-sm text-slate-400 leading-relaxed flex-1">
                         <strong className="text-slate-300 block mb-2">المتغيرات المتاحة للنسخ والإضافة التلقائية:</strong>
+                        <span className="block text-xs text-amber-300/80 mt-2 leading-relaxed">يتم إرسال رسالة الطلب غير المدفوع تلقائيًا عند عدم تسجيل أي مبلغ، بينما تُرسل الفاتورة العادية عند تسجيل عربون أو سداد كامل.</span>
                         <code className="text-blue-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{name}'}</code>
                         <code className="text-blue-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{receipt}'}</code>
                         <code className="text-blue-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{total}'}</code>
@@ -3859,7 +3763,9 @@
                           case 'welcome': return '👋 رسالة الترحيب الأولى';
                           case 'welcomeBack': return '🌟 رسالة ترحيب بالعودة (للعملاء الدائمين)';
                           case 'vipDiscount': return '🎁 رسالة خصم للعملاء المميزين (VIP)';
-                          case 'invoice': return '🧾 شكل الفاتورة الإلكترونية';
+                          case 'invoice': return '🧾 شكل الفاتورة الإلكترونية عند الدفع';
+                          case 'unpaidInvoice': return '📌 رسالة الطلب عند عدم دفع عربون';
+                          case 'depositWarning': return '⚠️ تنبيه دفع العربون والطباعة';
                           case 'reminder': return '⚠️ تذكير بالمبلغ المتبقي';
                           case 'ready': return '🎉 رسالة جاهزية الطلب للاستلام';
                           case 'deposit': return '💸 تأكيد استلام العربون';
@@ -3988,6 +3894,17 @@
                     </div>
                 </div>
             ) : null;
+
+            if (variant === 'social') {
+                return (
+                    <React.Fragment>
+                        <button type="button" onClick={startInstall} title="تثبيت بوابة العملاء كتطبيق" className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-500/10 text-cyan-200 shadow-md transition-all hover:scale-105 hover:border-cyan-200/70 hover:bg-cyan-500/25">
+                            <i className="ph-fill ph-device-mobile-camera text-xl"></i>
+                        </button>
+                        {guideModal}
+                    </React.Fragment>
+                );
+            }
 
             if (variant === 'wide') {
                 return (
@@ -4172,6 +4089,7 @@
           const [showClientPaymentPopup, setShowClientPaymentPopup] = useState(false);
           const [clientPaymentAmount, setClientPaymentAmount] = useState('');
           const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
+          const [showPaymentCard, setShowPaymentCard] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
           const [weddings, setWeddings] = useState([]);
@@ -4500,6 +4418,11 @@
               const currentStatus = txn.status || 0;
               const isWedding = trackType === 'w';
               const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+              const depositWarningText = (settings.waTemplates?.depositWarning || DEFAULT_WA_TEMPLATES.depositWarning)
+                  .replace(/{name}/g, displayName || 'العميل')
+                  .replace(/{receipt}/g, txn.receiptNo || '')
+                  .replace(/{remaining}/g, Number(txn.remaining) || 0)
+                  .replace(/{studio}/g, settings.studioName || 'الاستوديو');
               const displayReqs = getReqsText(txn);
               const statusesToUse = getTransactionStatuses(txn);
               const isDelivered = currentStatus === statusesToUse[statusesToUse.length - 1].id;
@@ -4634,6 +4557,18 @@
                           </div>
                       </div>
 
+                      {Number(txn.paid || 0) <= 0 && (
+                          <div className="w-full max-w-md mb-5 rounded-2xl border border-amber-400/45 bg-gradient-to-br from-amber-950/80 via-slate-900 to-red-950/50 p-4 text-center shadow-2xl shadow-amber-950/30 animate-fadeIn">
+                              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15 text-amber-300"><i className="ph-fill ph-warning-circle text-2xl"></i></div>
+                              <p className="text-sm font-black text-amber-100">تنبيه مهم قبل الطباعة</p>
+                              <p className="mt-1 text-xs leading-relaxed text-amber-100/80">{depositWarningText}</p>
+                              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  {settings.instapayLink ? <a href={settings.instapayLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-cyan-600 px-3 py-2.5 text-xs font-black text-white shadow-lg transition hover:bg-cyan-500"><i className="ph-fill ph-lightning text-base"></i> ادفع الآن / ادفع عربون</a> : <button type="button" onClick={(e) => { if (settings.vodafoneCashNumber) copyToClipboard(settings.vodafoneCashNumber, e); else document.getElementById('client-payment-area')?.scrollIntoView({behavior:'smooth', block:'center'}); }} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-cyan-600 px-3 py-2.5 text-xs font-black text-white shadow-lg transition hover:bg-cyan-500"><i className="ph-fill ph-wallet text-base"></i> {settings.vodafoneCashNumber ? 'نسخ رقم التحويل' : 'عرض طرق الدفع'}</button>}
+                                  <button type="button" onClick={() => { const msg = `مرحباً، أرسلت صورة التحويل الخاصة بالإيصال رقم #${txn.receiptNo}. أرجو مراجعة التحويل وتأكيد دفع العربون. شكراً لكم.`; openWhatsApp(settings.studioPhone || '01201260040', msg); }} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-600/20 px-3 py-2.5 text-xs font-black text-emerald-100 transition hover:bg-emerald-600/30"><i className="ph-fill ph-whatsapp-logo text-base"></i> أرسل صورة التحويل</button>
+                              </div>
+                          </div>
+                      )}
+
                       {txn.paymentPending && <div className="w-full max-w-md mb-5 bg-gradient-to-l from-amber-950/70 to-slate-900 border border-amber-400/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-hourglass-medium text-2xl"></i></div><div><p className="text-amber-200 text-sm font-black">حجزك قيد المراجعة</p><p className="text-amber-100/75 text-xs leading-relaxed mt-1">استلمنا طلبك بنجاح. يراجع الاستوديو الموعد والخدمات والمبلغ، وستظهر هنا أي تعديلات أو تأكيدات جديدة تلقائيًا.</p>{typeof Notification !== 'undefined' && Notification.permission !== 'granted' && <button type="button" onClick={async()=>{const result=await Notification.requestPermission(); if(result==='granted') showBrowserNotification('تم تفعيل إشعارات الحجز','سنخبرك عند تأكيد أو إكمال طلبك.');}} className="mt-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-100 px-2.5 py-1.5 rounded-lg font-black"><i className="ph-fill ph-bell-ringing ml-1"></i> تفعيل إشعارات الحالة</button>}</div></div>}
 
                       <div className="w-full max-w-md mb-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 shadow-lg overflow-hidden">
@@ -4722,12 +4657,13 @@
                           </div>}
                           {/* Payment Area if Remaining > 0 */}
                           {txn.remaining > 0 && (
-                              <div className="mt-4 bg-slate-950 rounded-2xl border border-red-900/50 p-4 shadow-inner">
-                                  <div className="flex items-center justify-between gap-3 mb-3 border-b border-slate-800 pb-3">
-                                      <div className="flex items-center gap-2"><i className="ph-fill ph-wallet text-xl text-red-400"></i><span className="font-bold text-sm text-slate-200">سداد المبلغ المتبقي</span></div>
-                                      <span className="inline-flex items-center gap-2 bg-red-500/15 border border-red-400/35 text-red-200 rounded-xl px-3 py-2 text-base font-black shadow-inner"><i className="ph-fill ph-coins text-red-300 text-lg"></i>{formatCurrency(txn.remaining)}</span>
-                                  </div>
-                                                                    <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
+                              <div id="client-payment-area" className="mt-4 overflow-hidden rounded-2xl border border-red-900/50 bg-slate-950 shadow-inner">
+                                  <button type="button" onClick={() => { setShowPaymentCard(v => !v); setShowClientPaymentPopup(false); }} className="flex w-full items-center justify-between gap-3 p-4 text-right transition hover:bg-red-950/20">
+                                      <span className="flex min-w-0 items-center gap-2"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-red-300 border border-red-400/25"><i className="ph-fill ph-wallet text-xl"></i></span><span><span className="block text-sm font-black text-slate-100">سداد المبلغ المتبقي</span><span className="mt-0.5 block text-[10px] text-slate-500">اضغط لعرض طرق الدفع</span></span></span>
+                                      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-400/35 bg-red-500/15 px-3 py-2 text-sm font-black text-red-100 shadow-inner"><i className="ph-fill ph-coins text-red-300"></i>{formatCurrency(txn.remaining)}<i className={`ph-bold ph-caret-${showPaymentCard ? 'up' : 'down'} mr-1 text-xs text-red-300`}></i></span>
+                                  </button>
+                                  {showPaymentCard && <div className="animate-fadeIn border-t border-red-900/50 p-4">
+                                  <p className="text-xs text-slate-400 mb-3">يمكنك سداد المبلغ الموضح أعلاه عبر المحافظ الإلكترونية أو إنستاباي على الرقم التالي:</p>
                                   
                                   <div className="flex flex-col gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4 overflow-hidden">
                                       <div className="flex items-center gap-2 min-w-0">
@@ -4778,6 +4714,7 @@
                                       </div>
                                   )}
                                   <p className="text-[10px] text-center text-slate-500 mt-3 font-bold"><i className="ph-fill ph-lock-key"></i> معاملاتك آمنة ومحفوظة.</p>
+                                  </div>}
                               </div>
                           )}
                       </div>
