@@ -20,6 +20,13 @@
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23eab308'%3E%3Cpath d='M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z'/%3E%3C/svg%3E">
 
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <meta name="theme-color" content="#020617">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="بوابة العملاء">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -81,11 +88,145 @@
         @media (min-width: 1536px) {
             .admin-app main { padding-inline: clamp(1.5rem, 3vw, 4rem); }
         }
+
+        /* Polished, scoped styling for the Administration > Settings screen */
+        .settings-panel {
+            --settings-border: rgba(148, 163, 184, .16);
+            --settings-focus: #a78bfa;
+            --settings-glow: rgba(139, 92, 246, .16);
+            color: #e2e8f0;
+        }
+        .settings-panel > .bg-slate-900,
+        .settings-panel .bg-slate-900.p-6.rounded-2xl {
+            background: linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(10, 16, 30, .98)) !important;
+            border: 1px solid var(--settings-border) !important;
+            border-radius: 1.25rem !important;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, .18), inset 0 1px rgba(255, 255, 255, .025) !important;
+        }
+        .settings-panel h2, .settings-panel h3 {
+            letter-spacing: -.01em;
+            text-wrap: pretty;
+        }
+        .settings-panel h2 { padding-bottom: .9rem; border-color: var(--settings-border) !important; }
+        .settings-panel h3 { line-height: 1.55; }
+        .settings-panel label.block { color: #cbd5e1; line-height: 1.55; }
+        .settings-panel input:not([type="checkbox"]):not([type="file"]),
+        .settings-panel select,
+        .settings-panel textarea {
+            min-width: 0;
+            min-height: 46px;
+            border: 1px solid rgba(100, 116, 139, .55) !important;
+            border-radius: .8rem !important;
+            background-color: rgba(2, 6, 23, .72) !important;
+            color: #f8fafc !important;
+            padding: .72rem .9rem !important;
+            font-size: 16px !important;
+            line-height: 1.5;
+            transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+        }
+        .settings-panel input:not([type="checkbox"]):not([type="file"]):focus,
+        .settings-panel select:focus,
+        .settings-panel textarea:focus {
+            outline: none !important;
+            border-color: var(--settings-focus) !important;
+            background-color: rgba(2, 6, 23, .96) !important;
+            box-shadow: 0 0 0 3px var(--settings-glow) !important;
+        }
+        .settings-panel input::placeholder,
+        .settings-panel textarea::placeholder { color: #8290a5 !important; opacity: .9; }
+        .settings-panel input[type="file"] {
+            display: block;
+            min-height: 46px;
+            width: 100%;
+            padding: .45rem;
+            border: 1px dashed rgba(148, 163, 184, .38);
+            border-radius: .8rem;
+            background: rgba(2, 6, 23, .55);
+            color: #cbd5e1;
+        }
+        .settings-panel input[type="file"]::file-selector-button {
+            margin-inline-end: .65rem;
+            padding: .5rem .85rem;
+            border: 0;
+            border-radius: .6rem;
+            background: #312e81;
+            color: #e9d5ff;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border {
+            min-height: 48px;
+            border-color: rgba(100, 116, 139, .5) !important;
+            border-radius: .8rem !important;
+            background: rgba(2, 6, 23, .72) !important;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border:focus-within {
+            border-color: var(--settings-focus) !important;
+            box-shadow: 0 0 0 3px var(--settings-glow);
+        }
+        .settings-panel .flex.items-center.bg-slate-900.rounded-lg.border input:not([type="checkbox"]) {
+            min-height: 44px;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        .settings-panel .bg-slate-950\/70.p-2\.5.rounded-xl,
+        .settings-panel .md\:col-span-2.bg-slate-950.p-4.rounded-2xl,
+        .settings-panel .bg-indigo-950\/20.p-4.rounded-2xl {
+            border-radius: 1rem !important;
+            box-shadow: inset 0 1px rgba(255,255,255,.025);
+        }
+        .settings-panel .bg-slate-800.rounded-xl.border,
+        .settings-panel .bg-slate-800.p-4.rounded-xl {
+            border-color: rgba(100, 116, 139, .42) !important;
+            border-radius: .95rem !important;
+        }
+        .settings-panel button { min-height: 42px; border-radius: .8rem; transition: transform .16s ease, filter .16s ease, box-shadow .16s ease; }
+        .settings-panel button:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 2px; }
+        .settings-panel .fixed.bottom-6.left-1\/2 {
+            bottom: max(.75rem, env(safe-area-inset-bottom)) !important;
+            border: 1px solid rgba(196, 181, 253, .35) !important;
+            border-radius: 1.15rem !important;
+            background: rgba(15, 23, 42, .94) !important;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, .5) !important;
+        }
+        @media (max-width: 640px) {
+            .settings-panel { gap: 1rem !important; }
+            .settings-panel > .bg-slate-900,
+            .settings-panel .bg-slate-900.p-6.rounded-2xl { padding: 1rem !important; }
+            .settings-panel .flex.gap-2 > input,
+            .settings-panel .flex.gap-2 > textarea { flex: 1 1 0%; }
+            .settings-panel .fixed.bottom-6.left-1\/2 { width: calc(100% - 1.25rem) !important; padding: .65rem !important; }
+            .settings-panel .fixed.bottom-6.left-1\/2 button { width: 100%; padding: .8rem 1rem !important; }
+            .settings-panel .overflow-y-auto { overscroll-behavior: contain; }
+        }
+
     </style>
 </head>
 <body>
     <div id="root"></div>
 
+    <script>
+    // Capture the browser's native install event and register the PWA service worker.
+    (function () {
+        window.__portalInstallPrompt = null;
+        window.addEventListener('beforeinstallprompt', function (event) {
+            event.preventDefault();
+            window.__portalInstallPrompt = event;
+            window.dispatchEvent(new Event('portal-install-available'));
+        });
+        window.addEventListener('appinstalled', function () {
+            window.__portalInstallPrompt = null;
+            window.dispatchEvent(new Event('portal-install-done'));
+        });
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .catch(function (error) { console.warn('تعذر تسجيل عامل الخدمة لبوابة العملاء:', error); });
+        }
+    })();
+    </script>
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
@@ -627,22 +768,6 @@
             });
             const [bookingSuccess, setBookingSuccess] = useState(null);
             const [showBookingReview, setShowBookingReview] = useState(false);
-            const [installPromptEvent, setInstallPromptEvent] = useState(null);
-
-            useEffect(() => {
-                const onBeforeInstall = (event) => { event.preventDefault(); setInstallPromptEvent(event); };
-                window.addEventListener('beforeinstallprompt', onBeforeInstall);
-                if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-                    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Portal service worker registration failed', err));
-                }
-                return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-            }, []);
-
-            const handleInstallPortal = async () => {
-                if (!installPromptEvent) return;
-                await installPromptEvent.prompt();
-                setInstallPromptEvent(null);
-            };
 
             const allRecords = useMemo(() => [...transactions, ...weddings], [transactions, weddings]);
             const reviews = useMemo(() => allRecords.filter(r => r.clientRating > 0).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)), [allRecords]);
@@ -895,7 +1020,6 @@
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center py-10 px-4 text-slate-100 pb-20">
                     <div className="w-full max-w-md animate-fadeIn">
-                        {installPromptEvent && <div className="mb-4 bg-gradient-to-l from-indigo-600/25 via-blue-600/20 to-cyan-500/20 border border-cyan-400/30 rounded-2xl p-3 flex items-center gap-3 shadow-lg shadow-blue-950/20"><div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-300 to-indigo-500 text-white flex items-center justify-center shadow-md"><i className="ph-fill ph-device-mobile-camera text-2xl"></i></div><div className="min-w-0 flex-1"><p className="text-white text-xs font-black">ثبّت بوابة {settings.studioName || 'الاستوديو'} على هاتفك</p><p className="text-blue-100/70 text-[10px] mt-1">افتحها بسرعة وتابع حجوزاتك وإيصالاتك من الشاشة الرئيسية.</p></div><button type="button" onClick={handleInstallPortal} className="shrink-0 bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-3 py-2 rounded-xl text-[10px] font-black">تثبيت</button></div>}
                         <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden flex flex-col items-center text-center group">
                             <div className="absolute top-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
                             
@@ -956,6 +1080,7 @@
                                             <i className="ph-fill ph-calendar-plus text-2xl"></i> احجز موعد تصوير الآن
                                         </button>
                                     )}
+                                    <PortalInstallButton variant="wide" />
                                     <div className="grid grid-cols-1 gap-3">
                                         <button onClick={() => setShowPhoneInput(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 border border-slate-700 text-sm sm:text-base">
                                             <i className="ph-fill ph-folder-open text-xl text-blue-400"></i> الأرشيف وطلباتك
@@ -3539,7 +3664,7 @@
             };
 
             return (
-              <div className="space-y-8 pb-20">
+              <div className="settings-panel space-y-8 pb-28">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو وإعدادات النظام</h2>
                     <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between mb-3">
@@ -3776,6 +3901,243 @@
                     </button>
                 </div>
               </div>
+            );
+        };
+
+        const PortalInstallButton = ({ variant = 'pill' }) => {
+            const [deferred, setDeferred] = useState(() => window.__portalInstallPrompt || null);
+            const [installed, setInstalled] = useState(false);
+            const [showGuide, setShowGuide] = useState(false);
+            const [copied, setCopied] = useState(false);
+            const [hidden, setHidden] = useState(false);
+
+            useEffect(() => {
+                const onAvailable = () => setDeferred(window.__portalInstallPrompt || null);
+                const onDone = () => { setInstalled(true); setDeferred(null); setShowGuide(false); };
+                window.addEventListener('portal-install-available', onAvailable);
+                window.addEventListener('portal-install-done', onDone);
+                const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                if (standalone) setInstalled(true);
+                return () => {
+                    window.removeEventListener('portal-install-available', onAvailable);
+                    window.removeEventListener('portal-install-done', onDone);
+                };
+            }, []);
+
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            const startInstall = async () => {
+                const promptEvent = deferred || window.__portalInstallPrompt;
+                if (promptEvent && typeof promptEvent.prompt === 'function') {
+                    promptEvent.prompt();
+                    try {
+                        const choice = await promptEvent.userChoice;
+                        if (choice && choice.outcome === 'accepted') setInstalled(true);
+                    } catch (_) {}
+                    window.__portalInstallPrompt = null;
+                    setDeferred(null);
+                    return;
+                }
+                setShowGuide(true);
+            };
+
+            const copyPortalLink = async () => {
+                const link = window.location.origin + window.location.pathname + '?client=true';
+                try {
+                    await navigator.clipboard.writeText(link);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2200);
+                } catch (_) {}
+            };
+
+            if (installed || hidden) return null;
+
+            const steps = isIOS
+                ? [{ icon: 'ph-export', text: 'اضغط زر المشاركة في أسفل متصفح Safari.' }, { icon: 'ph-plus-square', text: 'اختر «إضافة إلى الشاشة الرئيسية».' }, { icon: 'ph-check-circle', text: 'اضغط «إضافة» وستجد أيقونة البوابة على شاشتك.' }]
+                : isAndroid
+                    ? [{ icon: 'ph-dots-three-vertical', text: 'افتح قائمة المتصفح ⋮ من أعلى اليمين.' }, { icon: 'ph-download-simple', text: 'اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».' }, { icon: 'ph-check-circle', text: 'أكّد التثبيت لتظهر أيقونة البوابة مع تطبيقاتك.' }]
+                    : [{ icon: 'ph-monitor', text: 'اضغط أيقونة التثبيت في شريط عنوان المتصفح.' }, { icon: 'ph-download-simple', text: 'أو افتح قائمة المتصفح واختر «تثبيت بوابة العملاء».' }, { icon: 'ph-check-circle', text: 'ستُفتح البوابة في نافذة مستقلة كتطبيق.' }];
+
+            const guideModal = showGuide ? (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-950/85 p-4 backdrop-blur-sm sm:items-center" onClick={() => setShowGuide(false)}>
+                    <div dir="rtl" onClick={(e) => e.stopPropagation()} className="w-full max-w-sm overflow-hidden rounded-3xl border border-cyan-300/25 bg-slate-900 text-right shadow-2xl">
+                        <div className="h-1 bg-gradient-to-l from-cyan-300 via-blue-500 to-indigo-500"></div>
+                        <div className="p-5">
+                            <div className="mb-1 flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-2 text-cyan-200">
+                                    <i className="ph-fill ph-device-mobile-camera text-xl"></i>
+                                    <h3 className="text-base font-black">ثبّت البوابة على شاشتك</h3>
+                                </div>
+                                <button type="button" onClick={() => setShowGuide(false)} aria-label="إغلاق" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-white"><i className="ph ph-x"></i></button>
+                            </div>
+                            <p className="mb-4 text-xs leading-6 text-slate-400">خطوتان فقط، وتصل لإيصالك وحجوزاتك بضغطة واحدة من الشاشة الرئيسية.</p>
+                            <div className="space-y-2.5">
+                                {steps.map((step, index) => (
+                                    <div key={index} className="flex items-start gap-3 rounded-xl border border-slate-700/70 bg-slate-950/60 p-3">
+                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 text-xs font-black text-cyan-200">{index + 1}</span>
+                                        <p className="text-xs leading-6 text-slate-200"><i className={`ph ${step.icon} ml-1 text-cyan-300`}></i>{step.text}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <button type="button" onClick={copyPortalLink} className="mt-4 w-full rounded-xl border border-slate-600 bg-slate-800 py-2.5 text-xs font-bold text-white transition hover:bg-slate-700">
+                                <i className="ph ph-link ml-1"></i> {copied ? 'تم نسخ رابط البوابة' : 'نسخ رابط البوابة'}
+                            </button>
+                            <button type="button" onClick={() => { setShowGuide(false); setHidden(true); }} className="mt-2 w-full py-1.5 text-[11px] font-bold text-slate-500 transition hover:text-slate-300">لا أريد التثبيت الآن</button>
+                        </div>
+                    </div>
+                </div>
+            ) : null;
+
+            if (variant === 'wide') {
+                return (
+                    <React.Fragment>
+                        <div className="relative mb-3 w-full overflow-hidden rounded-2xl border border-cyan-300/25 bg-gradient-to-l from-cyan-950/40 to-slate-900 p-3">
+                            <button type="button" onClick={startInstall} className="flex w-full items-center gap-3 text-right">
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-200"><i className="ph-fill ph-device-mobile-camera text-xl"></i></span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-xs font-black text-white">ثبّت البوابة على شاشتك</span>
+                                    <span className="block text-[11px] leading-5 text-slate-400">إيصالك وحجوزاتك بضغطة واحدة، بدون فتح المتصفح.</span>
+                                </span>
+                                <i className="ph ph-download-simple shrink-0 text-lg text-cyan-300"></i>
+                            </button>
+                            <button type="button" onClick={() => setHidden(true)} aria-label="إخفاء" className="absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-white"><i className="ph ph-x text-xs"></i></button>
+                        </div>
+                        {guideModal}
+                    </React.Fragment>
+                );
+            }
+
+            return (
+                <React.Fragment>
+                    <button type="button" onClick={startInstall} title="تثبيت بوابة العملاء كتطبيق" className="flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-3 py-2 text-[11px] font-bold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-500/20">
+                        <i className="ph ph-download-simple text-sm"></i> تثبيت التطبيق
+                    </button>
+                    {guideModal}
+                </React.Fragment>
+            );
+        };
+
+        const FloatingPortalMessage = ({ navigateTo }) => {
+            const [visible, setVisible] = useState(() => {
+                try { return sessionStorage.getItem('portalReturnMessageDismissed') !== '1'; }
+                catch (_) { return true; }
+            });
+            const getInitialPosition = () => {
+                try {
+                    const saved = JSON.parse(sessionStorage.getItem('portalReturnMessagePosition') || 'null');
+                    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) return saved;
+                } catch (_) {}
+                const width = Math.min(390, Math.max(260, window.innerWidth - 24));
+                return { x: Math.max(12, window.innerWidth - width - 16), y: Math.max(12, window.innerHeight - 245) };
+            };
+            const [position, setPosition] = useState(getInitialPosition);
+            const [isDragging, setIsDragging] = useState(false);
+            const cardRef = useRef(null);
+            const dragOffset = useRef({ x: 0, y: 0 });
+            const latestPosition = useRef(position);
+
+            useEffect(() => {
+                const keepInsideViewport = () => {
+                    if (!cardRef.current) return;
+                    const rect = cardRef.current.getBoundingClientRect();
+                    const viewport = window.visualViewport;
+                    const viewportWidth = viewport?.width || window.innerWidth;
+                    const viewportHeight = viewport?.height || window.innerHeight;
+                    const current = latestPosition.current;
+                    const next = {
+                        x: Math.max(12, Math.min(current.x, viewportWidth - rect.width - 12)),
+                        y: Math.max(12, Math.min(current.y, viewportHeight - rect.height - 12))
+                    };
+                    latestPosition.current = next;
+                    setPosition(next);
+                };
+                window.addEventListener('resize', keepInsideViewport);
+                window.addEventListener('orientationchange', keepInsideViewport);
+                window.visualViewport?.addEventListener('resize', keepInsideViewport);
+                const timer = setTimeout(keepInsideViewport, 0);
+                return () => {
+                    clearTimeout(timer);
+                    window.removeEventListener('resize', keepInsideViewport);
+                    window.removeEventListener('orientationchange', keepInsideViewport);
+                    window.visualViewport?.removeEventListener('resize', keepInsideViewport);
+                };
+            }, []);
+
+            const handleDragStart = (event) => {
+                if (event.button !== undefined && event.button !== 0) return;
+                event.preventDefault();
+                const rect = cardRef.current.getBoundingClientRect();
+                dragOffset.current = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+                event.currentTarget.setPointerCapture?.(event.pointerId);
+                setIsDragging(true);
+            };
+            const handleDragMove = (event) => {
+                if (!isDragging) return;
+                const rect = cardRef.current?.getBoundingClientRect();
+                const viewport = window.visualViewport;
+                const viewportWidth = viewport?.width || window.innerWidth;
+                const viewportHeight = viewport?.height || window.innerHeight;
+                const width = rect?.width || Math.min(390, viewportWidth - 24);
+                const height = rect?.height || 220;
+                const x = Math.min(Math.max(12, event.clientX - dragOffset.current.x), Math.max(12, viewportWidth - width - 12));
+                const y = Math.min(Math.max(12, event.clientY - dragOffset.current.y), Math.max(12, viewportHeight - height - 12));
+                const next = { x, y };
+                latestPosition.current = next;
+                setPosition(next);
+            };
+            const handleDragEnd = () => {
+                if (!isDragging) return;
+                setIsDragging(false);
+                try { sessionStorage.setItem('portalReturnMessagePosition', JSON.stringify(latestPosition.current)); } catch (_) {}
+            };
+            const dismiss = () => {
+                setVisible(false);
+                try { sessionStorage.setItem('portalReturnMessageDismissed', '1'); } catch (_) {}
+            };
+
+            if (!visible) return null;
+            return (
+                <aside
+                    ref={cardRef}
+                    dir="rtl"
+                    aria-label="دعوة لزيارة بوابة العملاء"
+                    onPointerMove={handleDragMove}
+                    onPointerUp={handleDragEnd}
+                    onPointerCancel={handleDragEnd}
+                    className={`fixed z-[180] w-[min(92vw,390px)] overflow-x-hidden overflow-y-auto rounded-2xl border border-cyan-300/30 bg-slate-900/95 text-right shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl ${isDragging ? 'cursor-grabbing select-none' : ''}`}
+                    style={{ left: `${position.x}px`, top: `${position.y}px`, maxHeight: 'calc(100vh - 24px)', touchAction: 'auto' }}
+                >
+                    <div className="h-1 bg-gradient-to-l from-cyan-300 via-blue-500 to-indigo-500"></div>
+                    <div
+                        onPointerDown={handleDragStart}
+                        className="flex cursor-grab items-center justify-between gap-3 px-4 pt-3 pb-1 text-slate-400 touch-none"
+                        title="اسحب من هنا لتحريك الرسالة"
+                    >
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold"><i className="ph ph-arrows-out-cardinal"></i> اسحب لنقل الرسالة</span>
+                        <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={dismiss} aria-label="إغلاق الرسالة" title="إغلاق" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-700 hover:text-white">
+                            <i className="ph ph-x text-lg"></i>
+                        </button>
+                    </div>
+                    <div className="px-4 pb-4 pt-1">
+                        <div className="mb-1 flex items-center gap-2 text-cyan-200">
+                            <i className="ph-fill ph-sparkle text-lg"></i>
+                            <h2 className="text-sm font-black">نورتنا! بوابتك دايمًا مفتوحة</h2>
+                        </div>
+                        <p className="mb-3 text-xs leading-6 text-slate-300">احجز زيارتك القادمة بسهولة، وتابع أحدث عروضنا ومنتجاتنا من خلال بوابة العملاء.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => navigateTo('?client=true&view=booking')} className="rounded-xl bg-cyan-500 px-3 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-400">
+                                <i className="ph ph-calendar-check ml-1"></i> احجز مرة قادمة
+                            </button>
+                            <button type="button" onClick={() => navigateTo('?client=true&view=products')} className="rounded-xl border border-slate-600 bg-slate-800 px-3 py-2.5 text-xs font-bold text-white transition hover:border-cyan-300/50 hover:bg-slate-700">
+                                <i className="ph ph-gift ml-1"></i> العروض والمنتجات
+                            </button>
+                        </div>
+                        <button type="button" onClick={() => navigateTo('?client=true')} className="mt-2 w-full rounded-xl py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-950/50">
+                            دخول بوابة العملاء <i className="ph ph-arrow-left mr-1"></i>
+                        </button>
+                    </div>
+                </aside>
             );
         };
 
@@ -4073,14 +4435,25 @@
               }
           }, [isTracking, isTargetLoaded, transactions, weddings, trackPhone, trackReceipt, trackType, editIdentity]);
 
-          if (!authReady) {
+          if (!authReady || (isTracking && !isTargetLoaded)) {
+              const loadingMessage = isTracking
+                  ? 'جاري البحث عن الطلب...'
+                  : isClientPortal
+                      ? 'جاري فتح بوابة العملاء...'
+                      : 'جاري مزامنة بيانات البرنامج...';
               return (
-                  <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950 flex items-center justify-center text-slate-100 p-6 relative overflow-hidden">
-                      <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl"></div><div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl"></div>
-                      <div className="relative z-10 w-full max-w-md text-center bg-slate-900/80 border border-blue-500/20 rounded-3xl p-8 shadow-2xl backdrop-blur-sm">
-                          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/30 flex items-center justify-center shadow-lg shadow-blue-900/30"><i className="ph-fill ph-camera text-4xl text-blue-300"></i></div>
-                          {(isTracking || isClientPortal) ? <><p className="text-blue-200 text-xs font-bold mb-2">أهلاً بك في</p><h1 className="text-2xl font-black text-white mb-3">{settings.studioName || 'ستوديو المراكبي'} ✨</h1><p className="text-slate-300 text-sm font-bold leading-relaxed">نجهّز لك بوابة متابعة طلبك بكل عناية، لحظات ونزامن بياناتك بأمان مع السحابة.</p><div className="mt-6 flex items-center justify-center gap-3 text-indigo-200 text-xs font-bold"><span className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span><span>جاري تحميل بيانات طلبك ومزامنتها...</span></div><p className="text-[10px] text-slate-500 mt-4">لا تغلق الصفحة حتى تكتمل المزامنة</p></> : <><h1 className="text-xl font-black text-white mb-2">{settings.studioName || 'ستوديو المراكبي'}</h1><p className="text-slate-400 text-sm font-bold">جاري المزامنة مع السحابة...</p><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mt-5"></div></>}
-                      </div>
+                  <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-100 px-4 py-6">
+                      <section dir="rtl" role="status" aria-live="polite" className="w-full max-w-xs rounded-2xl border border-slate-800 bg-slate-900/90 px-5 py-5 text-center shadow-xl shadow-black/20">
+                          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-indigo-400/15 bg-indigo-400/10 text-indigo-300">
+                              <i className="ph-fill ph-camera text-2xl"></i>
+                          </div>
+                          <p className="mb-2 text-[11px] font-semibold text-slate-400">{settings.studioName || 'ستوديو المراكبي'}</p>
+                          <div className="flex items-center justify-center gap-2.5">
+                              <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-indigo-300/30 border-t-indigo-300"></span>
+                              <h1 className="text-sm font-bold text-white">{loadingMessage}</h1>
+                          </div>
+                          <p className="mt-2 text-[10px] text-slate-500">لحظات ونظهر لك التفاصيل</p>
+                      </section>
                   </div>
               );
           }
@@ -4112,15 +4485,6 @@
               const storedTxn = targetArr.find(t => (t.phone||'').trim() === trackPhone.trim() && t.receiptNo && t.receiptNo.toString() === trackReceipt.trim());
               const txn = storedTxn || (appointmentTarget ? { ...appointmentTarget, dateTime: appointmentTarget.createdAt, photoName: appointmentTarget.fullName || appointmentTarget.photoName || '', total: appointmentTarget.approvedPrice || appointmentTarget.price || 0, paid: appointmentTarget.approvedPaid || 0, remaining: Math.max(0, (appointmentTarget.approvedPrice || appointmentTarget.price || 0) - (appointmentTarget.approvedPaid || 0)), paymentPending: appointmentTarget.status !== 'confirmed', requestedPrice: appointmentTarget.requestedPrice || 0, requirements: appointmentTarget.details || '', appointmentConfirmed: appointmentTarget.status === 'confirmed', confirmationMessage: appointmentTarget.confirmationMessage || '', photoNo: [], status: 0 } : null);
 
-              if (!isTargetLoaded) {
-                  return (
-                      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-6 text-center">
-                          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                          <h2 className="text-xl font-bold mb-2 text-white">جاري البحث عن الطلب...</h2>
-                          <p className="text-slate-400 text-sm">لحظات ونعرض لك التفاصيل</p>
-                      </div>
-                  );
-              }
               
               if (!txn) {
                   return (
@@ -4237,12 +4601,14 @@
 
               return (
                   <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
-                      
-                      <div className="w-full max-w-md flex justify-end mb-2">
-                          <a href="?client=true" onClick={(e) => { e.preventDefault(); navigateTo('?client=true'); }} className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
-                              <i className="ph ph-arrow-right"></i> رجوع لبوابة العملاء
-                          </a>
+                      <FloatingPortalMessage navigateTo={navigateTo} />
+                      <div className="mb-3 flex w-full max-w-md items-center justify-between gap-2">
+                          <PortalInstallButton />
+                          <button type="button" onClick={() => navigateTo('?client=true')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 transition hover:text-white">
+                              <i className="ph ph-arrow-right"></i> بوابة العملاء
+                          </button>
                       </div>
+                      
 
                       {/* 1. البطاقة المدمجة (الصورة الشخصية + الترحيب) */}
                       <div className={`w-full max-w-md bg-gradient-to-br ${isWedding ? 'from-pink-950/50' : 'from-blue-950/50'} to-slate-900 p-6 md:p-8 rounded-3xl border ${isWedding ? 'border-pink-500/30 shadow-pink-900/20' : 'border-blue-500/30 shadow-blue-900/20'} mb-6 shadow-2xl relative overflow-hidden mt-2`}>
@@ -4644,15 +5010,6 @@
                               </>
                           )}
                       </div>
-                  </div>
-              );
-          }
-
-          if (!authReady) {
-              return (
-                  <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100">
-                      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <p className="font-bold">جاري المزامنة مع السحابة...</p>
                   </div>
               );
           }
