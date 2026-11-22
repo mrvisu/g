@@ -4632,36 +4632,6 @@
                               </div>
                           </div>
 
-                          {isWedding && txn.weddingDate && <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm"><span className="text-slate-400">موعد الزفاف:</span><span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span></div>}
-
-                          {(displayReqs || trackingPhotoItems.length > 0) && <div className="bg-slate-950/80 border border-slate-700 rounded-2xl p-4 mb-4 shadow-inner">
-                              <div className="flex items-center gap-2 mb-3">
-                                  <div className={`w-9 h-9 rounded-xl ${isWedding ? 'bg-pink-500/15 text-pink-300 border-pink-400/30' : 'bg-blue-500/15 text-blue-300 border-blue-400/30'} border flex items-center justify-center`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-list-dashes'} text-lg`}></i></div>
-                                  <p className="text-slate-200 text-sm font-black">الخدمات والطلبات</p>
-                              </div>
-                              {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
-                              {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0`}>
-                                  <p className="text-slate-200 text-xs font-black mb-3 flex items-center gap-1.5"><i className="ph-fill ph-images text-base text-blue-300"></i> Photo Numbers</p>
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                      {trackingPhotoItems.map((photo, i) => <div key={i} className="flex items-center justify-center rounded-xl border border-blue-500/25 bg-slate-950/60 px-3 py-3 text-center shadow-inner"><span className="text-blue-100 font-black text-base font-mono" dir="ltr">#{photo.number}</span></div>)}
-                                  </div>
-                              </div>}
-                          </div>}
-
-                          {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
-                          {txn.appointmentConfirmed && <div className="mb-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-seal-check text-emerald-300 text-2xl shrink-0"></i><div><p className="text-emerald-200 font-black text-sm">تم تأكيد موعدك بنجاح</p><p className="text-emerald-100/80 text-xs leading-relaxed mt-1">{txn.confirmationMessage || 'ننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.'}</p></div></div>}
-                          {!isWedding && (txn.pickupDate || settings.workingHours) && <div className="mb-3 bg-gradient-to-br from-blue-950/60 via-slate-950 to-indigo-950/50 border border-blue-500/35 rounded-2xl p-4 space-y-3 shadow-inner">
-                              {txn.pickupDate && <div className="flex items-start gap-3">
-                                  <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-2xl"></i></div>
-                                  <div className="min-w-0 flex-1">
-                                      <p className="text-[11px] text-blue-200/80 font-black flex items-center gap-1.5"><i className="ph-fill ph-calendar-star"></i> موعد استلام الصور</p>
-                                      <p className="text-emerald-300 text-base font-black mt-1">{(() => { const days = getDiffDays(txn.pickupDate); return days === 0 ? 'الاستلام اليوم' : days > 0 ? `الاستلام بعد ${days} ${days === 1 ? 'يوم' : 'أيام'}` : `موعد الاستلام كان منذ ${Math.abs(days)} ${Math.abs(days) === 1 ? 'يوم' : 'أيام'}`; })()}</p>
-                                      <p className="text-white text-sm font-bold mt-1 tracking-wide">{new Date(txn.pickupDate).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                  </div>
-                              </div>}
-                              {settings.workingHours && <div className="border-t border-blue-400/20 pt-3 flex items-start gap-3"><i className="ph-fill ph-clock text-indigo-300 text-xl mt-0.5 shrink-0"></i><div><p className="text-[10px] text-indigo-200/80 font-black">مواعيد عمل الاستوديو</p><p className="text-slate-200 text-xs font-bold leading-relaxed mt-1">{settings.workingHours}</p></div></div>}
-                              <div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة: <span className="text-amber-300 font-black">{formatCurrencyEnglish(instantPrintCost)}</span> • المدفوع: <span className="text-emerald-300 font-black">{formatCurrencyEnglish(instantPrintPaid)}</span> • المتبقي: <span className="text-amber-300 font-black">{formatCurrencyEnglish(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">للسداد، استخدم حقل <span className="text-indigo-300 font-bold">سداد المبلغ المتبقي</span> الموجود أسفل البطاقة.</p></div>
-                          </div>}
                           {/* Payment Area if Remaining > 0 */}
                           {txn.remaining > 0 && (
                               <div id="client-payment-area" className="mt-4 overflow-hidden rounded-2xl border border-red-900/50 bg-slate-950 shadow-inner">
@@ -4724,6 +4694,36 @@
                                   </div>}
                               </div>
                           )}
+                          {isWedding && txn.weddingDate && <div className="bg-slate-950 p-3 rounded-xl mb-4 border border-slate-800 flex items-center justify-between text-sm"><span className="text-slate-400">موعد الزفاف:</span><span className="font-bold text-pink-300">{formatDateOnly(txn.weddingDate)}</span></div>}
+
+                          {(displayReqs || trackingPhotoItems.length > 0) && <div className="bg-slate-950/80 border border-slate-700 rounded-2xl p-4 mb-4 shadow-inner">
+                              <div className="flex items-center gap-2 mb-3">
+                                  <div className={`w-9 h-9 rounded-xl ${isWedding ? 'bg-pink-500/15 text-pink-300 border-pink-400/30' : 'bg-blue-500/15 text-blue-300 border-blue-400/30'} border flex items-center justify-center`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-list-dashes'} text-lg`}></i></div>
+                                  <p className="text-slate-200 text-sm font-black">الخدمات والطلبات</p>
+                              </div>
+                              {displayReqs && <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 min-w-0"><p className="text-slate-300 text-sm font-medium whitespace-pre-wrap leading-relaxed break-words">{displayReqs}</p></div>}
+                              {trackingPhotoItems.length > 0 && <div className={`${displayReqs ? 'mt-3' : ''} min-w-0`}>
+                                  <p className="text-slate-200 text-xs font-black mb-2 flex items-center gap-1.5"><i className="ph-fill ph-images text-base text-blue-300"></i> Photo Numbers</p>
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 text-blue-100 font-black text-base font-mono" dir="ltr">
+                                      {trackingPhotoItems.map((photo, i) => <span key={i} className="whitespace-nowrap">#{photo.number}{i < trackingPhotoItems.length - 1 ? ' -' : ''}</span>)}
+                                  </div>
+                              </div>}
+                          </div>}
+
+                          {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
+                          {txn.appointmentConfirmed && <div className="mb-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-seal-check text-emerald-300 text-2xl shrink-0"></i><div><p className="text-emerald-200 font-black text-sm">تم تأكيد موعدك بنجاح</p><p className="text-emerald-100/80 text-xs leading-relaxed mt-1">{txn.confirmationMessage || 'ننتظرك في الموعد المحدد بكل ترحاب. شكراً لثقتك بنا.'}</p></div></div>}
+                          {!isWedding && (txn.pickupDate || settings.workingHours) && <div className="mb-3 bg-gradient-to-br from-blue-950/60 via-slate-950 to-indigo-950/50 border border-blue-500/35 rounded-2xl p-4 space-y-3 shadow-inner">
+                              {txn.pickupDate && <div className="flex items-start gap-3">
+                                  <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-2xl"></i></div>
+                                  <div className="min-w-0 flex-1">
+                                      <p className="text-[11px] text-blue-200/80 font-black flex items-center gap-1.5"><i className="ph-fill ph-calendar-star"></i> موعد استلام الصور</p>
+                                      <p className="text-emerald-300 text-base font-black mt-1">{(() => { const days = getDiffDays(txn.pickupDate); return days === 0 ? 'الاستلام اليوم' : days > 0 ? `الاستلام بعد ${days} ${days === 1 ? 'يوم' : 'أيام'}` : `موعد الاستلام كان منذ ${Math.abs(days)} ${Math.abs(days) === 1 ? 'يوم' : 'أيام'}`; })()}</p>
+                                      <p className="text-white text-sm font-bold mt-1 tracking-wide">{new Date(txn.pickupDate).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                  </div>
+                              </div>}
+                              {settings.workingHours && <div className="border-t border-blue-400/20 pt-3 flex items-start gap-3"><i className="ph-fill ph-clock text-indigo-300 text-xl mt-0.5 shrink-0"></i><div><p className="text-[10px] text-indigo-200/80 font-black">مواعيد عمل الاستوديو</p><p className="text-slate-200 text-xs font-bold leading-relaxed mt-1">{settings.workingHours}</p></div></div>}
+                              <div className="border-t border-blue-500/20 pt-3"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-amber-200 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-printer"></i> تريد طباعة الصورة فوراً؟</p><p className="text-[10px] text-slate-400 mt-1">التكلفة: <span className="text-amber-300 font-black">{formatCurrencyEnglish(instantPrintCost)}</span> • المدفوع: <span className="text-emerald-300 font-black">{formatCurrencyEnglish(instantPrintPaid)}</span> • المتبقي: <span className="text-amber-300 font-black">{formatCurrencyEnglish(instantPrintTotalDue)}</span></p></div><button type="button" onClick={handleInstantPrintRequest} className="shrink-0 bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-1.5 shadow-lg shadow-green-900/30 transition-colors"><i className="ph-fill ph-whatsapp-logo text-base"></i> اطلب الآن</button></div><p className="text-[9px] text-slate-500 leading-relaxed">للسداد، استخدم حقل <span className="text-indigo-300 font-bold">سداد المبلغ المتبقي</span> الموجود أسفل البطاقة.</p></div>
+                          </div>}
                       </div>
 
                       {/* 3. البطاقة الإعلانية (Promotional Card) */}
