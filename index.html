@@ -115,7 +115,7 @@
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, getDocsFromServer, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
         // Floating, non-blocking confirmation and validation cards.
@@ -303,6 +303,12 @@
             if (digits.startsWith('20') && digits.length >= 12) digits = '0' + digits.slice(2);
             else if (digits.length === 10 && digits.startsWith('1')) digits = '0' + digits;
             return digits;
+        };
+        const isValidCustomerPhone = (value) => {
+            const digits = normalizeCustomerPhone(value);
+            if (!digits) return false;
+            if (digits.startsWith('01')) return /^01[0125]\d{8}$/.test(digits);
+            return digits.length >= 10 && digits.length <= 15;
         };
 
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
@@ -656,7 +662,7 @@
             );
         };
 
-        const ClientPortalScreen = ({ db, settings, transactions, weddings, appointments, uniqueCustomersCount, recordsLoaded, studioLikes, onLikeStudio, navigateTo }) => {
+        const ClientPortalScreen = ({ db, settings, transactions, weddings, appointments, uniqueCustomersCount, recordsLoaded, settingsLoaded, settingsLoadError, studioLikes, onLikeStudio, navigateTo }) => {
             const [searchQuery, setSearchQuery] = useState('');
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
@@ -925,7 +931,7 @@
                 amber: 'from-amber-900/40 to-slate-900 border-amber-500/30 text-amber-400 bg-amber-500/20'
             };
 
-            const displayMiniProducts = (settings.miniProducts || DEFAULT_MINI_PRODUCTS).slice(0, 4);
+            const displayMiniProducts = Array.isArray(settings.miniProducts) ? settings.miniProducts.slice(0, 4) : [];
 
             return (
                 <div className="min-h-screen bg-slate-950 flex flex-col items-center py-10 px-4 text-slate-100 pb-20">
@@ -1000,19 +1006,24 @@
                                 </div>
                                 
                                 {/* Miniature Products Grid */}
-                                <div id="customer-products" className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                                    {displayMiniProducts.map((prod, idx) => {
-                                        const isThirdOfThree = false;
-                                        return (
-                                            <div key={prod.id} className="col-span-1">
-                                                <MiniProductCard prod={prod} onClick={handleOpenCard} spanTwo={isThirdOfThree} />
-                                            </div>
-                                        );
-                                    })}
+                                <div id="customer-products" className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6" aria-live="polite">
+                                    {!settingsLoaded ? (
+                                        <div className="col-span-full rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-5 text-center text-xs text-slate-400">
+                                            <i className="ph ph-spinner animate-spin ml-1"></i> جارٍ تحميل المنتجات والعروض المحفوظة...
+                                        </div>
+                                    ) : settingsLoadError ? (
+                                        <div className="col-span-full rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-5 text-center text-xs text-amber-200">
+                                            تعذّر تحميل البطاقات الآن. تحقق من الاتصال ثم أعد تحميل الصفحة.
+                                        </div>
+                                    ) : displayMiniProducts.map((prod, idx) => (
+                                        <div key={prod.id || `product-${idx}`} className="col-span-1">
+                                            <MiniProductCard prod={prod} onClick={handleOpenCard} spanTwo={false} />
+                                        </div>
+                                    ))}
                                 </div>
 
                                 {/* Promotions Section */}
-                                {settings.promotions?.length > 0 && (
+                                {!settingsLoaded ? null : settingsLoadError ? null : settings.promotions?.length > 0 && (
                                     <>
                                         <h3 className="text-lg font-black text-slate-200 mb-4 flex items-center justify-center gap-2 mt-8">
                                             <i className="ph-fill ph-sparkle text-yellow-400"></i> أحدث عروضنا لك
@@ -1418,55 +1429,40 @@
             ];
 
             return (
-              <nav className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 text-white sticky top-0 z-50 shadow-2xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 py-3 sm:py-0 min-h-20">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/20 transform transition hover:scale-105 overflow-hidden shrink-0">
-                        {settings.studioLogo ? <img src={settings.studioLogo} className="w-full h-full object-cover" /> : <i className="ph ph-camera text-slate-900 text-3xl"></i>}
+              <nav className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/90 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+                <div className="mx-auto w-full px-3 sm:px-5 xl:px-8">
+                  <div className="flex min-h-[76px] items-center justify-between gap-3 py-3 sm:gap-5">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400/15 to-slate-900 shadow-lg shadow-yellow-950/20 ring-1 ring-white/5 sm:h-14 sm:w-14">
+                        {settings.studioLogo ? <img src={settings.studioLogo} alt={`شعار ${settings.studioName || 'الاستوديو'}`} className="h-full w-full bg-slate-950/40 object-contain p-1.5" /> : <i className="ph ph-camera text-2xl text-yellow-300 sm:text-3xl"></i>}
                       </div>
-                      <div className="flex flex-col">
-                        <h1 className="text-base sm:text-2xl truncate font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-yellow-300 to-yellow-500" style={{ fontWeight: 900 }}>{settings.studioName}</h1>
-                        <span className="text-[10px] sm:text-xs text-slate-400 font-medium">نظام الإدارة الذكي</span>
+                      <div className="min-w-0">
+                        <h1 className="max-w-[58vw] truncate bg-gradient-to-l from-yellow-200 via-amber-300 to-yellow-500 bg-clip-text text-base font-black tracking-tight text-transparent sm:max-w-[38vw] sm:text-xl lg:max-w-[30vw]" title={settings.studioName || 'Mrakby Studio'}>{settings.studioName || 'Mrakby Studio'}</h1>
+                        <span className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 sm:text-xs"><i className="ph-fill ph-sparkle text-yellow-500/80"></i>نظام الإدارة الذكي</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
-                        <div className="relative">
-                            <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-300 hover:text-yellow-400 transition-colors bg-slate-900 rounded-full border border-slate-800">
-                                <i className="ph-fill ph-bell text-xl"></i>
-                                {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg">{unreadCount}</span>}
-                            </button>
-                            {showNotif && (
-                                <div className="absolute left-0 lg:left-auto lg:right-0 mt-3 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col max-h-[400px]">
-                                    <div className="flex justify-between items-center mb-2 px-2 pb-2 border-b border-slate-700">
-                                        <span className="font-bold text-slate-200">التقييمات والآراء ({feedbacks.length})</span>
-                                        <button onClick={() => setShowNotif(false)} className="text-slate-400 hover:text-white"><i className="ph ph-x"></i></button>
-                                    </div>
-                                    <div className="overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
-                                        {feedbacks.length === 0 ? <p className="text-center text-slate-500 text-sm py-4">لا توجد تقييمات بعد.</p> : feedbacks.map(fb => (
-                                                <div key={fb.id} onClick={() => { onViewFeedback(fb); setShowNotif(false); }} className={`p-3 rounded-lg border cursor-pointer transition-colors ${!fb.adminReadFeedback ? 'bg-slate-700/50 border-yellow-500/50' : 'bg-slate-900 border-slate-700 hover:border-slate-500'}`}>
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <span className="font-bold text-sm text-slate-200">{fb.type === 'wedding' ? (fb.groomName + ' و ' + fb.brideName) : fb.clientName}</span>
-                                                        <div className="flex gap-0.5 text-yellow-500 text-xs" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < fb.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</div>
-                                                    </div>
-                                                    {fb.clientFeedback && <p className="text-xs text-slate-400 line-clamp-2">{fb.clientFeedback}</p>}
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="hidden lg:flex items-center space-x-1 space-x-reverse bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                            {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>{btn.icon}{btn.label}</button>))}
-                            <div className="w-px h-6 bg-slate-700 mx-2"></div>
-                            <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all text-red-400 hover:text-white hover:bg-red-900/50" title="تسجيل الخروج وإقفال النظام"><i className="ph ph-sign-out text-lg"></i> خروج</button>
-                        </div>
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                      <div className="relative">
+                        <button type="button" aria-label={`التقييمات والآراء${unreadCount > 0 ? `، ${unreadCount} غير مقروء` : ''}`} aria-expanded={showNotif} onClick={() => setShowNotif(!showNotif)} className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition hover:border-yellow-400/40 hover:text-yellow-300 sm:h-11 sm:w-11">
+                          <i className="ph-fill ph-bell text-xl"></i>
+                          {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-slate-950 bg-red-500 px-1 text-[9px] font-black text-white shadow-lg">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                        </button>
+                        {showNotif && <div className="absolute left-0 z-[80] mt-3 flex max-h-[min(400px,70vh)] w-[min(20rem,calc(100vw-1.5rem))] flex-col rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl sm:left-auto sm:right-0">
+                          <div className="mb-2 flex items-center justify-between border-b border-slate-700 px-2 pb-2"><span className="text-sm font-black text-slate-200">التقييمات والآراء ({feedbacks.length})</span><button type="button" aria-label="إغلاق التقييمات" onClick={() => setShowNotif(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"><i className="ph ph-x"></i></button></div>
+                          <div className="custom-scrollbar flex flex-col gap-2 overflow-y-auto pr-1">
+                            {feedbacks.length === 0 ? <p className="py-4 text-center text-sm text-slate-500">لا توجد تقييمات بعد.</p> : feedbacks.map(fb => <button type="button" key={fb.id} onClick={() => { onViewFeedback(fb); setShowNotif(false); }} className={`rounded-xl border p-3 text-right transition ${!fb.adminReadFeedback ? 'border-yellow-500/40 bg-yellow-950/20' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}`}>
+                              <span className="mb-1 flex items-start justify-between gap-2"><span className="truncate text-sm font-bold text-slate-200">{fb.type === 'wedding' ? `${fb.groomName || ''} و ${fb.brideName || ''}` : fb.clientName || 'عميل'}</span><span className="flex shrink-0 gap-0.5 text-xs text-yellow-500" dir="ltr">{[...Array(5)].map((_, i) => <i key={i} className={`${i < fb.clientRating ? 'ph-fill' : 'ph'} ph-star`}></i>)}</span></span>
+                              {fb.clientFeedback && <span className="block line-clamp-2 text-xs text-slate-400">{fb.clientFeedback}</span>}
+                            </button>)}
+                          </div>
+                        </div>}
+                      </div>
+                      <button type="button" onClick={onLogout} title="تسجيل الخروج وإقفال النظام" className="flex h-10 items-center justify-center gap-2 rounded-xl border border-red-900/50 bg-red-950/25 px-2.5 text-xs font-bold text-red-300 transition hover:border-red-500/50 hover:bg-red-900/40 hover:text-white sm:h-11 sm:px-3 sm:text-sm"><i className="ph ph-sign-out text-lg"></i><span className="hidden sm:inline">خروج</span></button>
                     </div>
                   </div>
-                  <div className="lg:hidden pb-4 overflow-x-auto hide-scrollbar">
-                    <div className="flex items-center gap-2 min-w-max">
-                      {navItems.map(btn => (<button key={btn.id} onClick={() => setActiveTab(btn.id)} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === btn.id ? 'bg-yellow-500 text-slate-900 shadow-md' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'}`}>{btn.icon}{btn.label}</button>))}
-                      <button onClick={onLogout} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-900 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50"><i className="ph ph-sign-out text-lg"></i> خروج</button>
+                  <div className="border-t border-slate-800/80 py-3">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                      {navItems.map(btn => <button type="button" key={btn.id} aria-current={activeTab === btn.id ? 'page' : undefined} onClick={() => setActiveTab(btn.id)} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border px-2.5 py-2 text-center text-[11px] font-bold transition-all sm:text-xs ${activeTab === btn.id ? 'border-yellow-300/70 bg-gradient-to-l from-yellow-400 to-amber-500 text-slate-950 shadow-md shadow-yellow-950/20' : 'border-slate-800 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:bg-slate-800 hover:text-white'}`}><span className="shrink-0">{btn.icon}</span><span className="truncate">{btn.label}</span></button>)}
                     </div>
                   </div>
                 </div>
@@ -1474,8 +1470,9 @@
             );
         };
 
-        const AppointmentsTab = ({ appointments, db, settings }) => {
+        const AppointmentsTab = ({ appointments, db, settings, onDeleteCustomer }) => {
             const [filterStatus, setFilterStatus] = useState('all');
+            const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
             const [actionError, setActionError] = useState('');
             const [openWaMenuId, setOpenWaMenuId] = useState(null);
             const [deleteModalId, setDeleteModalId] = useState(null); // للتحكم في نافذة الحذف
@@ -1553,7 +1550,7 @@
                 setDeleteModalId(null);
             };
 
-            const filtered = appointments.filter(a => filterStatus === 'all' || a.status === filterStatus);
+            const filtered = appointments.filter(a => (filterStatus === 'all' || a.status === filterStatus) && (!invalidPhoneOnly || !isValidCustomerPhone(a.phone)));
 
             return (
                 <div className="space-y-6" onClick={() => setOpenWaMenuId(null)}>
@@ -1578,10 +1575,15 @@
                      </div>
                      
                      <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
-                          <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                             <div className="flex items-center gap-2"><i className="ph-fill ph-calendar-plus text-purple-400 text-2xl"></i> قائمة حجوزات الأونلاين المباشرة</div>
+                          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                              <h2 className="text-xl font-bold text-slate-100"><i className="ph-fill ph-calendar-plus ml-2 text-purple-400 text-2xl"></i> قائمة حجوزات الأونلاين المباشرة</h2>
+                              <button type="button" onClick={() => setInvalidPhoneOnly(value => !value)} aria-pressed={invalidPhoneOnly} className={`rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${invalidPhoneOnly ? 'border-red-400 bg-red-950/50 text-red-200' : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-red-400/50'}`}>
+                                  <i className="ph-fill ph-phone-slash ml-1"></i>{invalidPhoneOnly ? 'عرض كل الحجوزات' : `حجوزات بلا هاتف مكتمل (${appointments.filter(a => !isValidCustomerPhone(a.phone)).length})`}
+                              </button>
+                          </div>
+                          <div className="mb-4 flex items-center justify-end border-b border-slate-800 pb-4 text-slate-100">
                              <span className="bg-purple-900/30 text-purple-400 px-3 py-1 rounded border border-purple-500/30 text-xs font-bold">{filtered.length} طلب معروض</span>
-                          </h2>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                               {filtered.map(appt => (
                                   <div key={appt.id} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col gap-3 relative overflow-hidden group hover:border-purple-500/50 transition-all shadow-md animate-fadeIn">
@@ -1701,15 +1703,19 @@
                                </div>
                                <h3 className="text-xl font-black text-white mb-2">تأكيد الحذف نهائياً</h3>
                                <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                                   هل أنت متأكد من رغبتك في حذف هذا الموعد؟ 
-                                   <br />لا يمكن التراجع عن هذا الإجراء وسيتم مسح البيانات للأبد.
+                                   اختر الإجراء المناسب لهذا الحجز. الحذف نهائي ولا يمكن التراجع عنه.
                                </p>
-                               <div className="flex gap-3">
-                                   <button onClick={() => handleDelete(deleteModalId)} className="flex-1 bg-gradient-to-l from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white py-3.5 rounded-xl font-black shadow-lg transition-transform hover:scale-[1.02]">
-                                       نعم، احذف
-                                   </button>
-                                   <button onClick={() => setDeleteModalId(null)} className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-3.5 rounded-xl font-bold transition-colors">
-                                       إلغاء الأمر
+                               <div className="grid grid-cols-1 gap-2.5">
+                                   <div className="grid grid-cols-2 gap-2">
+                                       <button onClick={() => handleDelete(deleteModalId)} className="w-full min-h-12 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-100 transition hover:bg-slate-700">
+                                           حذف الموعد فقط
+                                       </button>
+                                       <button onClick={() => { const appointment = appointments.find(item => item.id === deleteModalId); if (appointment) onDeleteCustomer(appointment.phone, appointment.id, 'appointments'); setDeleteModalId(null); }} className="w-full min-h-12 rounded-xl border border-red-500/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-200 transition-colors hover:bg-red-900/50">
+                                           {(() => { const appointment = appointments.find(item => item.id === deleteModalId); return isValidCustomerPhone(appointment?.phone) ? 'حذف كل بيانات العميل المرتبطة بهاتفه' : 'حذف هذا الحجز فقط (رقم الهاتف غير مكتمل)'; })()}
+                                       </button>
+                                   </div>
+                                   <button onClick={() => setDeleteModalId(null)} className="w-full rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-600">
+                                       إلغاء
                                    </button>
                                </div>
                            </div>
@@ -2326,13 +2332,13 @@
                   
                   {confirmDelete ? (
                       <div className="flex flex-col gap-2 mt-auto pt-2">
-                         <span className="text-xs text-red-400 text-center font-bold">تأكيد الحذف نهائياً؟</span>
+                         <span className="text-xs text-red-300 text-center font-bold leading-5">{isValidCustomerPhone(txn.phone) ? 'سيتم حذف كل سجلات هذا العميل المرتبطة برقم هاتفه.' : 'رقم الهاتف غير مكتمل؛ سيتم حذف هذا الإيصال فقط لتجنب حذف سجلات عملاء آخرين بالخطأ.'} لا يمكن التراجع عن الحذف.</span>
                          <div className="flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(txn.id); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white px-2 py-2 rounded-xl text-xs font-bold transition-all">نعم</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(txn.phone, txn.id, isWedding ? 'weddings' : 'transactions'); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white px-2 py-2 rounded-xl text-xs font-bold transition-all">{isValidCustomerPhone(txn.phone) ? 'حذف العميل نهائياً' : 'حذف هذا الإيصال'}</button>
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-2 py-2 rounded-xl text-xs font-bold transition-all">إلغاء</button>
                          </div>
                       </div>
-                  ) : <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-auto"><i className="ph ph-trash text-xl"></i> حذف الإيصال</button>}
+                  ) : <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all mt-auto"><i className="ph ph-trash text-xl"></i> {isValidCustomerPhone(txn.phone) ? 'حذف العميل وبياناته' : 'حذف إيصال بلا هاتف مكتمل'}</button>}
                 </div>
               </div>
 
@@ -2363,40 +2369,137 @@
             )
         };
 
-        const TopCustomers = ({ allRecords, onCustomerClick }) => {
-            const currentMonth = new Date().getMonth() + 1;
-            const currentYear = new Date().getFullYear();
+        const CustomerArchive = ({ allRecords, settings, setReceiptImageModal, onCustomerClick }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [showRepeatReceipts, setShowRepeatReceipts] = useState(false);
+            const [showMonthlyStarsModal, setShowMonthlyStarsModal] = useState(false);
+            const [selectedReceiptRecord, setSelectedReceiptRecord] = useState(null);
+            const [query, setQuery] = useState('');
+            const [timeRange, setTimeRange] = useState('all');
+            const [ratingFilter, setRatingFilter] = useState('all');
+            const [showClosedRevenue, setShowClosedRevenue] = useState(false);
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+
+            const completedRecords = useMemo(() => (allRecords || []).filter(record => {
+                const wedding = record.type === 'wedding' || !!record.groomName || !!record.brideName;
+                return wedding ? Number(record.status) === 6 : Number(record.status) === 3;
+            }).sort((a, b) => new Date(b.dateTime || 0) - new Date(a.dateTime || 0)), [allRecords]);
 
             const topCustomers = useMemo(() => {
-                if (!allRecords) return [];
-                const thisMonthRecords = allRecords.filter(t => t.month === currentMonth && t.year === currentYear);
                 const counts = {};
-                thisMonthRecords.forEach(t => {
-                    if (!t.phone) return;
-                    if (!counts[t.phone]) { counts[t.phone] = { phone: t.phone, name: t.clientName || t.groomName || 'بدون اسم', visits: 0, totalSpent: 0 }; }
-                    counts[t.phone].visits += 1;
-                    counts[t.phone].totalSpent += (parseFloat(t.total) || 0);
+                (allRecords || []).filter(record => Number(record.month) === currentMonth && Number(record.year) === currentYear).forEach(record => {
+                    if (!record.phone) return;
+                    if (!counts[record.phone]) counts[record.phone] = { phone: record.phone, name: record.clientName || record.groomName || 'بدون اسم', visits: 0, totalSpent: 0, latestReceiptNo: record.receiptNo, latestDate: record.dateTime || '' };
+                    counts[record.phone].visits += 1;
+                    counts[record.phone].totalSpent += parseFloat(record.total) || 0;
+                    if (String(record.dateTime || '') >= String(counts[record.phone].latestDate || '')) {
+                        counts[record.phone].latestDate = record.dateTime || '';
+                        counts[record.phone].latestReceiptNo = record.receiptNo;
+                    }
                 });
-                
-                return Object.values(counts).filter(c => c.visits > 1).sort((a, b) => b.visits - a.visits || b.totalSpent - a.totalSpent).slice(0, 5);
+                return Object.values(counts).filter(customer => customer.visits > 1).sort((a, b) => b.visits - a.visits || b.totalSpent - a.totalSpent).slice(0, 10);
             }, [allRecords, currentMonth, currentYear]);
 
-            if (topCustomers.length === 0) return null;
+            const receiptNumbersFor = (phone) => (allRecords || [])
+                .filter(record => record.phone === phone && record.receiptNo !== undefined && record.receiptNo !== null && String(record.receiptNo).trim() !== '')
+                .sort((a, b) => String(b.dateTime || '').localeCompare(String(a.dateTime || '')))
+                .map(record => record);
+
+            const ratedCount = completedRecords.filter(record => Number(record.clientRating) > 0).length;
+            const pendingRatingCount = completedRecords.length - ratedCount;
+            const closedRevenue = completedRecords.reduce((sum, record) => sum + (parseFloat(record.total) || 0), 0);
+            const displayedArchive = useMemo(() => completedRecords.filter(record => {
+                const date = new Date(record.dateTime || 0);
+                if (timeRange === 'month' && (date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear)) return false;
+                if (timeRange === '90' && (Number.isNaN(date.getTime()) || now.getTime() - date.getTime() > 90 * 24 * 60 * 60 * 1000)) return false;
+                if (ratingFilter === 'pending' && Number(record.clientRating) > 0) return false;
+                if (ratingFilter === 'rated' && !(Number(record.clientRating) > 0)) return false;
+                const q = query.trim().toLowerCase();
+                if (!q) return true;
+                const name = `${record.groomName || ''} ${record.brideName || ''} ${record.clientName || ''}`.toLowerCase();
+                const phone = String(record.phone || '');
+                const receipt = String(record.receiptNo || '').toLowerCase();
+                const photos = Array.isArray(record.photoNo) ? record.photoNo.map(photo => typeof photo === 'object' ? photo.number : photo).join(' ').toLowerCase() : String(record.photoNo || '').toLowerCase();
+                return name.includes(q) || phone.includes(q) || receipt.includes(q) || photos.includes(q);
+            }), [completedRecords, timeRange, ratingFilter, query, currentMonth, currentYear]);
+
+            const sendReviewRequest = (record, name, wedding) => {
+                if (!record.phone) return;
+                const typeParam = wedding ? 'w' : 't';
+                const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(record.phone)}&receipt=${encodeURIComponent(record.receiptNo)}&type=${typeParam}`;
+                openWhatsApp(record.phone, `أهلاً بك أ. ${name || ''} 🌟\nبما إنك استلمت شغلك من ${settings.studioName}، يهمنا جداً نعرف رأيك وتقييمك للتجربة عبر هذا الرابط:\n${trackUrl}`);
+            };
+
+            const sendRetargetOffer = (record, name) => {
+                if (!record.phone) return;
+                openWhatsApp(record.phone, `أهلاً أ. ${name || ''}، نتمنى تكون الصور عجبتكم! 🌟\nبمناسبة مرور فترة على تصويركم في ${settings.studioName}، بنقدملك خصم 15% لو حابب تطبع الصور على تابلوه خشب أو تعمل ألبوم ميني لحفظ ذكرياتك. للطلب استفسر مننا هنا! 🎁`);
+            };
 
             return (
-                <div className="bg-gradient-to-br from-yellow-900/20 to-slate-900 p-6 rounded-2xl shadow-sm border border-yellow-500/30 mb-6">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-400"><i className="ph-fill ph-crown text-2xl"></i> نجوم الشهر (أكثر العملاء زيارة)</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        {topCustomers.map((cust, idx) => (
-                            <div key={idx} onClick={() => onCustomerClick && onCustomerClick(cust.phone)} className="cursor-pointer bg-slate-950 p-4 rounded-xl border border-yellow-500/20 flex flex-col items-center text-center shadow-inner relative overflow-hidden group hover:border-yellow-500 hover:bg-slate-900 transition-colors">
-                                {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-bl-lg z-10">المركز 1</div>}
-                                <div className="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"><i className="ph-fill ph-star text-xl"></i></div>
-                                <span className="font-bold text-slate-200 text-sm truncate w-full">{cust.name}</span>
-                                <span className="text-yellow-400 font-black text-xs mt-1">{cust.visits} زيارات</span>
-                            </div>
-                        ))}
+                <section className="overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/20 shadow-xl shadow-black/10">
+                    <div className="flex w-full flex-col gap-3 bg-slate-950/40 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+                        <button type="button" aria-expanded={isOpen} onClick={() => setIsOpen(value => !value)} className="flex min-w-0 items-center gap-3 self-start text-right xl:self-auto">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-500/10 text-cyan-200"><i className="ph-fill ph-archive-box text-xl"></i></span>
+                            <span className="min-w-0"><strong className="block truncate text-base font-black text-white sm:text-lg">أرشيف العملاء</strong><span className="mt-0.5 block truncate text-[11px] text-slate-400">إعادة التواصل وطلب التقييم · {completedRecords.length} أعمال مكتملة</span></span>
+                            <i className={`ph-bold ${isOpen ? 'ph-caret-up' : 'ph-caret-down'} text-cyan-200`}></i>
+                        </button>
+                        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:flex-nowrap xl:gap-1.5">
+                            <button type="button" onClick={() => setShowRepeatReceipts(true)} title="عرض أرقام إيصالات العملاء الأكثر زيارة" className="min-w-0 rounded-xl border border-blue-400/20 bg-blue-950/30 px-3 py-2 text-center transition hover:border-blue-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-blue-100/70">إجمالي الإيصالات</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-blue-200"><i className="ph-fill ph-receipt"></i>{(allRecords || []).length}</strong></button>
+                            <span className="min-w-0 rounded-xl border border-cyan-400/20 bg-cyan-950/30 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-cyan-100/70">مكتملة</span><strong className="mt-0.5 block text-base font-black text-cyan-200">{completedRecords.length}</strong></span>
+                            <span className="min-w-0 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-amber-100/70">بانتظار التقييم</span><strong className="mt-0.5 block text-base font-black text-amber-200">{pendingRatingCount}</strong></span>
+                            <span className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
+                            <button type="button" onClick={() => setShowClosedRevenue(value => !value)} title={showClosedRevenue ? 'إخفاء المبلغ' : 'إظهار قيمة الأعمال المستلمة'} className="min-w-0 rounded-xl border border-emerald-400/20 bg-emerald-950/20 px-3 py-2 text-center transition hover:border-emerald-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-emerald-100/70">قيمة المستلم</span><strong className="mt-0.5 block truncate text-base font-black text-emerald-200">{showClosedRevenue ? formatCurrency(closedRevenue) : '••••'}</strong></button>
+                            <button type="button" onClick={() => setShowMonthlyStarsModal(true)} title="عرض عملاء نجوم الشهر وإعادة استهدافهم" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/25 px-3 py-2 text-center transition hover:border-yellow-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">نجوم الشهر</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-yellow-200"><i className="ph-fill ph-star"></i>{topCustomers.length}</strong></button>
+                        </div>
                     </div>
-                </div>
+                    {isOpen && <div className="border-t border-slate-800 p-4 sm:p-5">
+                        <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_160px_170px]">
+                            <div className="relative min-w-0"><i className="ph ph-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"></i><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="ابحث بالاسم أو الهاتف أو رقم الإيصال..." className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 pr-9 pl-3 text-sm text-white outline-none transition focus:border-cyan-400" /></div>
+                            <select value={timeRange} onChange={event => setTimeRange(event.target.value)} aria-label="تصفية الأرشيف حسب الفترة" className="h-11 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs font-bold text-slate-200 outline-none focus:border-cyan-400"><option value="all">كل الأرشيف</option><option value="month">هذا الشهر</option><option value="90">آخر 90 يومًا</option></select>
+                            <select value={ratingFilter} onChange={event => setRatingFilter(event.target.value)} aria-label="تصفية حسب التقييم" className="h-11 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs font-bold text-slate-200 outline-none focus:border-cyan-400"><option value="all">كل العملاء</option><option value="pending">بانتظار التقييم</option><option value="rated">تم التقييم</option></select>
+                        </div>
+                        <div className="mb-3 flex items-center justify-between text-[11px] text-slate-500"><span>النتائج: <b className="text-slate-300">{displayedArchive.length}</b></span><span>مرتبة من الأحدث إلى الأقدم</span></div>
+                        <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                            {displayedArchive.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/60 px-4 py-10 text-center"><i className="ph ph-archive text-3xl text-slate-600"></i><p className="mt-2 text-sm font-bold text-slate-300">لا توجد سجلات مطابقة</p><p className="mt-1 text-xs text-slate-500">جرّب تغيير البحث أو الفلاتر.</p></div> : displayedArchive.map(record => {
+                                const wedding = record.type === 'wedding' || !!record.groomName || !!record.brideName;
+                                const name = wedding ? `${record.groomName || ''} و ${record.brideName || ''}`.trim() : record.clientName;
+                                const hasRating = Number(record.clientRating) > 0;
+                                return <article key={`${wedding ? 'w' : 't'}-${record.id}`} className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 transition hover:border-cyan-400/25 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2"><span className={`flex h-8 w-8 items-center justify-center rounded-xl ${wedding ? 'bg-pink-500/10 text-pink-300' : 'bg-blue-500/10 text-blue-300'}`}><i className={`ph-fill ${wedding ? 'ph-heart' : 'ph-camera'}`}></i></span><strong className="max-w-full truncate text-sm font-black text-slate-100">{name || 'بدون اسم'}</strong><span className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-[10px] font-black text-cyan-200">إيصال #{record.receiptNo || '—'}</span><span className={`rounded-lg px-2 py-1 text-[10px] font-bold ${wedding ? 'bg-pink-950/40 text-pink-200' : 'bg-blue-950/40 text-blue-200'}`}>{wedding ? 'زفاف' : 'استوديو'}</span></div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400"><span><i className="ph ph-phone ml-1"></i>{record.phone || 'لا يوجد هاتف'}</span><span><i className="ph ph-calendar-blank ml-1"></i>{formatDateOnly(record.dateTime)}</span><span><i className="ph ph-currency-circle-dollar ml-1"></i>{formatCurrency(record.total)}</span></div>
+                                        {record.confirmedReceipts?.length > 0 && <div className="mt-2 flex flex-wrap items-center gap-2"><span className="text-[10px] text-slate-500">إيصالات السداد:</span>{record.confirmedReceipts.map((url, index) => <button type="button" key={`${record.id}-receipt-${index}`} onClick={() => setReceiptImageModal(url)} title="عرض إيصال السداد" className="h-8 w-8 overflow-hidden rounded-lg border border-slate-700 transition hover:border-cyan-300"><img src={url} alt="إيصال سداد" className="h-full w-full object-cover" /></button>)}</div>}
+                                    </div>
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">{hasRating ? <div className="flex min-h-10 items-center justify-center gap-1 rounded-xl border border-yellow-500/20 bg-yellow-950/20 px-3 text-yellow-200" title={record.clientFeedback || 'تم استلام التقييم'}><b className="text-sm">{record.clientRating}</b><i className="ph-fill ph-star"></i>{record.clientFeedback && <span className="max-w-32 truncate text-[10px] text-yellow-100/70">{record.clientFeedback}</span>}</div> : <button type="button" disabled={!record.phone} onClick={() => sendReviewRequest(record, name, wedding)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-200 transition hover:border-yellow-400/40 hover:text-yellow-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ph ph-star"></i>طلب تقييم</button>}<button type="button" disabled={!record.phone} onClick={() => sendRetargetOffer(record, name)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-3 text-xs font-black text-white shadow-lg shadow-emerald-950/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"><i className="ph-fill ph-whatsapp-logo text-base"></i>إعادة تواصل</button></div>
+                                </article>;
+                            })}
+                        </div>
+                    </div>}
+                    {showRepeatReceipts && isOpen && <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" onClick={() => setShowRepeatReceipts(false)}>
+                        <section role="dialog" aria-modal="true" aria-labelledby="repeat-receipts-title" className="w-full max-w-2xl overflow-hidden rounded-3xl border border-cyan-400/25 bg-slate-900 shadow-2xl shadow-black/50" onClick={event => event.stopPropagation()}>
+                            <div className="flex items-center justify-between gap-3 border-b border-slate-700 bg-slate-950/60 px-5 py-4"><div><h3 id="repeat-receipts-title" className="text-base font-black text-white">إيصالات العملاء الأكثر زيارة</h3><p className="mt-1 text-xs text-slate-400">أفضل 10 عملاء لهذا الشهر · إجمالي الإيصالات: {(allRecords || []).length}</p></div><button type="button" onClick={() => setShowRepeatReceipts(false)} aria-label="إغلاق" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300 transition hover:border-red-400/40 hover:text-white"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4 custom-scrollbar">{topCustomers.length ? topCustomers.map((customer, index) => <div key={customer.phone} className="flex w-full flex-col gap-2 rounded-xl border border-slate-700 bg-slate-950/80 p-3 sm:flex-row sm:items-center sm:justify-between"><button type="button" onClick={() => { setShowRepeatReceipts(false); onCustomerClick && onCustomerClick(customer.phone); }} className="flex min-w-0 items-center gap-2 text-right text-xs font-black text-slate-100"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-yellow-500/10 text-[10px] text-yellow-200">{index + 1}</span><span className="truncate">{customer.name}</span><span className="shrink-0 text-[10px] font-bold text-yellow-200">{customer.visits} زيارات</span></button><span className="flex flex-wrap gap-1.5 sm:max-w-[62%] sm:justify-end">{receiptNumbersFor(customer.phone).map((record, receiptIndex) => <button type="button" key={`${record.id || record.receiptNo}-${receiptIndex}`} onClick={() => { setShowRepeatReceipts(false); setSelectedReceiptRecord(record); }} title={`فتح الإيصال رقم ${record.receiptNo}`} className="rounded-md border border-cyan-400/20 bg-cyan-950/40 px-2 py-1 font-mono text-[10px] font-black text-cyan-200 transition hover:border-cyan-300 hover:bg-cyan-900/70">#{record.receiptNo}</button>)}</span></div>) : <p className="rounded-xl border border-slate-700 bg-slate-950 p-5 text-center text-sm text-slate-400">لا توجد إيصالات لعملاء متكررين حتى الآن.</p>}</div>
+                            <div className="border-t border-slate-800 px-5 py-3 text-center text-[10px] text-slate-500">اضغط على اسم العميل لسجل الزيارات، أو على رقم الإيصال لفتح تفاصيله.</div>
+                        </section>
+                    </div>}
+                    {showMonthlyStarsModal && <div className="fixed inset-0 z-[135] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" onClick={() => setShowMonthlyStarsModal(false)}>
+                        <section role="dialog" aria-modal="true" aria-labelledby="monthly-stars-title" className="w-full max-w-2xl overflow-hidden rounded-3xl border border-yellow-400/25 bg-slate-900 shadow-2xl shadow-black/50" onClick={event => event.stopPropagation()}>
+                            <div className="flex items-center justify-between gap-3 border-b border-yellow-500/15 bg-gradient-to-l from-yellow-950/40 to-slate-950/70 px-5 py-4"><div><h3 id="monthly-stars-title" className="flex items-center gap-2 text-base font-black text-yellow-200"><i className="ph-fill ph-crown text-xl"></i> عملاء نجوم الشهر</h3><p className="mt-1 text-xs text-slate-400">أفضل 10 عملاء متكررين · اضغط على الإيصال لعرض تفاصيله</p></div><button type="button" onClick={() => setShowMonthlyStarsModal(false)} aria-label="إغلاق نافذة نجوم الشهر" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300 transition hover:border-red-400/40 hover:text-white"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="max-h-[68vh] space-y-2 overflow-y-auto p-4 custom-scrollbar">{topCustomers.length ? topCustomers.map((customer,index) => <article key={customer.phone} className="flex flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-950/80 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0 flex-1"><button type="button" onClick={() => { setShowMonthlyStarsModal(false); onCustomerClick && onCustomerClick(customer.phone); }} title={`فتح سجل زيارات ${customer.name}`} className="flex min-w-0 items-center gap-2 text-right"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10 text-xs font-black text-yellow-200">{index + 1}</span><span className="truncate text-sm font-black text-white">{customer.name}</span><span className="shrink-0 text-[10px] text-yellow-200">{customer.visits} زيارات</span></button><div className="mt-2 flex flex-wrap gap-1.5">{receiptNumbersFor(customer.phone).map((record, receiptIndex) => <button type="button" key={`${record.id || record.receiptNo}-${receiptIndex}`} onClick={() => { setShowMonthlyStarsModal(false); setSelectedReceiptRecord(record); }} title={`فتح الإيصال رقم ${record.receiptNo}`} className="rounded-lg border border-cyan-400/20 bg-cyan-950/40 px-2.5 py-1 font-mono text-[10px] font-black text-cyan-200 transition hover:border-cyan-300 hover:bg-cyan-900/70"><i className="ph-fill ph-receipt ml-1"></i>#{record.receiptNo}</button>)}</div></div><button type="button" onClick={() => sendRetargetOffer({ phone: customer.phone }, customer.name)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/25 bg-gradient-to-l from-emerald-700 to-teal-600 px-4 text-xs font-black text-white shadow-lg shadow-emerald-950/30 transition hover:-translate-y-0.5 hover:brightness-110"><i className="ph-fill ph-whatsapp-logo text-lg"></i>إعادة استهداف واتساب</button></article>) : <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/70 px-4 py-10 text-center text-sm text-slate-400">لا يوجد عملاء متكررون لهذا الشهر حتى الآن.</p>}</div>
+                            <div className="border-t border-slate-800 px-5 py-3 text-center text-[10px] text-slate-500">يمكنك فتح سجل العميل من اسمه أو تفاصيل الإيصال من رقمه، وإعادة التواصل عبر واتساب.</div>
+                        </section>
+                    </div>}
+                    {selectedReceiptRecord && <div className="fixed inset-0 z-[145] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" onClick={() => setSelectedReceiptRecord(null)}>
+                        <section role="dialog" aria-modal="true" className="w-full max-w-lg overflow-hidden rounded-3xl border border-cyan-400/25 bg-slate-900 shadow-2xl" onClick={event => event.stopPropagation()}>
+                            <div className="flex items-center justify-between border-b border-slate-700 bg-slate-950/60 px-5 py-4"><div><h3 className="text-base font-black text-white">تفاصيل الإيصال #{selectedReceiptRecord.receiptNo}</h3><p className="mt-1 text-xs text-slate-400">{selectedReceiptRecord.type === 'wedding' || selectedReceiptRecord.groomName || selectedReceiptRecord.brideName ? `${selectedReceiptRecord.groomName || ''} و ${selectedReceiptRecord.brideName || ''}` : selectedReceiptRecord.clientName || 'بدون اسم'}</p></div><button type="button" onClick={() => setSelectedReceiptRecord(null)} aria-label="إغلاق" className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="space-y-3 p-5 text-sm"><div className="grid grid-cols-2 gap-2"><div className="rounded-xl border border-slate-700 bg-slate-950 p-3"><span className="block text-[10px] text-slate-400">التاريخ</span><strong className="mt-1 block text-slate-100">{formatDateOnly(selectedReceiptRecord.dateTime)}</strong></div><div className="rounded-xl border border-slate-700 bg-slate-950 p-3"><span className="block text-[10px] text-slate-400">الهاتف</span><strong className="mt-1 block text-slate-100" dir="ltr">{selectedReceiptRecord.phone || '—'}</strong></div><div className="rounded-xl border border-slate-700 bg-slate-950 p-3"><span className="block text-[10px] text-slate-400">إجمالي الإيصال</span><strong className="mt-1 block text-cyan-200">{formatCurrency(selectedReceiptRecord.total)}</strong></div><div className="rounded-xl border border-slate-700 bg-slate-950 p-3"><span className="block text-[10px] text-slate-400">المدفوع / المتبقي</span><strong className="mt-1 block text-slate-100">{formatCurrency(selectedReceiptRecord.paid)} / {formatCurrency(selectedReceiptRecord.remaining)}</strong></div></div>
+                                {selectedReceiptRecord.confirmedReceipts?.length > 0 && <div><p className="mb-2 text-xs font-bold text-slate-300">صور إيصالات السداد</p><div className="flex flex-wrap gap-2">{selectedReceiptRecord.confirmedReceipts.map((url, index) => <button type="button" key={`${selectedReceiptRecord.id}-pay-${index}`} onClick={() => setReceiptImageModal(url)} className="h-14 w-14 overflow-hidden rounded-lg border border-slate-700"><img src={url} alt="إيصال سداد" className="h-full w-full object-cover" /></button>)}</div></div>}
+                            </div>
+                        </section>
+                    </div>}
+                </section>
             );
         };
 
@@ -2513,10 +2616,17 @@
             );
         };
 
-        const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
+        const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks, onDeleteCustomer }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [formData, setFormData] = useState({ clientName: '', photographerName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
+            const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
+            const [showIncompleteReceiptDeleteModal, setShowIncompleteReceiptDeleteModal] = useState(false);
+            const [incompleteReceiptPreviewCount, setIncompleteReceiptPreviewCount] = useState(0);
+            const [incompleteReceiptPreviewIds, setIncompleteReceiptPreviewIds] = useState([]);
+            const [isLoadingIncompleteReceiptPreview, setIsLoadingIncompleteReceiptPreview] = useState(false);
+            const [isDeletingIncompleteReceipts, setIsDeletingIncompleteReceipts] = useState(false);
+            const [incompleteReceiptDeleteResult, setIncompleteReceiptDeleteResult] = useState('');
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             const [debtPriorityFilter, setDebtPriorityFilter] = useState('all'); const [debtSort, setDebtSort] = useState('priority');
             
@@ -2603,7 +2713,53 @@
               setIsEditing(false); setShowAddModal(false);
             };
 
-            const handleDelete = async (id) => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await deleteDoc(doc(db, `artifacts/${appId}/public/data/transactions`, id)); };
+            const handleDelete = async (phone, recordId, collectionName) => onDeleteCustomer(phone, recordId, collectionName);
+            const openIncompleteReceiptDelete = async () => {
+                setIncompleteReceiptDeleteResult(''); setIncompleteReceiptPreviewCount(0); setIncompleteReceiptPreviewIds([]);
+                setIsLoadingIncompleteReceiptPreview(true); setShowIncompleteReceiptDeleteModal(true);
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                    const snapshot = await getDocsFromServer(collection(db, `artifacts/${appId}/public/data/transactions`));
+                    const targets = snapshot.docs.filter(item => !isValidCustomerPhone(item.data().phone));
+                    setIncompleteReceiptPreviewIds(targets.map(item => item.id).sort());
+                    setIncompleteReceiptPreviewCount(targets.length);
+                } catch (error) {
+                    console.error('تعذر معاينة الإيصالات ذات الهاتف الناقص:', error);
+                    setIncompleteReceiptDeleteResult('تعذرت معاينة قاعدة البيانات؛ لم يتم حذف أي سجل.');
+                } finally {
+                    setIsLoadingIncompleteReceiptPreview(false);
+                }
+            };
+            const deleteAllIncompleteReceipts = async () => {
+                if (isDeletingIncompleteReceipts || isLoadingIncompleteReceiptPreview) return;
+                setIsDeletingIncompleteReceipts(true); setIncompleteReceiptDeleteResult('');
+                let deletedCount = 0;
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                    const snapshot = await getDocsFromServer(collection(db, `artifacts/${appId}/public/data/transactions`));
+                    const targets = snapshot.docs.filter(item => !isValidCustomerPhone(item.data().phone));
+                    const liveIds = targets.map(item => item.id).sort();
+                    const previewIds = [...incompleteReceiptPreviewIds].sort();
+                    if (liveIds.length !== previewIds.length || liveIds.some((id, index) => id !== previewIds[index])) {
+                        setIncompleteReceiptPreviewIds(liveIds); setIncompleteReceiptPreviewCount(targets.length);
+                        setIncompleteReceiptDeleteResult('تغيرت السجلات منذ المعاينة؛ راجع العدد المحدّث ثم أكد الحذف مرة أخرى. لم يُحذف شيء.');
+                        return;
+                    }
+                    for (let i = 0; i < targets.length; i += 450) {
+                        const batch = writeBatch(db);
+                        targets.slice(i, i + 450).forEach(item => batch.delete(item.ref));
+                        await batch.commit();
+                        deletedCount += Math.min(450, targets.length - i);
+                    }
+                    setIncompleteReceiptPreviewIds([]); setIncompleteReceiptPreviewCount(0);
+                    setIncompleteReceiptDeleteResult(`اكتمل الحذف النهائي: ${deletedCount} إيصالاً من قاعدة بيانات Firebase.`);
+                } catch (error) {
+                    console.error('تعذر حذف جميع الإيصالات ذات الهاتف الناقص:', error);
+                    setIncompleteReceiptDeleteResult(`توقف الحذف بعد حذف ${deletedCount} إيصالاً. راجع السجلات قبل إعادة المحاولة.`);
+                } finally {
+                    setIsDeletingIncompleteReceipts(false);
+                }
+            };
             const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = transactions.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated); } };
             
             const handlePhoneChange = (val) => {
@@ -2624,7 +2780,7 @@
                 }
             };
 
-            let displayTxns = transactions; const isFiltering = query !== '' || filterDate !== '';
+            let displayTxns = transactions; const isFiltering = query !== '' || filterDate !== '' || invalidPhoneOnly;
             if (query) {
                  const q = query.toLowerCase();
                  displayTxns = displayTxns.filter(t => {
@@ -2641,6 +2797,7 @@
                  });
             }
             if (filterDate) displayTxns = displayTxns.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
+            if (invalidPhoneOnly) displayTxns = displayTxns.filter(t => !isValidCustomerPhone(t.phone));
             if (!isFiltering) displayTxns = transactions.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString() || (t.payments && t.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString())));
 
             const dayRevenue = calculatePeriodRevenue(transactions, filterDate ? new Date(filterDate) : new Date(), 'day');
@@ -2661,17 +2818,18 @@
             return (
               <div className="space-y-6">
                 
-                <div className={"grid grid-cols-1 gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 items-stretch " + (totalDebts > 0 ? "lg:grid-cols-4 sm:grid-cols-2" : "lg:grid-cols-3 sm:grid-cols-3")}>
-                  <button onClick={() => { setIsEditing(false); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false }); setFormData({ clientName: '', photographerName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 text-sm sm:text-base"><i className="ph ph-plus-circle text-xl sm:text-2xl"></i> إضافة عملية</button>
-                  {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>الديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
-                  <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث بالاسم، هاتف، إيصال، رقم الصورة..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-                  <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
-                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                      {filterDate && <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x text-lg"></i></button>}
+                <div className="grid grid-cols-2 gap-2 bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-800 items-stretch sm:grid-cols-3 xl:grid-cols-5">
+                  <button onClick={() => { setIsEditing(false); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false }); setFormData({ clientName: '', photographerName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-14 min-w-0 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/50 text-xs sm:text-sm whitespace-nowrap"><i className="ph ph-plus-circle text-lg"></i><span className="truncate">إضافة عملية</span></button>
+                  <button onClick={() => setShowDebtsModal(true)} disabled={totalDebts <= 0} className="w-full h-14 min-w-0 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm text-xs sm:text-sm whitespace-nowrap" title="عرض الديون"><i className="ph-fill ph-warning-circle text-lg"></i><span className="truncate">ديون ({uniqueDebtorsCount})</span></button>
+                  <div className="relative w-full h-14 min-w-0"><i className="ph ph-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg"></i><input type="text" placeholder="بحث..." aria-label="بحث في الإيصالات" className="w-full h-full pr-9 pl-2 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-xs sm:text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+                  <div className="flex gap-1.5 w-full h-14 min-w-0"><input type="date" title="تصفية بالتاريخ" aria-label="تصفية بالتاريخ" className="min-w-0 w-full h-full px-1.5 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-xs transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />{filterDate && <button aria-label="مسح التاريخ" onClick={() => setFilterDate('')} className="h-full px-2 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x"></i></button>}</div>
+                  <div className="grid h-14 min-w-0 grid-cols-2 gap-1.5">
+                    <button type="button" onClick={() => setInvalidPhoneOnly(value => !value)} aria-pressed={invalidPhoneOnly} title="تصفية الإيصالات ذات الهاتف غير المكتمل" className={`min-w-0 rounded-xl border px-1.5 text-[10px] sm:text-xs font-bold leading-tight transition-colors ${invalidPhoneOnly ? 'border-red-400 bg-red-950/50 text-red-200' : 'col-span-2 border-slate-700 bg-slate-950 text-slate-300 hover:border-red-400/50'}`}><i className="ph-fill ph-phone-slash ml-1"></i>{invalidPhoneOnly ? 'عرض كل الإيصالات' : `بلا هاتف (${transactions.filter(t => !isValidCustomerPhone(t.phone)).length})`}</button>
+                    {invalidPhoneOnly && <button type="button" onClick={openIncompleteReceiptDelete} title="حذف جميع الإيصالات ذات الهاتف غير المكتمل" className="min-w-0 rounded-xl border border-red-900/60 bg-red-950/40 px-1.5 text-[10px] sm:text-xs font-bold leading-tight text-red-300 transition hover:border-red-500 hover:bg-red-900/60"><i className="ph-fill ph-trash ml-1"></i>حذف الكل</button>}
                   </div>
                 </div>
 
-                {!isFiltering && <TopCustomers allRecords={allRecords} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setHistoryPhone(phone); }} />}
+                <CustomerArchive allRecords={allRecords} settings={settings} setReceiptImageModal={setReceiptImageModal} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setHistoryPhone(phone); }} />
                 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
@@ -2807,15 +2965,33 @@
                   </div>
                 )}
                 
+                {showIncompleteReceiptDeleteModal && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" onClick={() => !isDeletingIncompleteReceipts && setShowIncompleteReceiptDeleteModal(false)}>
+                    <div role="dialog" aria-modal="true" aria-labelledby="incomplete-receipts-delete-title" className="w-full max-w-md overflow-hidden rounded-3xl border border-red-500/30 bg-slate-900 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+                      <div className="h-1.5 bg-gradient-to-l from-red-500 via-rose-500 to-orange-400"></div>
+                      <div className="p-5 sm:p-6">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300"><i className="ph-fill ph-warning-circle text-3xl"></i></div>
+                        <h2 id="incomplete-receipts-delete-title" className="text-center text-lg font-black text-white">حذف الإيصالات الناقصة</h2>
+                        <p className="mt-2 text-center text-sm leading-6 text-slate-300">سيُحذف نهائيًا كل إيصال هاتفه فارغ أو غير مكتمل من قاعدة Firebase. لن تُمس الحجوزات أو الإيصالات ذات الهاتف المكتمل.</p>
+                        <div className="my-4 rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-center"><span className="text-xs text-slate-400">عدد الإيصالات المرشحة</span><div className="mt-1 text-2xl font-black text-red-300">{isLoadingIncompleteReceiptPreview ? '…' : incompleteReceiptPreviewCount}</div></div>
+                        {incompleteReceiptDeleteResult && <p role="status" className="mb-4 rounded-xl border border-slate-700 bg-slate-950 p-3 text-center text-xs leading-5 text-slate-200">{incompleteReceiptDeleteResult}</p>}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button type="button" disabled={isDeletingIncompleteReceipts || isLoadingIncompleteReceiptPreview || incompleteReceiptPreviewCount === 0} onClick={deleteAllIncompleteReceipts} className="rounded-xl bg-red-600 px-3 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">{isLoadingIncompleteReceiptPreview ? 'جارٍ الفحص…' : isDeletingIncompleteReceipts ? 'جارٍ الحذف…' : 'حذف نهائي من Firebase'}</button>
+                          <button type="button" disabled={isDeletingIncompleteReceipts} onClick={() => setShowIncompleteReceiptDeleteModal(false)} className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm font-bold text-slate-200 transition hover:bg-slate-700 disabled:opacity-50">{incompleteReceiptDeleteResult && incompleteReceiptPreviewCount === 0 ? 'إغلاق' : 'إلغاء'}</button>
+                        </div>
+                        <p className="mt-3 text-center text-[11px] text-amber-200/80">عملية نهائية لا يمكن التراجع عنها.</p>
+                      </div>
+                    </div>
+                  </div>}
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <VisitHistoryModal phone={historyPhone} allRecords={allRecords} onClose={() => setHistoryPhone(null)} />
             </div>
             );
         };
 
-        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks }) => {
+        const WeddingsTab = ({ settings, setSettings, weddings, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks, onDeleteCustomer }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
+            const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             const [loyaltyAlert, setLoyaltyAlert] = useState('');
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
@@ -2874,7 +3050,7 @@
               setIsEditing(false); setShowAddModal(false);
             };
 
-            const handleDelete = async (id) => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await deleteDoc(doc(db, `artifacts/${appId}/public/data/weddings`, id)); };
+            const handleDelete = async (phone, recordId, collectionName) => onDeleteCustomer(phone, recordId, collectionName);
             const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = weddings.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/weddings`, updated.id), updated); } };
             
             const handlePhoneChange = (val) => { 
@@ -2895,7 +3071,7 @@
                 } 
             };
 
-            let filteredWeds = weddings; const isFiltering = query !== '' || filterDate !== '';
+            let filteredWeds = weddings; const isFiltering = query !== '' || filterDate !== '' || invalidPhoneOnly;
             if (query) {
                  const q = query.toLowerCase();
                  filteredWeds = filteredWeds.filter(t => {
@@ -2912,6 +3088,7 @@
                  });
             }
             if (filterDate) filteredWeds = filteredWeds.filter(t => t.dateTime && t.dateTime.startsWith(filterDate));
+            if (invalidPhoneOnly) filteredWeds = filteredWeds.filter(t => !isValidCustomerPhone(t.phone));
             if (!isFiltering) filteredWeds = weddings.filter(t => new Date(t.dateTime).toDateString() === new Date().toDateString() || (t.payments && t.payments.some(p => new Date(p.date).toDateString() === new Date().toDateString())));
 
             const dayRevenue = calculatePeriodRevenue(weddings, filterDate ? new Date(filterDate) : new Date(), 'day');
@@ -2937,6 +3114,9 @@
                       <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
                       {filterDate && <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x text-lg"></i></button>}
                   </div>
+                  <button type="button" onClick={() => setInvalidPhoneOnly(value => !value)} aria-pressed={invalidPhoneOnly} className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${invalidPhoneOnly ? 'border-red-400 bg-red-950/50 text-red-200' : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-red-400/50'}`}>
+                    <i className="ph-fill ph-phone-slash ml-1"></i>{invalidPhoneOnly ? 'عرض كل الحجوزات' : `حجوزات بلا هاتف مكتمل (${weddings.filter(t => !isValidCustomerPhone(t.phone)).length})`}
+                  </button>
                 </div>
 
                 {!isFiltering && <WeddingScheduleView weddings={weddings} onEventClick={(txn) => setHistoryPhone(txn.phone)} onDayClick={handleDayClick} />}
@@ -3294,7 +3474,7 @@
         const ReportsTab = ({ settings, transactions, weddings, expenses, setReceiptImageModal }) => {
             const currentMonth = new Date().getMonth() + 1; const currentYear = new Date().getFullYear();
             const [filter, setFilter] = useState({ month: currentMonth, year: currentYear });
-            const [archiveQuery, setArchiveQuery] = useState(''); const [electronicDetails, setElectronicDetails] = useState(null); const [showAmounts, setShowAmounts] = useState(false);
+            const [electronicDetails, setElectronicDetails] = useState(null); const [showAmounts, setShowAmounts] = useState(false);
             const [selectedMonthDetails, setSelectedMonthDetails] = useState(null);
             
             const filteredTxns = transactions.filter(t => t.month == filter.month && t.year == filter.year);
@@ -3318,19 +3498,6 @@
               return { expected, collected: wedCollectedStats.total, cash: wedCollectedStats.cash, electronic: wedCollectedStats.electronic, debts: filteredWeds.reduce((sum, t) => sum + (parseFloat(t.remaining)||0), 0), expenses: weddingExpTotal, netProfit: wedCollectedStats.total - weddingExpTotal };
             }, [filteredWeds, wedCollectedStats, weddingExpTotal]);
 
-            const allCompleted = useMemo(() => [...filteredTxns.filter(t => t.status === 3), ...filteredWeds.filter(t => t.status === 6)].sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)), [filteredTxns, filteredWeds]);
-            const closedRevenue = allCompleted.reduce((sum, t) => sum + (parseFloat(t.total) || 0), 0);
-            
-            const searchedArchive = useMemo(() => {
-                 return allCompleted.filter(t => {
-                     const q = archiveQuery.toLowerCase();
-                     let matchPhoto = false;
-                     if (Array.isArray(t.photoNo)) { matchPhoto = t.photoNo.some(p => (typeof p === 'object' ? p.number : p).toString().toLowerCase().includes(q)); }
-                     else if (t.photoNo) { matchPhoto = t.photoNo.toString().toLowerCase().includes(q); }
-                     return (`${t.groomName || ''} ${t.brideName || ''} ${t.clientName || ''}`).toLowerCase().includes(q) || (t.phone || '').includes(q) || (t.receiptNo?.toString() || '').includes(q) || matchPhoto;
-                 });
-            }, [allCompleted, archiveQuery]);
-            
             const MonthlyStatsTable = () => {
                 const activeMonthsSet = new Set();
                 transactions.forEach(t => { if(t.year == filter.year) activeMonthsSet.add(t.month); });
@@ -3460,95 +3627,6 @@
                     </div>
                   </div>
 
-                </div>
-
-                <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col mt-4">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 mb-4 gap-4">
-                        <div>
-                            <h3 className="text-lg sm:text-xl font-bold text-yellow-400 flex items-center gap-2">
-                                <i className="ph-fill ph-archive-box text-2xl"></i> أرشيف العملاء (إعادة الاستهداف والتقييم)
-                            </h3>
-                            <p className="text-xs text-slate-400 mt-1">قائمة بالعملاء الذين استلموا أعمالهم، لطلب التقييم أو إرسال عروض ترويجية.</p>
-                        </div>
-                        <div className="bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-xl text-yellow-400 flex flex-col items-center">
-                            <span className="text-[10px] uppercase font-bold tracking-wider">أرباح الصفقات المغلقة</span>
-                            <span className="text-lg font-black">{showAmounts ? formatCurrency(closedRevenue) : '••••••'}</span>
-                        </div>
-                    </div>
-
-                    <div className="relative w-full mb-4">
-                        <i className="ph ph-magnifying-glass absolute right-4 top-3.5 text-slate-500 text-lg"></i>
-                        <input 
-                            type="text" 
-                            placeholder="ابحث في الأرشيف بالاسم، رقم الهاتف، أو رقم الإيصال..." 
-                            className="w-full p-3 pr-11 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm transition-colors" 
-                            value={archiveQuery} 
-                            onChange={(e) => setArchiveQuery(e.target.value)} 
-                        />
-                    </div>
-
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
-                        {searchedArchive.length === 0 ? (
-                            <p className="text-center text-slate-500 py-10 bg-slate-950 rounded-xl border border-slate-800 border-dashed">لا يوجد عملاء استلموا أعمالهم في هذا الشهر.</p>
-                        ) : (
-                            searchedArchive.map(txn => {
-                                const isWed = txn.type === 'wedding';
-                                const name = isWed ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
-                                return (
-                                    <div key={txn.id} className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-4 bg-slate-950 rounded-xl border border-slate-800 gap-4 hover:border-yellow-500/30 transition-all">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <i className={`text-lg ${isWed ? 'ph-fill ph-heart text-pink-500' : 'ph-fill ph-camera text-blue-500'}`}></i>
-                                                <span className="font-bold text-slate-200 text-base">{name || 'بدون اسم'}</span>
-                                                <span className="bg-slate-800 text-slate-400 text-[10px] px-2 py-0.5 rounded font-mono">#{txn.receiptNo}</span>
-                                            </div>
-                                            <div className="text-xs text-slate-500 font-mono mt-1">📞 {txn.phone} | 📅 {formatDateOnly(txn.dateTime)} | 💰 {showAmounts ? `${txn.total} ج.م` : '••••••'}</div>
-                                            
-                                            {txn.confirmedReceipts && txn.confirmedReceipts.length > 0 && (
-                                                <div className="flex items-center gap-2 mt-3">
-                                                    <span className="text-xs text-slate-500"><i className="ph ph-check-circle text-green-500"></i> إيصالات السداد:</span>
-                                                    {txn.confirmedReceipts.map((imgUrl, idx) => (
-                                                        <img key={idx} src={imgUrl} alt="إيصال" className="w-8 h-8 object-cover rounded border border-slate-700 cursor-pointer hover:opacity-80 transition-all shadow-sm" onClick={() => setReceiptImageModal(imgUrl)} title="تكبير الإيصال" />
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto shrink-0">
-                                            {txn.clientRating > 0 ? (
-                                                <div className="bg-yellow-950/30 border border-yellow-900/50 px-3 py-2 rounded-lg flex items-center gap-1 min-w-[120px] justify-center" title={txn.clientFeedback || 'بدون تعليق'}>
-                                                    <span className="text-yellow-500 font-black text-sm">{txn.clientRating}</span>
-                                                    <i className="ph-fill ph-star text-yellow-500 text-sm"></i>
-                                                </div>
-                                            ) : (
-                                                <button 
-                                                    onClick={() => {
-                                                        const typeParam = isWed ? 'w' : 't';
-                                                        const trackUrl = window.location.href.split('?')[0] + `?phone=${encodeURIComponent(txn.phone)}&receipt=${encodeURIComponent(txn.receiptNo)}&type=${typeParam}`;
-                                                        const msg = `أهلاً بك أ. ${name || ''} 🌟\nبما إنك استلمت شغلك من ${settings.studioName}، يهمنا جداً نعرف رأيك وتقييمك للتجربة عبر هذا الرابط:\n${trackUrl}`;
-                                                        openWhatsApp(txn.phone, msg);
-                                                    }}
-                                                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                                                >
-                                                    <i className="ph ph-star text-base"></i> طلب تقييم
-                                                </button>
-                                            )}
-
-                                            <button 
-                                                onClick={() => {
-                                                    const msg = `أهلاً أ. ${name || ''}، نتمنى تكون الصور عجبتكم! 🌟\nبمناسبة مرور فترة على تصويركم في ${settings.studioName}، بنقدملك خصم 15% لو حابب تطبع الصور على تابلوه خشب أو تعمل ألبوم ميني لحفظ ذكرياتك. للطلب استفسر مننا هنا! 🎁`;
-                                                    openWhatsApp(txn.phone, msg);
-                                                }}
-                                                className="bg-gradient-to-l from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-2 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm border border-green-500/50"
-                                            >
-                                                <i className="ph-fill ph-whatsapp-logo text-xl"></i> عرض إعادة استهداف
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
                 </div>
 
                 <MonthlyStatsTable />
@@ -4183,6 +4261,8 @@
           const [authError, setAuthError] = useState(null);
           const [txnsLoaded, setTxnsLoaded] = useState(false);
           const [wedsLoaded, setWedsLoaded] = useState(false);
+          const [settingsLoaded, setSettingsLoaded] = useState(false);
+          const [settingsLoadError, setSettingsLoadError] = useState(false);
           const [feedbackText, setFeedbackText] = useState('');
           const [rating, setRating] = useState(0);
           const [hoveredStar, setHoveredStar] = useState(0);
@@ -4350,7 +4430,13 @@
                     if (!data.appointmentSettings) data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
                     setSettings(data);
                 }
-            }, (err) => console.error("Settings error", err));
+                setSettingsLoadError(false);
+                setSettingsLoaded(true);
+            }, (err) => {
+                console.error("Settings error", err);
+                setSettingsLoadError(true);
+                setSettingsLoaded(true);
+            });
 
             const unsubInv = (!isTracking && !isClientPortal) ? onSnapshot(doc(db, basePath, 'inventory', 'main'), (docSnap) => {
               if (docSnap.exists()) setInventory(docSnap.data());
@@ -4428,7 +4514,7 @@
               setHistoryPhone(txn.phone);
               if (!txn.adminReadFeedback) {
                   const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                  const targetCol = txn.type === 'wedding' ? 'weddings' : 'transactions';
+                  const targetCol = isWedding ? 'weddings' : 'transactions';
                   const updated = { ...txn, adminReadFeedback: true };
                   setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated).catch(console.error);
               }
@@ -4444,6 +4530,48 @@
               const newInv = { ...inventory, [itemName]: Math.max(0, newValue) };
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv);
+          };
+
+          const deleteCustomerPermanently = async (phone, recordId, collectionName) => {
+              const normalizedPhone = normalizeCustomerPhone(phone);
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+              const basePath = `artifacts/${appId}/public/data`;
+              if (!isValidCustomerPhone(phone)) {
+                  if (!recordId || !['transactions', 'weddings', 'appointments'].includes(collectionName)) {
+                      alert('الرقم غير مكتمل؛ لا يمكن ربط بقية السجلات بأمان. احذف كل إيصال أو حجز ناقص على حدة من الفلتر.');
+                      return;
+                  }
+                  try {
+                      await deleteDoc(doc(db, `${basePath}/${collectionName}`, recordId));
+                      alert('تم حذف السجل المحدد فقط؛ لأن رقم الهاتف غير مكتمل ولا يمكن تحديد بقية سجلات العميل بأمان.');
+                  } catch (error) {
+                      console.error('تعذر حذف السجل المحدد:', error);
+                      alert('تعذر حذف السجل. تحقق من الاتصال ثم حاول مرة أخرى.');
+                  }
+                  return;
+              }
+              try {
+                  // Read live server snapshots, not potentially stale React state, and match normalized phone formats.
+                  const customerCollections = ['transactions', 'weddings', 'appointments'];
+                  const snapshots = await Promise.all(customerCollections.map(name => getDocsFromServer(collection(db, basePath, name))));
+                  const matching = snapshots.flatMap((snapshot, index) =>
+                      snapshot.docs
+                          .filter(item => normalizeCustomerPhone(item.data().phone) === normalizedPhone)
+                          .map(item => item.ref)
+                  );
+                  // Remove legacy device-binding metadata left by earlier versions as well.
+                  matching.push(doc(db, `${basePath}/client_device_bindings`, `phone_${normalizedPhone}`));
+                  const recordCount = matching.length - 1;
+                  for (let i = 0; i < matching.length; i += 450) {
+                      const batch = writeBatch(db);
+                      matching.slice(i, i + 450).forEach(ref => batch.delete(ref));
+                      await batch.commit();
+                  }
+                  alert(`تم حذف بيانات العميل نهائياً. عدد السجلات المحذوفة: ${recordCount}.`);
+              } catch (error) {
+                  console.error('تعذر حذف جميع بيانات العميل:', error);
+                  alert('تعذر إكمال الحذف. قد تكون بعض السجلات حُذفت بالفعل؛ تحقق من الاتصال ثم راجع سجلات العميل قبل إعادة المحاولة.');
+              }
           };
 
           const isTargetLoaded = isTracking ? (txnsLoaded && wedsLoaded && appointmentsLoaded) : (trackType === 'w' ? wedsLoaded : (txnsLoaded && appointmentsLoaded));
@@ -4488,7 +4616,7 @@
           }
 
           if (isClientPortal && !isTracking) {
-              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} appointments={appointments} uniqueCustomersCount={uniqueCustomersCount} recordsLoaded={txnsLoaded && wedsLoaded && appointmentsLoaded} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
+              return <ClientPortalScreen db={db} settings={settings} transactions={transactions} weddings={weddings} appointments={appointments} uniqueCustomersCount={uniqueCustomersCount} recordsLoaded={txnsLoaded && wedsLoaded && appointmentsLoaded} settingsLoaded={settingsLoaded} settingsLoadError={settingsLoadError} studioLikes={settings.studioLikes || 0} onLikeStudio={handleLikeStudio} navigateTo={navigateTo} />;
           }
 
           if (isTracking) {
@@ -5087,9 +5215,9 @@
               <main className={`${isTracking ? '' : 'w-full p-4 md:p-6'}`}>
                 {isTracking ? null : (
                     <>
-                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} />}
-                        {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} db={db} settings={settings} />}
-                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} />}
+                        {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} onDeleteCustomer={deleteCustomerPermanently} />}
+                        {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} db={db} settings={settings} onDeleteCustomer={deleteCustomerPermanently} />}
+                        {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} onDeleteCustomer={deleteCustomerPermanently} />}
                         {activeTab === 'expenses' && <ExpensesTab settings={settings} expenses={expenses} inventory={inventory} db={db} />}
                         {activeTab === 'reports' && <ReportsTab settings={settings} transactions={transactions} weddings={weddings} expenses={expenses} setReceiptImageModal={setReceiptImageModal} />}
                         {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} inventory={inventory} updateInventoryExact={updateInventoryExact} saveSettingsToDB={saveSettingsToDB} />}
