@@ -115,7 +115,7 @@
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment, runTransaction } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
         // Floating, non-blocking confirmation and validation cards.
@@ -157,30 +157,6 @@
         const getSafeSession = (key) => { try { return sessionStorage.getItem(key); } catch(e) { return null; } };
         const setSafeSession = (key, val) => { try { sessionStorage.setItem(key, val); } catch(e) {} };
         
-        const getSafeCookie = (name) => {
-            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            return match ? match[2] : null;
-        };
-        const setSafeCookie = (name, value) => {
-            document.cookie = `${name}=${value};max-age=31536000;path=/`;
-        };
-
-        const getRobustDeviceId = () => {
-            let id = getSafeLocal('st_dev_id') || getSafeCookie('st_dev_id');
-            if (!id) {
-                try {
-                    id = `DEV_${window.crypto.randomUUID()}`;
-                } catch (error) {
-                    const bytes = new Uint8Array(16);
-                    try { window.crypto.getRandomValues(bytes); id = `DEV_${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`; }
-                    catch (fallbackError) { id = `DEV_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`; }
-                }
-                setSafeLocal('st_dev_id', id);
-                setSafeCookie('st_dev_id', id);
-            }
-            return id;
-        };
-
         // --- Audio Notification Helper ---
         const playNotificationSound = () => {
             try {
@@ -327,30 +303,6 @@
             if (digits.startsWith('20') && digits.length >= 12) digits = '0' + digits.slice(2);
             else if (digits.length === 10 && digits.startsWith('1')) digits = '0' + digits;
             return digits;
-        };
-        // قفل موحد للهاتف يربط الأرشيف كله بأول جهاز؛ يدعم ترحيل الروابط القديمة المرتبطة مسبقاً.
-        const bindCustomerPhoneToDevice = async (db, phone, deviceId, legacyDeviceIds = []) => {
-            const normalizedPhone = normalizeCustomerPhone(phone);
-            if (!normalizedPhone) return { allowed: false, reason: 'invalid_phone' };
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-            const bindingRef = doc(db, `artifacts/${appId}/public/data/client_device_bindings`, `phone_${normalizedPhone}`);
-            return runTransaction(db, async (transaction) => {
-                const snapshot = await transaction.get(bindingRef);
-                const existing = snapshot.exists() ? snapshot.data() : null;
-                if (existing?.boundDeviceId) {
-                    return { allowed: existing.boundDeviceId === deviceId, reason: existing.boundDeviceId === deviceId ? 'same_device' : 'different_device' };
-                }
-                if (!existing) {
-                    const legacyIds = [...new Set((legacyDeviceIds || []).filter(Boolean))];
-                    if (legacyIds.length > 1) return { allowed: false, reason: 'legacy_conflict' };
-                    const legacyDeviceId = legacyIds[0] || '';
-                    const boundDeviceId = legacyDeviceId || deviceId;
-                    transaction.set(bindingRef, { phone: normalizedPhone, boundDeviceId, linkProtectionEnabled: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, { merge: true });
-                    return { allowed: !legacyDeviceId || legacyDeviceId === deviceId, reason: legacyDeviceId && legacyDeviceId !== deviceId ? 'legacy_device' : 'bound_now' };
-                }
-                transaction.set(bindingRef, { phone: normalizedPhone, boundDeviceId: deviceId, linkProtectionEnabled: true, updatedAt: new Date().toISOString() }, { merge: true });
-                return { allowed: true, reason: 'rebound_after_admin_reset' };
-            });
         };
 
         const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
@@ -709,7 +661,6 @@
             const [hasSearched, setHasSearched] = useState(false);
             const [results, setResults] = useState([]);
             const [errorMsg, setErrorMsg] = useState('');
-            const [phoneAccessDenied, setPhoneAccessDenied] = useState(false);
             const [showPhoneInput, setShowPhoneInput] = useState(false);
             const [selectedPromoModal, setSelectedPromoModal] = useState(null);
             const [promoImgIndex, setPromoImgIndex] = useState(0);
@@ -847,28 +798,10 @@
                 const phoneMatches = records.filter(record => normalizeCustomerPhone(record.phone) === normalizedPhone && normalizedPhone && record.receiptNo);
                 phoneMatches.sort((a, b) => new Date(b._portalDate || 0) - new Date(a._portalDate || 0));
                 if (phoneMatches.length) {
-                    try {
-                        const legacyDeviceIds = phoneMatches.map(record => record.boundDeviceId).filter(Boolean);
-                        const binding = await bindCustomerPhoneToDevice(db, normalizedPhone, getRobustDeviceId(), legacyDeviceIds);
-                        if (!binding.allowed) {
-                            setPhoneAccessDenied(true);
-                            setResults([]);
-                            setHasSearched(false);
-                            setErrorMsg('هذا الأرشيف مرتبط بجهاز آخر. تواصل مع الاستوديو لإعادة تفعيل الوصول على جهازك.');
-                            return;
-                        }
-                        setPhoneAccessDenied(false);
-                    } catch (error) {
-                        console.error('تعذر التحقق من جهاز بوابة العميل:', error);
-                        setPhoneAccessDenied(true);
-                        setErrorMsg('تعذر التحقق من جهازك الآن. تواصل مع الاستوديو لإعادة تفعيل الوصول.');
-                        return;
-                    }
                     setResults(phoneMatches);
                     setHasSearched(true);
                     return;
                 }
-                setPhoneAccessDenied(false);
 
                 // إبقاء البحث برقم الصورة كخيار مساعد، لا كوسيلة لإثبات هوية العميل.
                 const photoMatches = records.filter(record => {
@@ -1128,7 +1061,6 @@
                                   </div>
                                   <form onSubmit={handleSearch} className="flex flex-col gap-4">
                                       {errorMsg && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded-xl text-center font-bold border border-red-900/50 animate-fadeIn">{errorMsg}</div>}
-                                      {phoneAccessDenied && <a href={buildWhatsAppUrl(settings.studioPhone || '01201260040', `مرحباً، أرجو إعادة تفعيل أرشيف زياراتي على هذا الجهاز. رقم الهاتف المسجل: ${normalizeCustomerPhone(searchQuery)}.`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-500"><i className="ph-fill ph-whatsapp-logo text-lg"></i> تواصل مع الاستوديو لإعادة التفعيل</a>}
                                       <div>
                                           <label className="block text-sm font-bold text-slate-400 mb-2">رقم الهاتف المسجل أو رقم الصورة:</label>
                                           <div className="relative">
@@ -2231,9 +2163,6 @@
             const [actionError, setActionError] = useState('');
             const [showPhotosLinkInput, setShowPhotosLinkInput] = useState(false);
             const [photosLinkDraft, setPhotosLinkDraft] = useState(txn.photosLink || '');
-            const [showProtectionModal, setShowProtectionModal] = useState(false);
-            const [isResettingProtection, setIsResettingProtection] = useState(false);
-            const [protectionResetError, setProtectionResetError] = useState('');
             
             const currentStatus = txn.status || 0;
             const cashPaid = (txn.paid || 0) - (txn.electronicPaid || 0);
@@ -2256,42 +2185,6 @@
             const rewards = getCustomerRewards(txn.phone, allRecords, settings);
             const cardPhotoItems = Array.isArray(txn.photoNo) ? txn.photoNo.filter(p => typeof p === 'object' ? (p.number || p.serviceType) : p).map(p => typeof p === 'object' ? p : { number: p, note: '' }) : (txn.photoNo ? [{ number: txn.photoNo, note: '' }] : []);
 
-            const handleResetProtection = async (event) => {
-                event?.stopPropagation();
-                if (isResettingProtection) return;
-                setIsResettingProtection(true);
-                setProtectionResetError('');
-                try {
-                    const phone = normalizeCustomerPhone(txn.phone);
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                    const targetCol = isWedding ? 'weddings' : 'transactions';
-                    if (phone) {
-                        await setDoc(doc(db, `artifacts/${appId}/public/data/client_device_bindings`, `phone_${phone}`), {
-                            phone,
-                            boundDeviceId: null,
-                            linkProtectionEnabled: true,
-                            updatedAt: new Date().toISOString()
-                        }, { merge: true });
-                    }
-                    await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), {
-                        linkProtectionEnabled: true,
-                        boundDeviceId: null
-                    }, { merge: true });
-                    setShowProtectionModal(false);
-                } catch (error) {
-                    console.error('تعذر إعادة تفعيل ربط جهاز العميل:', error);
-                    setProtectionResetError('تعذر حفظ التغيير الآن. تحقق من الاتصال ثم حاول مرة أخرى.');
-                } finally {
-                    setIsResettingProtection(false);
-                }
-            };
-
-            useEffect(() => {
-                if (!showProtectionModal) return;
-                const closeOnEscape = (event) => { if (event.key === 'Escape' && !isResettingProtection) setShowProtectionModal(false); };
-                window.addEventListener('keydown', closeOnEscape);
-                return () => window.removeEventListener('keydown', closeOnEscape);
-            }, [showProtectionModal, isResettingProtection]);
 
             const handleAddToCalendar = (e) => {
                 e.stopPropagation();
@@ -2426,7 +2319,6 @@
                   <div className="mt-3 grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
                         <div className="rounded-xl border border-yellow-500/25 bg-yellow-950/20 px-3 py-2 min-w-0"><p className="text-yellow-300 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-gift"></i> رصيد المكافآت المتاح</p><p className="text-white font-black text-sm mt-1">{rewards.balance} ج.م</p></div>
                         <button onClick={() => onViewHistory && onViewHistory(txn.phone)} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-right hover:border-yellow-500/50 transition-colors min-w-0"><span className="text-slate-400 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-clock-counter-clockwise text-yellow-400"></i> سجل الزيارات</span><span className="text-white font-black text-sm mt-1 block">{visitCount} زيارة</span></button>
-                        <button onClick={(event) => { event.stopPropagation(); setProtectionResetError(''); setShowProtectionModal(true); }} className="rounded-xl border border-orange-500/30 bg-orange-950/20 px-3 py-2 text-right transition-colors hover:bg-orange-900/30 min-w-0"><span className="text-orange-300 text-[10px] font-bold flex items-center gap-1"><i className="ph-fill ph-lock-key"></i> حماية الرابط</span><span className="text-white font-black text-sm mt-1 block">{txn.boundDeviceId ? 'مرتبط بأول جهاز' : 'بانتظار أول فتح'}</span></button>
                         <div className="min-w-0"><button onClick={() => setShowPhotosLinkInput(v => !v)} aria-expanded={showPhotosLinkInput} className="w-full h-full rounded-xl border border-blue-500/30 bg-blue-950/20 px-3 py-2 text-right transition-colors hover:border-blue-400/50 hover:bg-blue-900/30"><span className="flex items-center gap-1 text-xs font-bold text-blue-300"><i className="ph-fill ph-google-drive-logo"></i> رابط الصور للعميل</span><span className="mt-1 block truncate text-sm font-black text-white">{txn.photosLink ? 'تعديل الرابط' : 'إضافة رابط'}</span></button></div>
                         {showPhotosLinkInput && <div className="col-span-2 min-w-0 animate-fadeIn rounded-xl border border-blue-500/40 bg-gradient-to-br from-blue-950/50 to-slate-900 p-3 shadow-lg shadow-blue-950/20"><label className="mb-2 flex items-center gap-2 text-xs font-bold text-blue-200" htmlFor={`photos-link-${txn.id}`}><i className="ph-fill ph-link"></i>رابط تحميل صور العميل</label><input id={`photos-link-${txn.id}`} type="url" value={photosLinkDraft} onChange={e => setPhotosLinkDraft(e.target.value)} placeholder="الصق رابط الصور هنا..." dir="ltr" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-left text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" />{txn.photosLink && <p className="mt-1.5 break-all text-left text-[10px] text-slate-400" dir="ltr">الرابط الحالي: {txn.photosLink}</p>}<div className="mt-3 flex flex-wrap gap-2"><button onClick={async () => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; const targetCol = isWedding ? 'weddings' : 'transactions'; await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { photosLink: photosLinkDraft.trim() }, { merge: true }); setShowPhotosLinkInput(false); }} className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-500">حفظ الرابط</button><button onClick={() => setShowPhotosLinkInput(false)} className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-bold text-slate-300 transition hover:bg-slate-700">إلغاء</button></div></div>}
                       </div>
@@ -2466,29 +2358,6 @@
                         </div>
                         <div className="border-t border-slate-800 px-4 py-3 text-center text-xs text-slate-400">عدد الصور المرتبطة بالإيصال: {cardPhotoItems.length}</div>
                     </div>
-                </div>}
-                {showProtectionModal && <div className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-fadeIn" onClick={() => { if (!isResettingProtection) setShowProtectionModal(false); }}>
-                    <section role="dialog" aria-modal="true" aria-labelledby={`protection-modal-title-${txn.id}`} dir="rtl" onClick={event => event.stopPropagation()} className="relative w-full max-w-md overflow-hidden rounded-3xl border border-orange-300/20 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 shadow-[0_30px_100px_rgba(0,0,0,.65)]">
-                        <div className="h-1.5 bg-gradient-to-l from-amber-300 via-orange-500 to-rose-500"></div>
-                        <button type="button" onClick={() => setShowProtectionModal(false)} disabled={isResettingProtection} aria-label="إغلاق نافذة حماية الرابط" className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 transition hover:border-slate-500 hover:text-white disabled:opacity-50"><i className="ph-bold ph-x text-lg"></i></button>
-                        <div className="px-6 pb-6 pt-7 sm:px-7">
-                            <div className="mb-5 flex items-center gap-4">
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-orange-300/20 bg-gradient-to-br from-orange-400/20 to-amber-500/10 text-orange-300 shadow-lg shadow-orange-950/30"><i className="ph-fill ph-shield-warning text-3xl"></i></div>
-                                <div className="min-w-0"><p className="mb-1 text-[11px] font-bold tracking-wide text-orange-300">إدارة أمان العميل</p><h3 id={`protection-modal-title-${txn.id}`} className="text-lg font-black text-white">إعادة تفعيل حماية الرابط</h3></div>
-                            </div>
-                            <p className="text-sm leading-7 text-slate-300">سيتم فك ربط الأرشيف من الجهاز الحالي، ثم يرتبط رقم العميل بأول جهاز يفتح أحد روابطه بعد إعادة التفعيل.</p>
-                            <div className="mt-4 rounded-2xl border border-slate-700/80 bg-slate-950/70 p-4">
-                                <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-3"><span className="text-xs font-bold text-slate-400">العميل</span><span className="truncate text-sm font-black text-white">{displayName || 'عميل'}</span></div>
-                                <div className="mt-3 grid grid-cols-2 gap-3"><div className="min-w-0"><span className="block text-[10px] font-bold text-slate-500">رقم الهاتف</span><span className="mt-1 block truncate font-mono text-sm font-bold text-slate-200" dir="ltr">{txn.phone || 'غير مسجل'}</span></div><div className="min-w-0"><span className="block text-[10px] font-bold text-slate-500">الإيصال الحالي</span><span className="mt-1 block font-mono text-sm font-bold text-slate-200">#{txn.receiptNo || '—'}</span></div></div>
-                            </div>
-                            <div className="mt-4 flex gap-3 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3.5 py-3 text-xs leading-6 text-amber-100/90"><i className="ph-fill ph-info mt-0.5 shrink-0 text-lg text-amber-300"></i><p>هذا الإجراء يؤثر على جميع الإيصالات المرتبطة برقم الهاتف. بعد التأكيد، يستطيع أول جهاز يفتح الرابط إعادة ربط الأرشيف.</p></div>
-                            {protectionResetError && <p role="alert" className="mt-3 rounded-xl border border-red-400/20 bg-red-950/40 px-3 py-2.5 text-xs font-bold leading-5 text-red-200">{protectionResetError}</p>}
-                            <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                <button type="button" onClick={() => setShowProtectionModal(false)} disabled={isResettingProtection} className="order-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-slate-200 transition hover:bg-slate-700 disabled:opacity-50 sm:order-1">إلغاء</button>
-                                <button type="button" onClick={handleResetProtection} disabled={isResettingProtection} className="order-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-orange-500 to-amber-500 px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-orange-950/30 transition hover:from-orange-400 hover:to-amber-400 disabled:cursor-wait disabled:opacity-70 sm:order-2">{isResettingProtection ? <><i className="ph ph-spinner animate-spin text-lg"></i> جارٍ الحفظ...</> : <><i className="ph-bold ph-lock-key-open text-lg"></i> تأكيد إعادة التفعيل</>}</button>
-                            </div>
-                        </div>
-                    </section>
                 </div>}
               </>
             )
@@ -4314,9 +4183,6 @@
           const [authError, setAuthError] = useState(null);
           const [txnsLoaded, setTxnsLoaded] = useState(false);
           const [wedsLoaded, setWedsLoaded] = useState(false);
-          const [clientViewError, setClientViewError] = useState('');
-          const [clientDeviceCheckComplete, setClientDeviceCheckComplete] = useState(false);
-          const [clientDeviceVerifiedKey, setClientDeviceVerifiedKey] = useState('');
           const [feedbackText, setFeedbackText] = useState('');
           const [rating, setRating] = useState(0);
           const [hoveredStar, setHoveredStar] = useState(0);
@@ -4581,24 +4447,8 @@
           };
 
           const isTargetLoaded = isTracking ? (txnsLoaded && wedsLoaded && appointmentsLoaded) : (trackType === 'w' ? wedsLoaded : (txnsLoaded && appointmentsLoaded));
-          const targetArrForDevice = trackType === 'w' ? weddings : transactions;
-          const matchingRecordForDevice = targetArrForDevice.find(t => (t.phone || '').trim() === trackPhone.trim() && t.receiptNo && String(t.receiptNo) === trackReceipt.trim()) || (trackType === 't' ? appointments.find(a => (a.phone || '').trim() === trackPhone.trim() && a.receiptNo && String(a.receiptNo) === trackReceipt.trim()) : null);
-          const currentDeviceIdForAccessKey = isTracking ? getRobustDeviceId() : '';
-          const clientDeviceAccessKey = isTracking ? `${trackType}|${trackPhone.trim()}|${trackReceipt.trim()}|${currentDeviceIdForAccessKey}|${matchingRecordForDevice?.boundDeviceId || 'unbound'}` : '';
-
           useEffect(() => {
-              if (!isTracking) {
-                  setClientDeviceCheckComplete(false);
-                  setClientDeviceVerifiedKey('');
-                  setClientViewError('');
-                  return;
-              }
-              if (!isTargetLoaded) {
-                  setClientDeviceCheckComplete(false);
-                  setClientDeviceVerifiedKey('');
-                  return;
-              }
-
+              if (!isTracking || !isTargetLoaded) return;
               const targetArr = trackType === 'w' ? weddings : transactions;
               let targetRecord = targetArr.find(t => (t.phone || '').trim() === trackPhone.trim() && t.receiptNo && String(t.receiptNo) === trackReceipt.trim());
               let targetCol = trackType === 'w' ? 'weddings' : 'transactions';
@@ -4606,71 +4456,15 @@
                   targetRecord = appointments.find(a => (a.phone || '').trim() === trackPhone.trim() && a.receiptNo && String(a.receiptNo) === trackReceipt.trim());
                   if (targetRecord) targetCol = 'appointments';
               }
-              if (!targetRecord || !targetRecord.id) {
-                  setClientDeviceVerifiedKey(clientDeviceAccessKey);
-                  setClientDeviceCheckComplete(true);
-                  return;
-              }
-
-              let cancelled = false;
-              setClientDeviceCheckComplete(false);
-              setClientViewError('');
-              const currentDeviceId = currentDeviceIdForAccessKey;
-              const accessKey = clientDeviceAccessKey;
+              if (!targetRecord || !targetRecord.id || targetRecord.viewedByClient) return;
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-              const targetRef = doc(db, `artifacts/${appId}/public/data/${targetCol}`, targetRecord.id);
+              setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, targetRecord.id), {
+                  viewedByClient: true,
+                  viewTime: new Date().toISOString()
+              }, { merge: true }).catch(error => console.error('تعذر تسجيل مشاهدة الطلب:', error));
+          }, [isTracking, isTargetLoaded, transactions, weddings, appointments, trackPhone, trackReceipt, trackType]);
 
-              (async () => {
-                  try {
-                      const customerLegacyIds = [...transactions, ...weddings, ...appointments]
-                          .filter(record => normalizeCustomerPhone(record.phone) === normalizeCustomerPhone(trackPhone))
-                          .map(record => record.boundDeviceId)
-                          .filter(Boolean);
-                      const phoneBinding = await bindCustomerPhoneToDevice(db, trackPhone, currentDeviceId, customerLegacyIds);
-                      if (cancelled) return;
-                      if (!phoneBinding.allowed) {
-                          setClientViewError('access_denied');
-                          setClientDeviceVerifiedKey(accessKey);
-                          setClientDeviceCheckComplete(true);
-                          return;
-                      }
-
-                      // قفل الهاتف هو المرجع الموحد؛ يتم تحديث بيانات الإيصال للتوافق مع الروابط القديمة.
-                      const allowed = await runTransaction(db, async (transaction) => {
-                          const snapshot = await transaction.get(targetRef);
-                          if (!snapshot.exists()) return false;
-                          const stored = snapshot.data();
-                          const update = {};
-                          if (stored.linkProtectionEnabled !== true) update.linkProtectionEnabled = true;
-                          if (stored.boundDeviceId !== currentDeviceId) update.boundDeviceId = currentDeviceId;
-                          if (!stored.viewedByClient) {
-                              update.viewedByClient = true;
-                              update.viewTime = new Date().toISOString();
-                          }
-                          if (Object.keys(update).length) transaction.set(targetRef, update, { merge: true });
-                          return true;
-                      });
-                      if (cancelled) return;
-                      if (!allowed) setClientViewError('access_denied');
-                      else {
-                          setClientViewError('');
-                          if (editIdentity) { setShowConfirmData(true); setEditingConfirmData(true); }
-                      }
-                      setClientDeviceVerifiedKey(accessKey);
-                      setClientDeviceCheckComplete(true);
-                  } catch (error) {
-                      console.error('تعذر التحقق من ربط رابط العميل بالجهاز:', error);
-                      if (cancelled) return;
-                      setClientViewError('verification_failed');
-                      setClientDeviceVerifiedKey(accessKey);
-                      setClientDeviceCheckComplete(true);
-                  }
-              })();
-
-              return () => { cancelled = true; };
-          }, [isTracking, isTargetLoaded, transactions, weddings, appointments, trackPhone, trackReceipt, trackType, editIdentity]);
-
-          if (!authReady || (isTracking && (!isTargetLoaded || !clientDeviceCheckComplete || clientDeviceVerifiedKey !== clientDeviceAccessKey))) {
+          if (!authReady || (isTracking && !isTargetLoaded)) {
               const loadingMessage = isTracking
                   ? 'جاري البحث عن الطلب...'
                   : isClientPortal
@@ -4689,31 +4483,6 @@
                           </div>
                           <p className="mt-2 text-[10px] text-slate-500">لحظات ونظهر لك التفاصيل</p>
                       </section>
-                  </div>
-              );
-          }
-
-          if (clientViewError === 'access_denied' || clientViewError === 'verification_failed') {
-              const reactivationMessage = `مرحباً، أرجو إعادة تفعيل رابط العميل على جهازي الحالي.
-رقم الهاتف المسجل: ${trackPhone}
-رقم الإيصال: #${trackReceipt}
-تعذر فتح الرابط بعد ربطه بجهاز آخر. شكراً لكم.`;
-              const reactivationUrl = buildWhatsAppUrl(settings.studioPhone || '01201260040', reactivationMessage);
-              return (
-                  <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-6 text-center">
-                      <div className="w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30 shadow-lg shadow-red-900/20">
-                          <i className="ph-fill ph-lock-key text-4xl"></i>
-                      </div>
-                      <h2 className="text-2xl font-black mb-2 text-white">{clientViewError === 'verification_failed' ? 'تعذر التحقق من جهازك' : 'تم تقييد الوصول للرابط'}</h2>
-                      <p className="text-slate-400 text-sm mb-6 max-w-sm">
-                          {clientViewError === 'verification_failed' ? 'تعذر تأكيد ربط هذا الرابط بالجهاز. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة، أو تواصل مع الاستوديو.' : 'حفاظاً على خصوصيتك، يرتبط هذا الرابط بأول جهاز يفتحه. لا يمكن فتحه من جهاز آخر بعد الربط.'}
-                      </p>
-                      <p className="text-xs text-yellow-400 bg-yellow-950/30 border border-yellow-500/30 px-4 py-2 rounded-lg">
-                          يجب أن يكون أول فتح للرابط من هاتف العميل المقصود. إذا فُتح من جهاز آخر بالخطأ أو احتجت إلى تغييره، تواصل مع الاستوديو لإعادة تفعيل الرابط.
-                      </p>
-                      <a href={reactivationUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-black text-white shadow-lg transition hover:bg-emerald-500">
-                          <i className="ph-fill ph-whatsapp-logo text-xl"></i> تواصل مع الاستوديو لإعادة تفعيل الرابط
-                      </a>
                   </div>
               );
           }
