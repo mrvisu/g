@@ -2181,6 +2181,8 @@
                 /فور[ىي]|فوراً|فوري[ةه]|طباعة\s*فورية|instant\s*print/i.test(instantPrintText)
             );
             const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+            const clientTrackingUrl = `${window.location.origin}${window.location.pathname}?phone=${encodeURIComponent(txn.phone || '')}&receipt=${encodeURIComponent(txn.receiptNo || '')}&type=${isWedding ? 'w' : 't'}`;
+            const canSendPrintReview = Boolean(txn.phone && txn.writeNameOnPhoto && String(txn.photoName || '').trim() && String(txn.nationalId || '').trim() && String(txn.branch || '').trim());
             
             const printName = txn.photoName || (txn.writeNameOnPhoto ? txn.clientName : '');
             const statusesToUse = getTransactionStatuses(txn);
@@ -2229,9 +2231,21 @@ ${clientTrackingUrl}
                   </div>
                 </div>
                 {showDetails && <div className="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-5 animate-fadeIn" onClick={() => setShowDetails(false)}>
-                  <div className="w-full max-w-6xl max-h-[96vh] overflow-y-auto custom-scrollbar rounded-2xl sm:rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative"><button onClick={() => setShowDetails(false)} className="absolute top-3 left-3 z-30 w-10 h-10 rounded-full bg-slate-950/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-red-900/70 flex items-center justify-center shadow-xl" title="إغلاق التفاصيل"><i className="ph ph-x text-xl"></i></button>
-              <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row gap-4 sm:gap-6 justify-between hover:border-slate-700 transition-all group">
+                  <div className="w-full max-w-6xl max-h-[96vh] overflow-y-auto custom-scrollbar rounded-2xl sm:rounded-3xl border border-blue-300/25 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-2 sm:p-3 shadow-2xl shadow-blue-950/50 ring-1 ring-white/10" onClick={e => e.stopPropagation()}>
+                    <div className="relative">
+                      <div dir="rtl" className="mb-3 rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-950/70 via-slate-900 to-slate-900 p-4 shadow-xl shadow-blue-950/20">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${isWedding ? 'border-pink-300/25 bg-pink-400/10 text-pink-200' : 'border-cyan-300/25 bg-cyan-400/10 text-cyan-200'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-receipt'} text-xl`}></i></span><div className="min-w-0"><p className="text-[10px] font-bold text-slate-400">إدارة الإيصال</p><h2 className="truncate text-sm font-black text-white">تفاصيل إيصال العميل</h2></div><span className="rounded-lg border border-white/10 bg-slate-950/70 px-2.5 py-1.5 font-mono text-xs font-black text-slate-100">#{txn.receiptNo || '—'}</span></div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button type="button" onClick={(e) => copyToClipboard(clientTrackingUrl, e)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-950/60 text-cyan-100 shadow-sm transition hover:border-cyan-200/70 hover:bg-cyan-900/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300/30" title="نسخ رابط العميل" aria-label="نسخ رابط العميل"><i className="ph-fill ph-copy text-base"></i></button>
+                            <button onClick={() => setShowDetails(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-600/70 bg-slate-950/80 text-slate-300 shadow-md transition hover:border-red-400/50 hover:bg-red-950/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-300/30" title="إغلاق التفاصيل" aria-label="إغلاق التفاصيل"><i className="ph ph-x text-xl"></i></button>
+                          </div>
+                        </div>
+                        {canSendPrintReview && <div className="mt-4 flex items-center gap-3 border-t border-white/10 pt-3">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); const msg = `أهلاً أ. ${displayName || 'عميلنا العزيز'}، نرجو مراجعة بيانات الطباعة على الصورة الخاصة بإيصال رقم #${txn.receiptNo} عبر الرابط التالي، والتأكد من صحة الاسم والرقم القومي والشعبة قبل اعتماد الطباعة:\n${clientTrackingUrl}\n\nشاكرين ثقتكم بـ${settings.studioName || 'ستوديو المراكبي'}.`; openWhatsApp(txn.phone, msg); }} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-950/60 text-emerald-200 shadow-sm transition hover:border-emerald-200/70 hover:bg-emerald-900/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30" title="إرسال رابط مراجعة بيانات الطباعة إلى العميل عبر واتساب" aria-label="إرسال رابط مراجعة بيانات الطباعة إلى العميل عبر واتساب"><i className="ph-fill ph-whatsapp-logo text-lg"></i></button>
+                        </div>}
+                      </div>
+              <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/25 p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/30 border border-blue-400/20 ring-1 ring-white/[.035] flex flex-col md:flex-row gap-4 sm:gap-6 justify-between hover:border-blue-300/35 transition-all group">
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="space-y-3">
                       <div className="flex justify-between items-start">
@@ -4541,8 +4555,6 @@ ${clientTrackingUrl}
               const isWedding = trackType === 'w';
               document.title = `${isWedding ? 'إيصال زفاف' : 'إيصال تصوير'} #${txn.receiptNo || ''} | ${settings.studioName}`;
               const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
-              const clientTrackingUrl = `${window.location.origin}${window.location.pathname}?phone=${encodeURIComponent(txn.phone || '')}&receipt=${encodeURIComponent(txn.receiptNo || '')}&type=${isWedding ? 'w' : 't'}`;
-              const canSendPrintReview = Boolean(txn.phone && txn.writeNameOnPhoto && String(txn.photoName || '').trim() && String(txn.nationalId || '').trim() && String(txn.branch || '').trim());
               const depositWarningText = (settings.waTemplates?.depositWarning || DEFAULT_WA_TEMPLATES.depositWarning)
                   .replace(/{name}/g, displayName || 'العميل')
                   .replace(/{receipt}/g, txn.receiptNo || '')
