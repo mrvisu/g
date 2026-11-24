@@ -980,7 +980,6 @@
                                 <a href="https://instagram.com/MrakbyPh" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center bg-pink-900/20 border border-pink-500/30 text-pink-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white hover:border-transparent transition-all shadow-md" title="إنستجرام">
                                     <i className="ph-fill ph-instagram-logo text-2xl"></i>
                                 </a>
-                                <PortalInstallButton variant="social" />
                             </div>
 
                         </div>
@@ -2207,7 +2206,7 @@
 
             return (
               <>
-                <div onClick={() => setShowDetails(true)} style={hasInstantPrint ? { background: 'linear-gradient(110deg, rgba(69, 26, 3, .76) 0%, rgba(41, 25, 15, .94) 52%, rgba(15, 23, 42, .98) 100%)', border: '2px solid rgba(251, 191, 36, .78)', boxShadow: '0 0 0 1px rgba(251, 191, 36, .16), 0 8px 26px rgba(120, 53, 15, .24)' } : undefined} className={`relative overflow-hidden px-3 py-3 sm:px-4 rounded-2xl shadow-sm border transition-all duration-200 cursor-pointer group ${hasInstantPrint ? 'border-amber-400/80 shadow-lg shadow-amber-950/30 ring-1 ring-amber-400/20 hover:border-yellow-300 hover:shadow-amber-900/40' : 'bg-slate-900 border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80'}`}>
+                <div onClick={() => setShowDetails(true)} style={hasInstantPrint ? { background: 'linear-gradient(110deg, rgba(69, 26, 3, .76) 0%, rgba(41, 25, 15, .94) 52%, rgba(15, 23, 42, .98) 100%)', border: '2px solid rgba(251, 191, 36, .78)', boxShadow: '0 0 0 1px rgba(251, 191, 36, .16), 0 8px 26px rgba(120, 53, 15, .24)' } : undefined} className={`relative overflow-hidden px-3 py-3 sm:px-4 rounded-2xl shadow-lg border transition-all duration-200 cursor-pointer group ring-1 ring-white/[.035] ${hasInstantPrint ? 'border-amber-400/80 shadow-lg shadow-amber-950/30 ring-1 ring-amber-400/20 hover:border-yellow-300 hover:shadow-amber-900/40' : 'bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border-slate-700/80 shadow-slate-950/40 hover:border-blue-400/60 hover:shadow-blue-950/30 hover:-translate-y-0.5'}`}>
                   {hasInstantPrint && <span aria-hidden="true" className="absolute inset-y-2 right-0 w-1.5 rounded-l-full bg-gradient-to-b from-yellow-300 via-amber-400 to-orange-500 shadow-[0_0_14px_rgba(251,191,36,.45)]"></span>}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -2220,6 +2219,11 @@
                       {parseFloat(txn.remaining) > 0 ? <span className="inline-flex items-center gap-1.5 text-red-200 bg-red-950/50 border border-red-500/35 px-2 py-1.5 rounded-lg text-[10px] font-black"><i className="ph-fill ph-coins"></i> متبقي: {formatCurrency(txn.remaining)}</span> : <span className="inline-flex items-center gap-1.5 text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 px-2 py-1.5 rounded-lg text-[10px] font-bold"><i className="ph-fill ph-check-circle"></i> مدفوع بالكامل</span>}
                       {txn.viewedByClient ? <span className="text-blue-300 bg-blue-950/30 border border-blue-500/20 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph-fill ph-eye"></i> تمت المشاهدة</span> : <span className="text-slate-500 bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1" title="لم يفتح العميل الرابط بعد"><i className="ph ph-eye-slash"></i> لم يُشاهد</span>}
                       <button onClick={(e) => { e.stopPropagation(); sendInvoice(); }} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><i className="ph ph-receipt"></i><span>إرسال الفاتورة</span></button>
+                      <button type="button" onClick={(e) => copyToClipboard(clientTrackingUrl, e)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-950/50 text-cyan-100 shadow-sm transition hover:border-cyan-200/70 hover:bg-cyan-900/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300/30" title="نسخ رابط العميل" aria-label="نسخ رابط العميل"><i className="ph-fill ph-copy text-base"></i></button>
+                      {canSendPrintReview && <button type="button" onClick={(e) => { e.stopPropagation(); const msg = `أهلاً أ. ${displayName || 'عميلنا العزيز'}، نرجو مراجعة بيانات الطباعة على الصورة الخاصة بإيصال رقم #${txn.receiptNo} عبر الرابط التالي، والتأكد من صحة الاسم والرقم القومي والشعبة قبل اعتماد الطباعة:
+${clientTrackingUrl}
+
+شاكرين ثقتكم بـ${settings.studioName || 'ستوديو المراكبي'}.`; openWhatsApp(txn.phone, msg); }} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-950/50 text-emerald-200 shadow-sm transition hover:border-emerald-200/70 hover:bg-emerald-900/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30" title="إرسال رابط مراجعة بيانات الطباعة إلى العميل عبر واتساب" aria-label="إرسال رابط مراجعة بيانات الطباعة إلى العميل عبر واتساب"><i className="ph-fill ph-whatsapp-logo text-lg"></i></button>}
                       <button onClick={(e) => { e.stopPropagation(); setShowDetails(true); }} className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700" title="عرض التفاصيل"><i className="ph ph-caret-left"></i></button>
                     </div>
                   </div>
@@ -4025,131 +4029,6 @@
             );
         };
 
-        const PortalInstallButton = ({ variant = 'pill' }) => {
-            const [deferred, setDeferred] = useState(() => window.__portalInstallPrompt || null);
-            const [installed, setInstalled] = useState(false);
-            const [showGuide, setShowGuide] = useState(false);
-            const [copied, setCopied] = useState(false);
-            const [hidden, setHidden] = useState(false);
-
-            useEffect(() => {
-                const onAvailable = () => setDeferred(window.__portalInstallPrompt || null);
-                const onDone = () => { setInstalled(true); setDeferred(null); setShowGuide(false); };
-                window.addEventListener('portal-install-available', onAvailable);
-                window.addEventListener('portal-install-done', onDone);
-                const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
-                if (standalone) setInstalled(true);
-                return () => {
-                    window.removeEventListener('portal-install-available', onAvailable);
-                    window.removeEventListener('portal-install-done', onDone);
-                };
-            }, []);
-
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            const isAndroid = /Android/i.test(navigator.userAgent);
-
-            const startInstall = async () => {
-                const promptEvent = deferred || window.__portalInstallPrompt;
-                if (promptEvent && typeof promptEvent.prompt === 'function') {
-                    promptEvent.prompt();
-                    try {
-                        const choice = await promptEvent.userChoice;
-                        if (choice && choice.outcome === 'accepted') setInstalled(true);
-                    } catch (_) {}
-                    window.__portalInstallPrompt = null;
-                    setDeferred(null);
-                    return;
-                }
-                setShowGuide(true);
-            };
-
-            const copyPortalLink = async () => {
-                const link = window.location.origin + window.location.pathname + '?client=true';
-                try {
-                    await navigator.clipboard.writeText(link);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2200);
-                } catch (_) {}
-            };
-
-            if (installed || hidden) return null;
-
-            const steps = isIOS
-                ? [{ icon: 'ph-export', text: 'اضغط زر المشاركة في أسفل متصفح Safari.' }, { icon: 'ph-plus-square', text: 'اختر «إضافة إلى الشاشة الرئيسية».' }, { icon: 'ph-check-circle', text: 'اضغط «إضافة» وستجد أيقونة البوابة على شاشتك.' }]
-                : isAndroid
-                    ? [{ icon: 'ph-dots-three-vertical', text: 'افتح قائمة المتصفح ⋮ من أعلى اليمين.' }, { icon: 'ph-download-simple', text: 'اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».' }, { icon: 'ph-check-circle', text: 'أكّد التثبيت لتظهر أيقونة البوابة مع تطبيقاتك.' }]
-                    : [{ icon: 'ph-monitor', text: 'اضغط أيقونة التثبيت في شريط عنوان المتصفح.' }, { icon: 'ph-download-simple', text: 'أو افتح قائمة المتصفح واختر «تثبيت بوابة العملاء».' }, { icon: 'ph-check-circle', text: 'ستُفتح البوابة في نافذة مستقلة كتطبيق.' }];
-
-            const guideModal = showGuide ? (
-                <div className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-950/85 p-4 backdrop-blur-sm sm:items-center" onClick={() => setShowGuide(false)}>
-                    <div dir="rtl" onClick={(e) => e.stopPropagation()} className="w-full max-w-sm overflow-hidden rounded-3xl border border-cyan-300/25 bg-slate-900 text-right shadow-2xl">
-                        <div className="h-1 bg-gradient-to-l from-cyan-300 via-blue-500 to-indigo-500"></div>
-                        <div className="p-5">
-                            <div className="mb-1 flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-2 text-cyan-200">
-                                    <i className="ph-fill ph-device-mobile-camera text-xl"></i>
-                                    <h3 className="text-base font-black">ثبّت البوابة على شاشتك</h3>
-                                </div>
-                                <button type="button" onClick={() => setShowGuide(false)} aria-label="إغلاق" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-white"><i className="ph ph-x"></i></button>
-                            </div>
-                            <p className="mb-4 text-xs leading-6 text-slate-400">خطوتان فقط، وتصل لإيصالك وحجوزاتك بضغطة واحدة من الشاشة الرئيسية.</p>
-                            <div className="space-y-2.5">
-                                {steps.map((step, index) => (
-                                    <div key={index} className="flex items-start gap-3 rounded-xl border border-slate-700/70 bg-slate-950/60 p-3">
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 text-xs font-black text-cyan-200">{index + 1}</span>
-                                        <p className="text-xs leading-6 text-slate-200"><i className={`ph ${step.icon} ml-1 text-cyan-300`}></i>{step.text}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <button type="button" onClick={copyPortalLink} className="mt-4 w-full rounded-xl border border-slate-600 bg-slate-800 py-2.5 text-xs font-bold text-white transition hover:bg-slate-700">
-                                <i className="ph ph-link ml-1"></i> {copied ? 'تم نسخ رابط البوابة' : 'نسخ رابط البوابة'}
-                            </button>
-                            <button type="button" onClick={() => { setShowGuide(false); setHidden(true); }} className="mt-2 w-full py-1.5 text-[11px] font-bold text-slate-500 transition hover:text-slate-300">لا أريد التثبيت الآن</button>
-                        </div>
-                    </div>
-                </div>
-            ) : null;
-
-            if (variant === 'social') {
-                return (
-                    <React.Fragment>
-                        <button type="button" onClick={startInstall} title="تثبيت بوابة العملاء كتطبيق" className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-500/10 text-cyan-200 shadow-md transition-all hover:scale-105 hover:border-cyan-200/70 hover:bg-cyan-500/25">
-                            <i className="ph-fill ph-device-mobile-camera text-xl"></i>
-                        </button>
-                        {guideModal}
-                    </React.Fragment>
-                );
-            }
-
-            if (variant === 'wide') {
-                return (
-                    <React.Fragment>
-                        <div className="relative mb-3 w-full overflow-hidden rounded-2xl border border-cyan-300/25 bg-gradient-to-l from-cyan-950/40 to-slate-900 p-3">
-                            <button type="button" onClick={startInstall} className="flex w-full items-center gap-3 text-right">
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-200"><i className="ph-fill ph-device-mobile-camera text-xl"></i></span>
-                                <span className="min-w-0 flex-1">
-                                    <span className="block text-xs font-black text-white">ثبّت البوابة على شاشتك</span>
-                                    <span className="block text-[11px] leading-5 text-slate-400">إيصالك وحجوزاتك بضغطة واحدة، بدون فتح المتصفح.</span>
-                                </span>
-                                <i className="ph ph-download-simple shrink-0 text-lg text-cyan-300"></i>
-                            </button>
-                            <button type="button" onClick={() => setHidden(true)} aria-label="إخفاء" className="absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-white"><i className="ph ph-x text-xs"></i></button>
-                        </div>
-                        {guideModal}
-                    </React.Fragment>
-                );
-            }
-
-            return (
-                <React.Fragment>
-                    <button type="button" onClick={startInstall} title="تثبيت بوابة العملاء كتطبيق" className="flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-3 py-2 text-[11px] font-bold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-500/20">
-                        <i className="ph ph-download-simple text-sm"></i> تثبيت التطبيق
-                    </button>
-                    {guideModal}
-                </React.Fragment>
-            );
-        };
-
         const FloatingPortalMessage = ({ navigateTo }) => {
             const [visible, setVisible] = useState(() => {
                 try { return sessionStorage.getItem('portalReturnMessageDismissed') !== '1'; }
@@ -4662,6 +4541,8 @@
               const isWedding = trackType === 'w';
               document.title = `${isWedding ? 'إيصال زفاف' : 'إيصال تصوير'} #${txn.receiptNo || ''} | ${settings.studioName}`;
               const displayName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
+              const clientTrackingUrl = `${window.location.origin}${window.location.pathname}?phone=${encodeURIComponent(txn.phone || '')}&receipt=${encodeURIComponent(txn.receiptNo || '')}&type=${isWedding ? 'w' : 't'}`;
+              const canSendPrintReview = Boolean(txn.phone && txn.writeNameOnPhoto && String(txn.photoName || '').trim() && String(txn.nationalId || '').trim() && String(txn.branch || '').trim());
               const depositWarningText = (settings.waTemplates?.depositWarning || DEFAULT_WA_TEMPLATES.depositWarning)
                   .replace(/{name}/g, displayName || 'العميل')
                   .replace(/{receipt}/g, txn.receiptNo || '')
@@ -4695,6 +4576,7 @@
               const cleanedDisplayReqs = String(displayReqs || '').split('\n').filter(line => !photoServiceNames.some(serviceName => serviceName && line.includes(serviceName))).join('\n').trim();
               const clientDisplayReqs = cleanedDisplayReqs;
               const clientPhotoRows = trackingPhotoItems.filter(photo => photo.serviceType || photo.service || photo.note);
+              const hasPhotoNameRequest = Boolean(txn.writeNameOnPhoto && String(txn.photoName || '').trim() && String(txn.nationalId || '').trim() && String(txn.branch || '').trim());
               const photoItemsWithNotes = trackingPhotoItems.filter(photo => String(photo.note || '').trim());
               const photoItemsWithoutNotes = trackingPhotoItems.filter(photo => !String(photo.note || '').trim());
               const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
@@ -4830,15 +4712,21 @@
               };
 
               return (
-                  <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
+                  <div className="min-h-screen bg-gradient-to-b from-[#0d1424] via-slate-950 to-[#070b14] text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
                       <FloatingPortalMessage navigateTo={navigateTo} />
+                      <div dir="rtl" className={`relative mb-3 w-full max-w-md overflow-hidden rounded-2xl border ${isWedding ? 'border-pink-400/25 bg-gradient-to-l from-pink-950/60 via-slate-900 to-slate-900' : 'border-blue-400/25 bg-gradient-to-l from-blue-950/60 via-slate-900 to-slate-900'} px-4 py-3 shadow-xl shadow-black/20`}>
+                          <div className={`absolute inset-y-0 right-0 w-1 ${isWedding ? 'bg-gradient-to-b from-pink-300 to-rose-600' : 'bg-gradient-to-b from-cyan-300 to-blue-600'}`}></div>
+                          <div className="flex items-center justify-between gap-3">
+                              <div className="flex min-w-0 items-center gap-3"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${isWedding ? 'border-pink-300/20 bg-pink-400/10 text-pink-200' : 'border-cyan-300/20 bg-cyan-400/10 text-cyan-200'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-receipt'} text-xl`}></i></span><div className="min-w-0"><p className="truncate text-sm font-black text-white">{settings.studioName || 'ستوديو المراكبي'}</p><p className="mt-0.5 text-[10px] font-semibold text-slate-400">إيصال إلكتروني · متابعة الطلب</p></div></div>
+                              <span className="shrink-0 rounded-lg border border-white/10 bg-slate-950/60 px-2.5 py-1.5 font-mono text-xs font-black text-slate-100">#{txn.receiptNo || '—'}</span>
+                          </div>
+                      </div>
                       <div className="mb-3 flex w-full max-w-md items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                              <PortalInstallButton />
                               <button type="button" onClick={handleShareTracking} className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-500/30 bg-blue-950/40 text-blue-300 transition hover:bg-blue-800/50" title="مشاركة رابط العميل" aria-label="مشاركة رابط العميل"><i className="ph-fill ph-share-network text-base"></i></button>
                           </div>
-                          <button type="button" onClick={() => navigateTo('?client=true')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 transition hover:text-white">
-                              <i className="ph ph-arrow-right"></i> بوابة العملاء
+                          <button type="button" onClick={() => navigateTo('?client=true')} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-cyan-300/25 bg-gradient-to-l from-cyan-950/70 to-slate-900 px-3.5 text-xs font-black text-cyan-100 shadow-lg shadow-cyan-950/20 transition-all hover:-translate-y-0.5 hover:border-cyan-200/60 hover:from-cyan-900/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300/30">
+                              <i className="ph-fill ph-arrow-right text-base"></i><span>العودة إلى بوابة العملاء</span>
                           </button>
                       </div>
                       
@@ -4901,7 +4789,7 @@
 
                       {txn.paymentPending && <div className="w-full max-w-md mb-5 bg-gradient-to-l from-amber-950/70 to-slate-900 border border-amber-400/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-hourglass-medium text-2xl"></i></div><div><p className="text-amber-200 text-sm font-black">حجزك قيد المراجعة</p><p className="text-amber-100/75 text-xs leading-relaxed mt-1">استلمنا طلبك بنجاح. يراجع الاستوديو الموعد والخدمات والمبلغ، وستظهر هنا أي تعديلات أو تأكيدات جديدة تلقائيًا.</p>{typeof Notification !== 'undefined' && Notification.permission !== 'granted' && <button type="button" onClick={async()=>{const result=await Notification.requestPermission(); if(result==='granted') showBrowserNotification('تم تفعيل إشعارات الحجز','سنخبرك عند تأكيد أو إكمال طلبك.');}} className="mt-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-100 px-2.5 py-1.5 rounded-lg font-black"><i className="ph-fill ph-bell-ringing ml-1"></i> تفعيل إشعارات الحالة</button>}</div></div>}
 
-                      <div className="w-full max-w-md mb-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 shadow-lg overflow-hidden">
+                      {hasPhotoNameRequest && <div className="w-full max-w-md mb-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 shadow-lg overflow-hidden">
                           <button type="button" onClick={() => { setShowConfirmData(v => !v); setEditingConfirmData(false); }} className="w-full p-4 flex items-center gap-3 text-right hover:bg-indigo-900/30 transition-colors">
                               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center shrink-0"><i className={`ph-fill ${txn.identityConfirmed ? 'ph-check-circle' : 'ph-identification-card'} text-xl`}></i></div>
                               <div className="flex-1 min-w-0"><p className="text-indigo-100 font-black text-sm">تأكيد بيانات الإيصال</p><p className="text-[11px] text-slate-400 mt-1 truncate">{txn.identityConfirmed ? `تم التأكيد: ${txn.photoName || txn.clientName || 'الاسم'} • ${txn.nationalId || 'بدون رقم قومي'} • ${txn.branch || 'بدون شعبة'}` : 'راجع الاسم والرقم القومي قبل الطباعة'}</p></div>
@@ -4910,7 +4798,7 @@
                           {showConfirmData && <div className="border-t border-indigo-500/20 p-4 animate-fadeIn">
                               {!editingConfirmData && txn.identityConfirmed ? <div className="flex items-start justify-between gap-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl p-3"><div className="min-w-0 flex-1"><p className="text-emerald-300 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> البيانات معتمدة</p><div className="mt-3 rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2"><p className="text-[10px] text-slate-500 font-bold mb-1">الاسم على الصورة</p><p className="text-white text-sm font-bold truncate">{txn.photoName || txn.clientName || '—'}</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">الرقم القومي</p><p className="text-slate-300 text-xs font-mono truncate" dir="ltr">{txn.nationalId || '—'}</p></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-3"><p className="text-[10px] text-slate-500 font-bold mb-1">الشعبة / المسار</p><p className="text-purple-300 text-xs font-bold truncate">{txn.branch || '—'}</p></div></div></div><button type="button" onClick={() => setEditingConfirmData(true)} className="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0" title="تعديل البيانات"><i className="ph ph-pencil-simple"></i></button></div> : <div className="space-y-3"><p className="text-xs text-slate-300 leading-relaxed">يمكنك تعديل الاسم المنفصل للطباعة والرقم القومي والشعبة ثم حفظها. الاسم الأساسي للإيصال ثابت من الاستوديو.</p><div className="space-y-3"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الاسم المنفصل المطلوب كتابته على الصورة</label><input id="client-confirm-name" defaultValue={txn.photoName || txn.clientName || ''} placeholder="الاسم المطلوب كتابته على الصورة" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الرقم القومي للصورة</label><input id="client-confirm-national-id" defaultValue={txn.nationalId || ''} inputMode="numeric" maxLength="14" placeholder="الرقم القومي (14 رقمًا)" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-4"><label className="text-xs text-slate-400 font-bold block mb-1">الشعبة / المسار</label><input id="client-confirm-branch" defaultValue={txn.branch || ''} placeholder="الشعبة / المسار" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div></div></div><p className="text-[11px] leading-relaxed text-amber-200 bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl"><i className="ph-fill ph-warning-circle ml-1"></i>تأكد من صحة الاسم والرقم القومي قبل الحفظ، لأن إعادة الطباعة بسبب بيانات خاطئة تكون على مسؤولية العميل.</p><label className="flex items-start gap-2 text-xs text-indigo-100 bg-slate-950/80 p-3 rounded-xl"><input id="client-confirm-consent" type="checkbox" defaultChecked={txn.identityConfirmed} className="mt-0.5 accent-indigo-500" /><span>أؤكد صحة البيانات وأوافق على كتابتها على الصورة.</span></label><div className="flex gap-2"><button type="button" onClick={async()=>{const name=document.getElementById('client-confirm-name').value.trim(); const nationalId=document.getElementById('client-confirm-national-id').value.trim(); const branch=document.getElementById('client-confirm-branch').value.trim(); if(!name || !/^\d{14}$/.test(nationalId)){alert('يرجى إدخال الاسم والرقم القومي المكوّن من 14 رقمًا.');return;} const consent=document.getElementById('client-confirm-consent'); if(!consent || !consent.checked){alert('يرجى تأكيد صحة البيانات والموافقة على كتابتها على الصورة.');return;} const editedAt=new Date().toISOString(); const previousValues={name:txn.photoName || txn.clientName || '', nationalId:txn.nationalId || '', branch:txn.branch || ''}; const nextValues={name, nationalId, branch}; const clientFieldChanges={...(txn.clientFieldChanges || {})}; Object.keys(nextValues).forEach(key=>{if(nextValues[key] !== previousValues[key]) clientFieldChanges[key]={at:editedAt, previous:previousValues[key], value:nextValues[key]};}); const targetCol=isWedding?'weddings':'transactions'; const appId=typeof __app_id!=='undefined'?__app_id:'studio-marakby'; await setDoc(doc(db,`artifacts/${appId}/public/data/${targetCol}`,txn.id),{nationalId,photoName:name,branch,writeNameOnPhoto:true,identityConfirmed:true,clientFieldChanges},{merge:true}); setShowConfirmData(false); setEditingConfirmData(false); alert('تم حفظ بيانات الإيصال بنجاح.');}} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2"><i className="ph ph-check"></i> حفظ البيانات</button>{editingConfirmData && <button type="button" onClick={() => { setEditingConfirmData(false); setShowConfirmData(false); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 rounded-xl font-bold">إلغاء</button>}</div></div>}
                           </div>}
-                      </div>
+                      </div>}
                       {/* 2. بطاقة تتبع الطلب ورصيد المكافآت المدمجة */}
                       <div className="w-full max-w-md bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 mb-8 relative overflow-hidden">
                           <div className={`absolute top-0 right-0 w-2 h-full ${isWedding ? 'bg-pink-500' : 'bg-blue-500'}`}></div>
