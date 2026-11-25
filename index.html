@@ -308,9 +308,9 @@
         };
         const safeCustomerPhone = (value) => isValidCustomerPhone(value) ? normalizeCustomerPhone(value) : '';
 
-        const formatCurrency = (num) => Number(num || 0).toLocaleString('ar-EG') + ' ج.م';
+        const formatCurrency = (num) => Number(num || 0).toLocaleString('en-US') + ' ج.م';
         const formatCurrencyEnglish = (num) => Number(num || 0).toLocaleString('en-US') + ' EGP';
-        const formatDateOnly = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('ar-EG') : '';
+        const formatDateOnly = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('en-GB') : '';
         const getEnglishDisplayDate = (dateStr) => {
             if (!dateStr) return null;
             const value = String(dateStr);
@@ -336,12 +336,12 @@
             return date ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : raw;
         };
         const formatDateTimeEnglish = (dateStr) => dateStr ? `${formatDateOnlyEnglish(dateStr)} ${formatTimeOnlyEnglish(dateStr)}` : '';
-        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : '';
+        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '';
         const formatTimeOnly = (dateStr) => {
              if(!dateStr) return '';
              const d = new Date(dateStr);
              if(isNaN(d.getTime())) return dateStr; 
-             return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+             return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
         };
 
         const getCustomerRewards = (phone, allRecs, settingsObj) => {
@@ -1752,7 +1752,7 @@
 
         const StatCard = ({title, value, color, highlight, onClick, hideValue = false, valueType = 'currency'}) => {
             const colors = { green: "bg-green-950/30 text-green-400 border-green-900/50", red: "bg-red-950/30 text-red-400 border-red-900/50", blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", pink: "bg-pink-950/30 text-pink-400 border-pink-900/50", indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50", emerald: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50", rose: "bg-rose-950/30 text-rose-400 border-rose-900/50", yellow: "bg-yellow-950/30 text-yellow-400 border-yellow-900/50", amber: "bg-amber-950/30 text-amber-300 border-amber-900/50", slate: "bg-slate-800/60 text-slate-300 border-slate-700" };
-            const formattedValue = valueType === 'percent' ? `${Number(value || 0).toFixed(1)}%` : valueType === 'number' ? Number(value || 0).toLocaleString('ar-EG') : formatCurrency(value);
+            const formattedValue = valueType === 'percent' ? `${Number(value || 0).toFixed(1)}%` : valueType === 'number' ? Number(value || 0).toLocaleString('en-US') : formatCurrency(value);
             return (
               <div onClick={onClick} className={`flex flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color] || colors.blue} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
                 <h4 className="text-[10px] sm:text-xs font-bold opacity-80 mb-1 leading-tight">{title}</h4>
@@ -2119,7 +2119,7 @@
                     </div>
                     <div>
                         <label className="text-slate-400 text-xs font-bold block mb-1">تاريخ السداد</label>
-                        <input type="date" name="paymentDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 shadow-inner"/>
+                        <input type="date" name="paymentDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none focus:border-green-500 shadow-inner" lang="en" dir="ltr"/>
                     </div>
                     <button type="submit" className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-black py-4 mt-2 rounded-xl shadow-lg transition-transform hover:scale-[1.02] text-base flex items-center justify-center gap-2">
                         <i className="ph-bold ph-check-circle text-xl"></i> تأكيد التحصيل
@@ -2425,7 +2425,7 @@ ${clientTrackingUrl}
             )
         };
 
-        const CustomerArchive = ({ allRecords, settings, setReceiptImageModal, onCustomerClick }) => {
+        const CustomerArchive = ({ allRecords, transactions, inventory, settings, setReceiptImageModal, onCustomerClick }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [showRepeatReceipts, setShowRepeatReceipts] = useState(false);
             const [showMonthlyStarsModal, setShowMonthlyStarsModal] = useState(false);
@@ -2437,6 +2437,11 @@ ${clientTrackingUrl}
             const now = new Date();
             const currentMonth = now.getMonth() + 1;
             const currentYear = now.getFullYear();
+            const monthlyInstantPrintCount = useMemo(() => (transactions || []).reduce((count, record) => {
+                const date = new Date(record.dateTime || record.createdAt || record.date || '');
+                if (Number.isNaN(date.getTime()) || date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear) return count;
+                return count + getExplicitInstantPrintItems(record).reduce((sum, item) => sum + item.qty, 0);
+            }, 0), [transactions, currentMonth, currentYear]);
 
             const completedRecords = useMemo(() => (allRecords || []).filter(record => {
                 const wedding = record.type === 'wedding' || !!record.groomName || !!record.brideName;
@@ -2501,9 +2506,10 @@ ${clientTrackingUrl}
                             <span className="min-w-0"><strong className="block truncate text-base font-black text-white sm:text-lg">أرشيف العملاء</strong><span className="mt-0.5 block truncate text-[11px] text-slate-400">إعادة التواصل وطلب التقييم · {completedRecords.length} أعمال مكتملة</span></span>
                             <i className={`ph-bold ${isOpen ? 'ph-caret-up' : 'ph-caret-down'} text-cyan-200`}></i>
                         </button>
-                        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:flex-nowrap xl:gap-1.5">
+                        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:max-w-full xl:flex-1 xl:flex-wrap xl:justify-end xl:gap-1.5">
                             <button type="button" onClick={() => setShowRepeatReceipts(true)} title="عرض أرقام إيصالات العملاء الأكثر زيارة" className="min-w-0 rounded-xl border border-blue-400/20 bg-blue-950/30 px-3 py-2 text-center transition hover:border-blue-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-blue-100/70">إجمالي الإيصالات</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-blue-200"><i className="ph-fill ph-receipt"></i>{(allRecords || []).length}</strong></button>
                             <span className="min-w-0 rounded-xl border border-cyan-400/20 bg-cyan-950/30 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-cyan-100/70">مكتملة</span><strong className="mt-0.5 block text-base font-black text-cyan-200">{completedRecords.length}</strong></span>
+                            <div className="min-w-0 rounded-xl border border-yellow-400/25 bg-gradient-to-br from-yellow-950/45 to-amber-950/20 px-3 py-2 text-center shadow-sm shadow-yellow-950/20 xl:w-[160px] xl:flex-none" title="ملخص مخزون الطباعة الفورية وعدد الطباعات خلال الشهر الحالي"><span className="block truncate text-[10px] font-bold text-yellow-100/80"><i className="ph-fill ph-printer ml-1 text-yellow-300"></i>ملخص الطباعة الفورية</span><div className="mt-1.5 grid grid-cols-2 divide-x divide-x-reverse divide-yellow-400/15"><div className="px-1"><span className="block text-[9px] text-slate-400">ورق متاح</span><strong className="mt-0.5 block text-sm font-black text-yellow-200">{Number(inventory?.['ورق طباعة صور'] || 0).toLocaleString('en-US')}</strong></div><div className="px-1"><span className="block text-[9px] text-slate-400">طباعات الشهر</span><strong className="mt-0.5 block text-sm font-black text-amber-200">{monthlyInstantPrintCount.toLocaleString('en-US')}</strong></div></div></div>
                             <span className="min-w-0 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-amber-100/70">بانتظار التقييم</span><strong className="mt-0.5 block text-base font-black text-amber-200">{pendingRatingCount}</strong></span>
                             <span className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
                             <button type="button" onClick={() => setShowClosedRevenue(value => !value)} title={showClosedRevenue ? 'إخفاء المبلغ' : 'إظهار قيمة الأعمال المستلمة'} className="min-w-0 rounded-xl border border-emerald-400/20 bg-emerald-950/20 px-3 py-2 text-center transition hover:border-emerald-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-emerald-100/70">قيمة المستلم</span><strong className="mt-0.5 block truncate text-base font-black text-emerald-200">{showClosedRevenue ? formatCurrency(closedRevenue) : '••••'}</strong></button>
@@ -2975,14 +2981,14 @@ ${clientTrackingUrl}
                   <button onClick={() => { setIsEditing(false); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false }); setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-14 min-w-0 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/50 text-xs sm:text-sm whitespace-nowrap"><i className="ph ph-plus-circle text-lg"></i><span className="truncate">إضافة عملية</span></button>
                   <button onClick={() => setShowDebtsModal(true)} disabled={totalDebts <= 0} className="w-full h-14 min-w-0 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm text-xs sm:text-sm whitespace-nowrap" title="عرض الديون"><i className="ph-fill ph-warning-circle text-lg"></i><span className="truncate">ديون ({uniqueDebtorsCount})</span></button>
                   <div className="relative w-full h-14 min-w-0"><i className="ph ph-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg"></i><input type="text" placeholder="بحث..." aria-label="بحث في الإيصالات" className="w-full h-full pr-9 pl-2 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-xs sm:text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-                  <div className="flex gap-1.5 w-full h-14 min-w-0"><input type="date" title="تصفية بالتاريخ" aria-label="تصفية بالتاريخ" className="min-w-0 w-full h-full px-1.5 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-xs transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />{filterDate && <button aria-label="مسح التاريخ" onClick={() => setFilterDate('')} className="h-full px-2 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x"></i></button>}</div>
+                  <div className="flex gap-1.5 w-full h-14 min-w-0"><input type="date" title="تصفية بالتاريخ" aria-label="تصفية بالتاريخ" className="min-w-0 w-full h-full px-1.5 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-blue-500 outline-none text-xs transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} lang="en" dir="ltr" />{filterDate && <button aria-label="مسح التاريخ" onClick={() => setFilterDate('')} className="h-full px-2 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x"></i></button>}</div>
                   <div className="grid h-14 min-w-0 grid-cols-2 gap-1.5">
                     <button type="button" onClick={() => setInvalidPhoneOnly(value => !value)} aria-pressed={invalidPhoneOnly} title="تصفية الإيصالات ذات الهاتف غير المكتمل" className={`min-w-0 rounded-xl border px-1.5 text-[10px] sm:text-xs font-bold leading-tight transition-colors ${invalidPhoneOnly ? 'border-red-400 bg-red-950/50 text-red-200' : 'col-span-2 border-slate-700 bg-slate-950 text-slate-300 hover:border-red-400/50'}`}><i className="ph-fill ph-phone-slash ml-1"></i>{invalidPhoneOnly ? 'عرض كل الإيصالات' : `بلا هاتف (${transactions.filter(t => !isValidCustomerPhone(t.phone)).length})`}</button>
                     {invalidPhoneOnly && <button type="button" onClick={openIncompleteReceiptDelete} title="حذف جميع الإيصالات ذات الهاتف غير المكتمل" className="min-w-0 rounded-xl border border-red-900/60 bg-red-950/40 px-1.5 text-[10px] sm:text-xs font-bold leading-tight text-red-300 transition hover:border-red-500 hover:bg-red-900/60"><i className="ph-fill ph-trash ml-1"></i>حذف الكل</button>}
                   </div>
                 </div>
 
-                <CustomerArchive allRecords={allRecords} settings={settings} setReceiptImageModal={setReceiptImageModal} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setHistoryPhone(phone); }} />
+                <CustomerArchive allRecords={allRecords} transactions={transactions} inventory={inventory} settings={settings} setReceiptImageModal={setReceiptImageModal} onCustomerClick={(phone) => { const custTxns = allRecords.filter(t => t.phone === phone).sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)); if(custTxns.length > 0) setHistoryPhone(phone); }} />
                 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
@@ -2990,8 +2996,6 @@ ${clientTrackingUrl}
                     <div className="flex flex-wrap items-center gap-2 justify-end">
                         <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}</span>
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية</span>
-                        <span className="bg-yellow-500/10 text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm" title="عدد وقيمة الطباعة الفورية المسجلة اليوم"><i className="ph-fill ph-lightning"></i> فوري اليوم: {todayInstantSummary.photos} صورة · {formatCurrency(todayInstantSummary.total)}</span>
-                        <span className="bg-amber-500/10 text-amber-200 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm" title="عدد الطباعات الفورية خلال الشهر الحالي"><i className="ph-fill ph-printer"></i> طباعات الشهر: {monthlyInstantSummary.photos}</span>
                     </div>
                   </h2>
                   <div className="space-y-4">
@@ -3270,7 +3274,7 @@ ${clientTrackingUrl}
                   {totalDebts > 0 && <button onClick={() => setShowDebtsModal(true)} className="w-full h-12 sm:h-14 bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-400 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm relative group text-sm sm:text-base"><i className="ph-fill ph-warning-circle text-lg sm:text-xl group-hover:scale-110 transition-transform"></i>ديون ({uniqueDebtorsCount}) عميل<span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md animate-pulse">هام</span></button>}
                   <div className="relative w-full h-12 sm:h-14"><i className="ph ph-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i><input type="text" placeholder="ابحث باسم العريس، العروسة، الهاتف، رقم الصورة..." className="w-full h-full pr-11 pl-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none text-sm transition-colors" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
                   <div className="flex gap-2 w-full h-12 sm:h-14 shrink-0">
-                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                      <input type="date" title="تصفية بيوم محدد" className="flex-1 h-full px-3 border border-slate-700 bg-slate-950 text-slate-300 rounded-xl focus:border-pink-500 outline-none text-sm transition-colors cursor-pointer" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} lang="en" dir="ltr" />
                       {filterDate && <button onClick={() => setFilterDate('')} className="h-full px-4 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl transition-colors shrink-0"><i className="ph ph-x text-lg"></i></button>}
                   </div>
                   <button type="button" onClick={() => setInvalidPhoneOnly(value => !value)} aria-pressed={invalidPhoneOnly} className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${invalidPhoneOnly ? 'border-red-400 bg-red-950/50 text-red-200' : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-red-400/50'}`}>
@@ -3352,12 +3356,12 @@ ${clientTrackingUrl}
                           <div><label className="block text-xs font-bold text-slate-400 mb-1">اسم العروسة</label><input type="text" placeholder="الاسم" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.brideName} onChange={e => setFormData({...formData, brideName: e.target.value})} /></div>
                           <div><label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف</label><input type="tel" inputMode="numeric" maxLength="15" placeholder="01XXXXXXXXX (اختياري)" className={`w-full p-3 border bg-slate-950 text-white rounded-xl outline-none text-sm ${formData.phone && !isValidCustomerPhone(formData.phone) ? 'border-amber-500' : 'border-slate-700 focus:border-pink-500'}`} value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} onBlur={() => { if(formData.phone && !isValidCustomerPhone(formData.phone)) setFormData(prev => ({...prev, phone:''})); }} />{formData.phone && !isValidCustomerPhone(formData.phone) && <small className="text-[10px] text-amber-300">الهاتف غير صالح؛ سيُسجل الحجز بلا هاتف إن لم يتم تصحيحه.</small>}</div>
                           <div className="sm:col-span-2 lg:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">عنوان العريس</label><input type="text" placeholder="العنوان بالتفصيل" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.groomAddress} onChange={e => setFormData({...formData, groomAddress: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ الزفاف</label><input type="date" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.weddingDate} onChange={e => setFormData({...formData, weddingDate: e.target.value})} /></div>
+                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ الزفاف</label><input type="date" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.weddingDate} onChange={e => setFormData({...formData, weddingDate: e.target.value})} lang="en" dir="ltr" /></div>
                           <div><label className="block text-xs font-bold text-slate-400 mb-1">اللوكيشن / القاعة</label><input type="text" placeholder="المكان" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
                           <div><label className="block text-xs font-bold text-slate-400 mb-1">الميك أب (Makeup Artist)</label><input type="text" placeholder="اسم الكوافير" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.makeupArtist} onChange={e => setFormData({...formData, makeupArtist: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">وقت الخروج</label><input type="time" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.leaveTime} onChange={e => setFormData({...formData, leaveTime: e.target.value})} /></div>
+                          <div><label className="block text-xs font-bold text-slate-400 mb-1">وقت الخروج</label><input type="time" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.leaveTime} onChange={e => setFormData({...formData, leaveTime: e.target.value})} lang="en" dir="ltr" /></div>
                           <div><label className="block text-xs font-bold text-slate-400 mb-1">نوع السيشن</label><input type="text" placeholder="مثال: داي يوز، سيشن فقط..." className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.sessionType} onChange={e => setFormData({...formData, sessionType: e.target.value})} /></div>
-                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ تصوير الكاجوال</label><input type="date" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.casualShootDate} onChange={e => setFormData({...formData, casualShootDate: e.target.value})} /></div>
+                          <div><label className="block text-xs font-bold text-slate-400 mb-1">تاريخ تصوير الكاجوال</label><input type="date" className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-xl focus:border-pink-500 outline-none text-sm" value={formData.casualShootDate} onChange={e => setFormData({...formData, casualShootDate: e.target.value})} lang="en" dir="ltr" /></div>
                         </div>
 
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -3537,7 +3541,7 @@ ${clientTrackingUrl}
                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4"><i className="ph ph-money text-red-400 text-2xl"></i> تسجيل مصروفات</h2>
                      <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                        <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">المبلغ</label><input type="number" required placeholder="ج.م" value={expData.amount} onChange={e => setExpData({...expData, amount: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 font-bold" /></div>
-                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">التاريخ</label><input type="date" required value={expData.date} onChange={e => setExpData({...expData, date: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm" /></div>
+                       <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">التاريخ</label><input type="date" required value={expData.date} onChange={e => setExpData({...expData, date: e.target.value})} lang="en" dir="ltr" className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm" /></div>
                        <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">البند</label><select value={expData.category} onChange={e => setExpData({...expData, category: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm">{settings.expenseCategories.map((cat, idx) => <option key={idx} value={cat}>{cat}</option>)}</select></div>
                        <div className="lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">النوع</label><select value={expData.type} onChange={e => setExpData({...expData, type: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm font-bold"><option value="studio">استوديو</option><option value="wedding">زفاف</option></select></div>
                        <div className="sm:col-span-2 lg:col-span-1"><label className="block text-xs font-bold text-slate-400 mb-1">ملاحظات</label><input type="text" placeholder="ملاحظات..." value={expData.notes} onChange={e => setExpData({...expData, notes: e.target.value})} className="w-full p-2.5 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none focus:border-red-500 text-sm" /></div>
