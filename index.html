@@ -2467,7 +2467,6 @@ ${clientTrackingUrl}
             const [query, setQuery] = useState('');
             const [timeRange, setTimeRange] = useState('all');
             const [ratingFilter, setRatingFilter] = useState('all');
-            const [showClosedRevenue, setShowClosedRevenue] = useState(false);
             const now = new Date();
             const currentMonth = now.getMonth() + 1;
             const currentYear = now.getFullYear();
@@ -2504,7 +2503,6 @@ ${clientTrackingUrl}
 
             const ratedCount = (allRecords || []).filter(record => Number(record.clientRating) > 0).length;
             const pendingRatingCount = completedRecords.filter(record => !(Number(record.clientRating) > 0)).length;
-            const closedRevenue = completedRecords.reduce((sum, record) => sum + (parseFloat(record.total) || 0), 0);
             const displayedArchive = useMemo(() => completedRecords.filter(record => {
                 const date = new Date(record.dateTime || 0);
                 if (timeRange === 'month' && (date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear)) return false;
@@ -2546,7 +2544,6 @@ ${clientTrackingUrl}
                             <div className="min-w-0 rounded-xl border border-yellow-400/25 bg-gradient-to-br from-yellow-950/45 to-amber-950/20 px-3 py-2 text-center shadow-sm shadow-yellow-950/20 xl:w-[160px] xl:flex-none" title="ملخص مخزون الطباعة الفورية وعدد الطباعات خلال الشهر الحالي"><span className="block truncate text-[10px] font-bold text-yellow-100/80"><i className="ph-fill ph-printer ml-1 text-yellow-300"></i>ملخص الطباعة الفورية</span><div className="mt-1.5 grid grid-cols-2 divide-x divide-x-reverse divide-yellow-400/15"><div className="px-1"><span className="block text-[9px] text-slate-400">ورق متاح</span><strong className="mt-0.5 block text-sm font-black text-yellow-200">{Number(inventory?.['ورق طباعة صور'] || 0).toLocaleString('en-US')}</strong></div><div className="px-1"><span className="block text-[9px] text-slate-400">طباعات الشهر</span><strong className="mt-0.5 block text-sm font-black text-amber-200">{monthlyInstantPrintCount.toLocaleString('en-US')}</strong></div></div></div>
                             <span className="min-w-0 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-amber-100/70">بانتظار التقييم</span><strong className="mt-0.5 block text-base font-black text-amber-200">{pendingRatingCount}</strong></span>
                             <span title="عدد التقييمات بالنجوم المستلمة من بوابة العملاء" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات العملاء</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
-                            <button type="button" onClick={() => setShowClosedRevenue(value => !value)} title={showClosedRevenue ? 'إخفاء المبلغ' : 'إظهار قيمة الأعمال المستلمة'} className="min-w-0 rounded-xl border border-emerald-400/20 bg-emerald-950/20 px-3 py-2 text-center transition hover:border-emerald-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-emerald-100/70">قيمة المستلم</span><strong className="mt-0.5 block truncate text-base font-black text-emerald-200">{showClosedRevenue ? formatCurrency(closedRevenue) : '••••'}</strong></button>
                             <button type="button" onClick={() => setShowMonthlyStarsModal(true)} title="عرض عملاء نجوم الشهر وإعادة استهدافهم" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/25 px-3 py-2 text-center transition hover:border-yellow-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">نجوم الشهر</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-yellow-200"><i className="ph-fill ph-star"></i>{topCustomers.length}</strong></button>
                         </div>
                     </div>
@@ -3519,6 +3516,21 @@ ${clientTrackingUrl}
             const [filterMonth, setFilterMonth] = useState(currentMonth);
             const [filterYear, setFilterYear] = useState(currentYear);
             const [instantSheetPrice, setInstantSheetPrice] = useState(settings.instantPrintSheetPrice || '');
+            const [inventoryDrafts, setInventoryDrafts] = useState({});
+            useEffect(() => {
+                if (!inventory) return;
+                setInventoryDrafts(prev => {
+                    const next = { ...prev };
+                    let changed = false;
+                    Object.entries(prev).forEach(([itemName, value]) => {
+                        if (inventory[itemName] !== undefined && Number(inventory[itemName]) === Number(value)) {
+                            delete next[itemName];
+                            changed = true;
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+            }, [inventory]);
             const saveInstantSheetPrice = async () => { const value = Math.max(0, Number(instantSheetPrice) || 0); const nextSettings = { ...settings, instantPrintSheetPrice: value }; setSettings(nextSettings); const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), nextSettings, { merge: true }); };
 
             const handleAddExpense = async (e) => {
@@ -3551,10 +3563,29 @@ ${clientTrackingUrl}
                return [...basicItems, ...prods];
             }, [settings.products]);
 
-            const updateInventory = async (itemName, change) => {
-               const newInv = { ...inventory, [itemName]: Math.max(0, (inventory[itemName] || 0) + change) };
+            const writeInventoryValue = async (itemName, quantity) => {
+               const newInv = { [itemName]: quantity };
                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-               await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv);
+               setInventoryDrafts(prev => ({ ...prev, [itemName]: String(quantity) }));
+               await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv, { merge: true });
+            };
+
+            const updateInventory = async (itemName, change, fallbackStock = 0) => {
+               const baseStock = Number(inventoryDrafts[itemName] ?? (inventory[itemName] !== undefined ? inventory[itemName] : fallbackStock));
+               if (!Number.isSafeInteger(baseStock) || baseStock < 0) { alert('أدخل كمية صحيحة قبل استخدام أزرار الزيادة أو النقصان.'); return; }
+               await writeInventoryValue(itemName, Math.max(0, baseStock + change));
+            };
+
+            const saveInventoryQuantity = async (itemName, rawValue) => {
+               const raw = String(rawValue ?? '').trim();
+               const quantity = Number(raw);
+               if (!raw || !Number.isSafeInteger(quantity) || quantity < 0) { alert('أدخل كمية صحيحة أكبر من أو تساوي صفرًا.'); return; }
+               try {
+                   await writeInventoryValue(itemName, quantity);
+               } catch (error) {
+                   console.error('تعذر حفظ كمية المخزون:', error);
+                   alert('تعذر حفظ الكمية. حاول مرة أخرى.');
+               }
             };
 
             return (
@@ -3605,17 +3636,24 @@ ${clientTrackingUrl}
                 <div className="xl:col-span-1">
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 sticky top-24">
                       <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4"><i className="ph ph-stack text-purple-400 text-2xl"></i> إدارة وإحصائيات المخزون</h2>
+                      <p className="mb-3 text-[10px] text-slate-400">أدخل الكمية مباشرةً ثم اضغط «حفظ»، أو استخدم زري الزيادة والنقصان.</p>
                       <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-4"><div className="flex items-center gap-2 mb-3"><i className="ph-fill ph-lightning text-yellow-300 text-xl"></i><div><h3 className="text-sm font-black text-yellow-100">مخزون الطباعة الفورية</h3><p className="text-[10px] text-yellow-100/60 mt-1">يُخصم تلقائيًا عند اختيار «فوري» في نموذج العملية.</p></div></div><div className="grid grid-cols-2 gap-2 text-center mb-3"><div className="rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">الأوراق المتاحة</span><strong className="text-xl font-black text-yellow-200">{inventory['ورق طباعة صور'] || 0}</strong></div><div className="rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">سعر الورقة</span><strong className="text-xl font-black text-emerald-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div></div><div className="flex gap-2"><input type="number" min="0" value={instantSheetPrice} onChange={e => setInstantSheetPrice(e.target.value)} placeholder="سعر الورقة للعميل" className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white outline-none focus:border-yellow-400" /><button type="button" onClick={saveInstantSheetPrice} className="rounded-lg bg-yellow-500 px-3 py-2 text-xs font-black text-slate-950 hover:bg-yellow-400">حفظ السعر</button></div><p className="mt-2 text-[10px] text-slate-500">استخدم أزرار مخزون «ورق طباعة صور» أسفل البطاقة لإضافة أو خصم الأوراق يدويًا.</p></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-2 gap-4 max-h-[65vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
                          {inventoryItemsList.map((item, idx) => {
-                            const isProduct = item.price !== undefined; const itemName = item.name; const currentStock = inventory[itemName] !== undefined ? inventory[itemName] : (item.totalQty || 0);
+                            const isProduct = item.price !== undefined;
+                            const itemName = item.name;
+                            const currentStock = inventory[itemName] !== undefined ? inventory[itemName] : (item.totalQty || 0);
+                            const stockInputValue = inventoryDrafts[itemName] ?? String(currentStock);
+                            const parsedStockInput = Number(stockInputValue);
+                            const canSaveStock = stockInputValue.trim() !== '' && Number.isSafeInteger(parsedStockInput) && parsedStockInput >= 0 && parsedStockInput !== Number(currentStock);
                             return (
                             <div key={idx} className="flex flex-col p-4 bg-slate-950 rounded-2xl border border-slate-800 hover:border-purple-500/50 transition-all shadow-md">
                                <div className="text-center mb-4"><span className="font-bold text-slate-200 text-sm block truncate">{itemName}</span></div>
-                               <div className="flex items-center justify-between bg-slate-900 p-1.5 rounded-xl border border-slate-700 shadow-inner mb-4">
-                                  <button type="button" onClick={()=>updateInventory(itemName, -1)} className="text-red-400 hover:bg-slate-800 w-8 h-8 rounded-lg flex items-center justify-center"><i className="ph ph-minus text-base font-bold"></i></button>
-                                  <span className="font-bold text-2xl text-white tracking-wider">{currentStock}</span>
-                                  <button type="button" onClick={()=>updateInventory(itemName, 1)} className="text-green-400 hover:bg-slate-800 w-8 h-8 rounded-lg flex items-center justify-center"><i className="ph ph-plus text-base font-bold"></i></button>
+                               <div className="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-700 shadow-inner mb-4">
+                                  <button type="button" onClick={()=>updateInventory(itemName, -1, currentStock)} aria-label={`إنقاص كمية ${itemName}`} className="shrink-0 text-red-400 hover:bg-slate-800 w-8 h-8 rounded-lg flex items-center justify-center"><i className="ph ph-minus text-base font-bold"></i></button>
+                                  <input type="number" min="0" step="1" lang="en" dir="ltr" inputMode="numeric" value={stockInputValue} onChange={event => setInventoryDrafts(prev => ({ ...prev, [itemName]: event.target.value }))} onKeyDown={event => { if (event.key === 'Enter' && canSaveStock) { event.preventDefault(); saveInventoryQuantity(itemName, stockInputValue); } }} aria-label={`كمية ${itemName}`} className="min-w-0 h-9 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-1 text-center text-lg font-black text-white outline-none focus:border-purple-400" />
+                                  <button type="button" onClick={()=>updateInventory(itemName, 1, currentStock)} aria-label={`زيادة كمية ${itemName}`} className="shrink-0 text-green-400 hover:bg-slate-800 w-8 h-8 rounded-lg flex items-center justify-center"><i className="ph ph-plus text-base font-bold"></i></button>
+                                  <button type="button" onClick={()=>saveInventoryQuantity(itemName, stockInputValue)} disabled={!canSaveStock} className="shrink-0 rounded-lg bg-purple-600 px-2.5 py-2 text-[10px] font-black text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40">حفظ</button>
                                </div>
                                {isProduct && (
                                   <div className="flex flex-col gap-2 text-[11px] sm:text-xs font-bold mt-auto bg-slate-900/50 p-3 rounded-xl border border-slate-800/50">
@@ -4930,12 +4968,6 @@ ${clientTrackingUrl}
               return (
                   <div className="min-h-screen bg-gradient-to-b from-[#0d1424] via-slate-950 to-[#070b14] text-slate-100 p-4 md:p-6 flex flex-col items-center pb-32">
                       <FloatingPortalMessage navigateTo={navigateTo} />
-                      <div dir="rtl" className={`relative mb-3 w-full max-w-md overflow-hidden rounded-2xl border ${isWedding ? 'border-pink-400/25 bg-gradient-to-l from-pink-950/60 via-slate-900 to-slate-900' : 'border-blue-400/25 bg-gradient-to-l from-blue-950/60 via-slate-900 to-slate-900'} px-4 py-3 shadow-xl shadow-black/20`}>
-                          <div className={`absolute inset-y-0 right-0 w-1 ${isWedding ? 'bg-gradient-to-b from-pink-300 to-rose-600' : 'bg-gradient-to-b from-cyan-300 to-blue-600'}`}></div>
-                          <div className="flex items-center justify-end gap-3">
-                              <span className="shrink-0 rounded-lg border border-white/10 bg-slate-950/60 px-2.5 py-1.5 font-mono text-xs font-black text-slate-100">#{txn.receiptNo || '—'}</span>
-                          </div>
-                      </div>
                       <div className="mb-3 flex w-full max-w-md items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                               <button type="button" onClick={handleShareTracking} className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-500/30 bg-blue-950/40 text-blue-300 transition hover:bg-blue-800/50" title="مشاركة رابط العميل" aria-label="مشاركة رابط العميل"><i className="ph-fill ph-share-network text-base"></i></button>
