@@ -583,6 +583,17 @@
             if (legacy.length) return legacy;
             return txn?.pickupOption === 'instant' ? [{ name: 'طباعة فورية', qty: 1, unitPrice: 0 }] : [];
         };
+        const getLocalDateKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const getInstantStatsStartDate = (settings) => {
+            const configured = String(settings?.instantStatsStartDate || '');
+            return /^\d{4}-\d{2}-\d{2}$/.test(configured) ? configured : getLocalDateKey();
+        };
+        const isInstantStatsRecordIncluded = (record, settings) => {
+            const rawDate = String(record?.dateTime || record?.createdAt || record?.date || '');
+            const dateOnly = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            const date = dateOnly ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])) : new Date(rawDate);
+            return !Number.isNaN(date.getTime()) && getLocalDateKey(date) >= getInstantStatsStartDate(settings);
+        };
         const getRecordDisplayName = (record) => record?.type === 'wedding'
             ? `${record.groomName || ''} و ${record.brideName || ''}`.trim()
             : (record?.clientName || 'عميل');
@@ -2439,9 +2450,9 @@ ${clientTrackingUrl}
             const currentYear = now.getFullYear();
             const monthlyInstantPrintCount = useMemo(() => (transactions || []).reduce((count, record) => {
                 const date = new Date(record.dateTime || record.createdAt || record.date || '');
-                if (Number.isNaN(date.getTime()) || date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear) return count;
+                if (Number.isNaN(date.getTime()) || date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear || !isInstantStatsRecordIncluded(record, settings)) return count;
                 return count + getExplicitInstantPrintItems(record).reduce((sum, item) => sum + item.qty, 0);
-            }, 0), [transactions, currentMonth, currentYear]);
+            }, 0), [transactions, currentMonth, currentYear, settings.instantStatsStartDate]);
 
             const completedRecords = useMemo(() => (allRecords || []).filter(record => {
                 const wedding = record.type === 'wedding' || !!record.groomName || !!record.brideName;
@@ -2468,8 +2479,8 @@ ${clientTrackingUrl}
                 .sort((a, b) => String(b.dateTime || '').localeCompare(String(a.dateTime || '')))
                 .map(record => record);
 
-            const ratedCount = completedRecords.filter(record => Number(record.clientRating) > 0).length;
-            const pendingRatingCount = completedRecords.length - ratedCount;
+            const ratedCount = (allRecords || []).filter(record => Number(record.clientRating) > 0).length;
+            const pendingRatingCount = completedRecords.filter(record => !(Number(record.clientRating) > 0)).length;
             const closedRevenue = completedRecords.reduce((sum, record) => sum + (parseFloat(record.total) || 0), 0);
             const displayedArchive = useMemo(() => completedRecords.filter(record => {
                 const date = new Date(record.dateTime || 0);
@@ -2511,7 +2522,7 @@ ${clientTrackingUrl}
                             <span className="min-w-0 rounded-xl border border-cyan-400/20 bg-cyan-950/30 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-cyan-100/70">مكتملة</span><strong className="mt-0.5 block text-base font-black text-cyan-200">{completedRecords.length}</strong></span>
                             <div className="min-w-0 rounded-xl border border-yellow-400/25 bg-gradient-to-br from-yellow-950/45 to-amber-950/20 px-3 py-2 text-center shadow-sm shadow-yellow-950/20 xl:w-[160px] xl:flex-none" title="ملخص مخزون الطباعة الفورية وعدد الطباعات خلال الشهر الحالي"><span className="block truncate text-[10px] font-bold text-yellow-100/80"><i className="ph-fill ph-printer ml-1 text-yellow-300"></i>ملخص الطباعة الفورية</span><div className="mt-1.5 grid grid-cols-2 divide-x divide-x-reverse divide-yellow-400/15"><div className="px-1"><span className="block text-[9px] text-slate-400">ورق متاح</span><strong className="mt-0.5 block text-sm font-black text-yellow-200">{Number(inventory?.['ورق طباعة صور'] || 0).toLocaleString('en-US')}</strong></div><div className="px-1"><span className="block text-[9px] text-slate-400">طباعات الشهر</span><strong className="mt-0.5 block text-sm font-black text-amber-200">{monthlyInstantPrintCount.toLocaleString('en-US')}</strong></div></div></div>
                             <span className="min-w-0 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-amber-100/70">بانتظار التقييم</span><strong className="mt-0.5 block text-base font-black text-amber-200">{pendingRatingCount}</strong></span>
-                            <span className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
+                            <span title="عدد التقييمات بالنجوم المستلمة من بوابة العملاء" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات العملاء</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
                             <button type="button" onClick={() => setShowClosedRevenue(value => !value)} title={showClosedRevenue ? 'إخفاء المبلغ' : 'إظهار قيمة الأعمال المستلمة'} className="min-w-0 rounded-xl border border-emerald-400/20 bg-emerald-950/20 px-3 py-2 text-center transition hover:border-emerald-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-emerald-100/70">قيمة المستلم</span><strong className="mt-0.5 block truncate text-base font-black text-emerald-200">{showClosedRevenue ? formatCurrency(closedRevenue) : '••••'}</strong></button>
                             <button type="button" onClick={() => setShowMonthlyStarsModal(true)} title="عرض عملاء نجوم الشهر وإعادة استهدافهم" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/25 px-3 py-2 text-center transition hover:border-yellow-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">نجوم الشهر</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-yellow-200"><i className="ph-fill ph-star"></i>{topCustomers.length}</strong></button>
                         </div>
@@ -2940,7 +2951,7 @@ ${clientTrackingUrl}
                 const summary = { photos: 0, total: 0, unpriced: 0 };
                 (records || []).forEach(record => {
                     const date = new Date(record.dateTime || record.createdAt || record.date || '');
-                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey) return;
+                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey || !isInstantStatsRecordIncluded(record, settings)) return;
                     // مهم: نقرأ فقط instantPrintItems الصريحة، ولا نفحص soldProducts أو نصوص photoNo.
                     getExplicitInstantPrintItems(record).forEach(item => {
                         summary.photos += item.qty;
@@ -2950,7 +2961,7 @@ ${clientTrackingUrl}
                 });
                 return summary;
             };
-            const monthlyInstantSummary = useMemo(() => { const now = new Date(); return getInstantPhotoSummary(transactions, `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`); }, [transactions]);
+            const monthlyInstantSummary = useMemo(() => { const now = new Date(); return getInstantPhotoSummary(transactions, `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`); }, [transactions, settings.instantStatsStartDate]);
             const todayKey = (() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; })();
             const todayInstantSummary = useMemo(() => {
                 const todayTransactions = (transactions || []).filter(record => {
@@ -3657,15 +3668,15 @@ ${clientTrackingUrl}
                 const monthKey = `${year}-${String(month).padStart(2, '0')}`;
                 (transactions || []).forEach(record => {
                     const date = new Date(record.dateTime || record.createdAt || record.date || '');
-                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey) return;
+                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey || !isInstantStatsRecordIncluded(record, settings)) return;
                     const items = getExplicitInstantPrintItems(record); if (!items.length) return;
                     summary.receipts += 1;
                     items.forEach(item => { const value = item.qty * item.unitPrice; summary.photos += item.qty; summary.total += value; if (!item.unitPrice) summary.unpriced += item.qty; const name = item.name || 'طباعة فورية'; if (!summary.services[name]) summary.services[name] = { photos: 0, total: 0 }; summary.services[name].photos += item.qty; summary.services[name].total += value; });
                 });
                 summary.average = summary.photos ? summary.total / summary.photos : 0; return summary;
             };
-            const monthlyInstantSummary = useMemo(() => summarizeInstant(filter.year, filter.month), [transactions, filter]);
-            const previousInstantMonth = useMemo(() => { const d = new Date(Number(filter.year), Number(filter.month) - 2, 1); return summarizeInstant(d.getFullYear(), d.getMonth() + 1); }, [transactions, filter]);
+            const monthlyInstantSummary = useMemo(() => summarizeInstant(filter.year, filter.month), [transactions, filter, settings.instantStatsStartDate]);
+            const previousInstantMonth = useMemo(() => { const d = new Date(Number(filter.year), Number(filter.month) - 2, 1); return summarizeInstant(d.getFullYear(), d.getMonth() + 1); }, [transactions, filter, settings.instantStatsStartDate]);
             const instantRevenueShare = (studioCollectedStats.total + wedCollectedStats.total) > 0 ? (monthlyInstantSummary.total / (studioCollectedStats.total + wedCollectedStats.total)) * 100 : 0;
             const topInstantServices = Object.entries(monthlyInstantSummary.services).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
             const instantSheetsAvailable = Math.max(0, Number(inventory?.['ورق طباعة صور'] || 0));
@@ -4374,7 +4385,7 @@ ${clientTrackingUrl}
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
-            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
+            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, instantStatsStartDate: getLocalDateKey(), appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
           const settingsRef = useRef(settings);
           settingsRef.current = settings;
@@ -4501,8 +4512,16 @@ ${clientTrackingUrl}
                     if (!data.workingHours) data.workingHours = 'يومياً من 10 صباحاً حتى 10 مساءً';
                     if (data.overdueAlertHours === undefined) data.overdueAlertHours = 24;
                     if (data.instantPrintSheetPrice === undefined) data.instantPrintSheetPrice = 0;
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data.instantStatsStartDate || ''))) {
+                        data.instantStatsStartDate = getLocalDateKey();
+                        if (!isTracking && !isClientPortal) setDoc(doc(db, basePath, 'settings', 'main'), { instantStatsStartDate: data.instantStatsStartDate }, { merge: true }).catch(error => console.warn('تعذر حفظ تاريخ بداية إحصائيات الطباعة الفورية:', error));
+                    }
                     if (!data.appointmentSettings) data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
                     setSettings(data);
+                } else if (!isTracking && !isClientPortal) {
+                    const baseline = getLocalDateKey();
+                    setSettings(prev => ({ ...prev, instantStatsStartDate: baseline }));
+                    setDoc(doc(db, basePath, 'settings', 'main'), { ...settingsRef.current, instantStatsStartDate: baseline }, { merge: true }).catch(error => console.warn('تعذر إنشاء تاريخ بداية إحصائيات الطباعة الفورية:', error));
                 }
                 setSettingsLoadError(false);
                 setSettingsLoaded(true);
@@ -4588,9 +4607,9 @@ ${clientTrackingUrl}
               setHistoryPhone(txn.phone);
               if (!txn.adminReadFeedback) {
                   const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
-                  const targetCol = isWedding ? 'weddings' : 'transactions';
-                  const updated = { ...txn, adminReadFeedback: true };
-                  setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updated).catch(console.error);
+                  const isWeddingRecord = txn.type === 'wedding' || !!txn.groomName || !!txn.brideName;
+                  const targetCol = isWeddingRecord ? 'weddings' : 'transactions';
+                  setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { adminReadFeedback: true }, { merge: true }).catch(console.error);
               }
           };
 
@@ -4890,8 +4909,7 @@ ${clientTrackingUrl}
                       <FloatingPortalMessage navigateTo={navigateTo} />
                       <div dir="rtl" className={`relative mb-3 w-full max-w-md overflow-hidden rounded-2xl border ${isWedding ? 'border-pink-400/25 bg-gradient-to-l from-pink-950/60 via-slate-900 to-slate-900' : 'border-blue-400/25 bg-gradient-to-l from-blue-950/60 via-slate-900 to-slate-900'} px-4 py-3 shadow-xl shadow-black/20`}>
                           <div className={`absolute inset-y-0 right-0 w-1 ${isWedding ? 'bg-gradient-to-b from-pink-300 to-rose-600' : 'bg-gradient-to-b from-cyan-300 to-blue-600'}`}></div>
-                          <div className="flex items-center justify-between gap-3">
-                              <div className="flex min-w-0 items-center gap-3"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${isWedding ? 'border-pink-300/20 bg-pink-400/10 text-pink-200' : 'border-cyan-300/20 bg-cyan-400/10 text-cyan-200'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-receipt'} text-xl`}></i></span><div className="min-w-0"><p className="truncate text-sm font-black text-white">{settings.studioName || 'ستوديو المراكبي'}</p></div></div>
+                          <div className="flex items-center justify-end gap-3">
                               <span className="shrink-0 rounded-lg border border-white/10 bg-slate-950/60 px-2.5 py-1.5 font-mono text-xs font-black text-slate-100">#{txn.receiptNo || '—'}</span>
                           </div>
                       </div>
@@ -5257,8 +5275,7 @@ ${clientTrackingUrl}
                                           try {
                                               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                                               const targetCol = isWedding ? 'weddings' : 'transactions';
-                                              const updatedTxn = { ...txn, clientRating: rating, clientFeedback: feedbackText };
-                                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), updatedTxn);
+                                              await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), { clientRating: rating, clientFeedback: feedbackText, clientFeedbackAt: new Date().toISOString() }, { merge: true });
                                               
                                               setFeedbackSubmitted(true);
                                           } catch(err) {
