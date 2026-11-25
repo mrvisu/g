@@ -2726,8 +2726,12 @@ ${clientTrackingUrl}
 
             const [overdueReview, setOverdueReview] = useState(null);
             const [overdueQueue, setOverdueQueue] = useState([]);
+            const [resolvedOverdueIds, setResolvedOverdueIds] = useState(() => new Set());
+            const [isSavingOverdueReview, setIsSavingOverdueReview] = useState(false);
             const [instantReview, setInstantReview] = useState(null);
             const [instantQueue, setInstantQueue] = useState([]);
+            const [resolvedInstantIds, setResolvedInstantIds] = useState(() => new Set());
+            const [isSavingInstantReview, setIsSavingInstantReview] = useState(false);
             const [notificationClock, setNotificationClock] = useState(Date.now());
             useEffect(() => { const timer = setInterval(() => setNotificationClock(Date.now()), 60000); return () => clearInterval(timer); }, []);
             
@@ -2841,28 +2845,43 @@ ${clientTrackingUrl}
                     const overdueHours = Math.max(1, Number(settings.overdueAlertHours || 24));
                     if (!created || now - created < overdueHours * 60 * 60 * 1000) return false;
                     const finalStatus = record.type === 'wedding' ? 6 : 3;
-                    return Number(record.status || 0) < finalStatus && !record.overdueReviewedAt && now >= snoozedUntil;
+                    return Number(record.status || 0) < finalStatus && !record.overdueReviewedAt && !resolvedOverdueIds.has(record.id) && now >= snoozedUntil;
                 }).sort((a, b) => new Date(a.dateTime || a.createdAt || 0) - new Date(b.dateTime || b.createdAt || 0));
                 setOverdueQueue(queue);
                 if (!overdueReview && queue.length) { playNotificationSound(); setOverdueReview(queue[0]); }
-            }, [allRecords, overdueReview, notificationClock, settings.overdueAlertHours]);
+            }, [allRecords, overdueReview, notificationClock, settings.overdueAlertHours, resolvedOverdueIds]);
             useEffect(() => {
                 const now = Date.now();
                 const todayKey = new Date().toDateString();
                 const queue = (allRecords || []).filter(record => {
                     const createdAt = new Date(record.dateTime || record.createdAt || record.date || '');
                     const age = now - createdAt.getTime();
-                    return !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === todayKey && age >= 30 * 60 * 1000 && age < 24 * 60 * 60 * 1000 && getExplicitInstantPrintItems(record).length > 0 && !record.instantReminderShownAt;
+                    return !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === todayKey && age >= 30 * 60 * 1000 && age < 24 * 60 * 60 * 1000 && getExplicitInstantPrintItems(record).length > 0 && !record.instantReminderShownAt && !resolvedInstantIds.has(record.id);
                 }).sort((a, b) => new Date(a.dateTime || a.createdAt || 0) - new Date(b.dateTime || b.createdAt || 0));
                 setInstantQueue(queue);
                 if (!instantReview && !overdueReview && queue.length) { playNotificationSound(); setInstantReview(queue[0]); }
-            }, [allRecords, instantReview, overdueReview, notificationClock]);
-            const resolveOverdueReview = async (record, nextStatus, keepReviewing = false) => {
+            }, [allRecords, instantReview, overdueReview, notificationClock, resolvedInstantIds]);
+            const resolveOverdueReview = async (record, nextStatus) => {
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                 const collectionName = record.type === 'wedding' ? 'weddings' : 'transactions';
-                await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { status: nextStatus, statusUpdatedAt: new Date().toISOString(), overdueReviewedAt: new Date().toISOString(), statusNotificationId: `${record.id}-overdue-${Date.now()}` }, { merge: true });
                 const remaining = overdueQueue.filter(item => item.id !== record.id);
-                setOverdueQueue(remaining); setOverdueReview(keepReviewing ? (remaining[0] || null) : null);
+                const reviewedAt = new Date().toISOString();
+                setResolvedOverdueIds(prev => new Set([...prev, record.id]));
+                setOverdueQueue(remaining);
+                // Keep the dialog mounted and swap directly to the next receipt while Firestore saves.
+                setOverdueReview(remaining[0] || null);
+                setIsSavingOverdueReview(true);
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { status: nextStatus, statusUpdatedAt: reviewedAt, overdueReviewedAt: reviewedAt, statusNotificationId: `${record.id}-overdue-${Date.now()}` }, { merge: true });
+                } catch (error) {
+                    console.error('تعذر حفظ مراجعة العمل المتأخر:', error);
+                    setResolvedOverdueIds(prev => { const next = new Set(prev); next.delete(record.id); return next; });
+                    setOverdueQueue(prev => [record, ...prev.filter(item => item.id !== record.id)]);
+                    setOverdueReview(record);
+                    alert('تعذر حفظ المراجعة. أعد المحاولة من فضلك.');
+                } finally {
+                    setIsSavingOverdueReview(false);
+                }
             };
             const snoozeOverdueReviews = () => {
                 setSafeLocal('studio_overdue_snooze_until', String(Date.now() + 30 * 60 * 1000));
@@ -2871,9 +2890,23 @@ ${clientTrackingUrl}
             const resolveInstantReview = async (record) => {
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
                 const collectionName = record.type === 'wedding' ? 'weddings' : 'transactions';
-                await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { instantReminderShownAt: new Date().toISOString() }, { merge: true });
                 const remaining = instantQueue.filter(item => item.id !== record.id);
-                setInstantQueue(remaining); setInstantReview(remaining[0] || null);
+                setResolvedInstantIds(prev => new Set([...prev, record.id]));
+                setInstantQueue(remaining);
+                // Keep the reminder open while replacing its content with the next receipt.
+                setInstantReview(remaining[0] || null);
+                setIsSavingInstantReview(true);
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { instantReminderShownAt: new Date().toISOString() }, { merge: true });
+                } catch (error) {
+                    console.error('تعذر حفظ تذكير الطباعة الفورية:', error);
+                    setResolvedInstantIds(prev => { const next = new Set(prev); next.delete(record.id); return next; });
+                    setInstantQueue(prev => [record, ...prev.filter(item => item.id !== record.id)]);
+                    setInstantReview(record);
+                    alert('تعذر حفظ المراجعة. أعد المحاولة من فضلك.');
+                } finally {
+                    setIsSavingInstantReview(false);
+                }
             };
             const handleDelete = async (phone, recordId, collectionName) => onDeleteCustomer(phone, recordId, collectionName);
             const openIncompleteReceiptDelete = async () => {
@@ -3004,8 +3037,8 @@ ${clientTrackingUrl}
 
             return (
                 <>
-                {instantReview && <div className="fixed inset-0 z-[245] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-yellow-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-yellow-400 to-amber-600"></div><div className="p-5 sm:p-6 text-right"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-500/15 text-yellow-300"><i className="ph-fill ph-lightning text-3xl"></i></div><div><h3 className="text-lg font-black text-white">تذكير بطباعة فورية</h3><p className="text-xs text-slate-400 mt-1">مرّت 30 دقيقة على تسجيل الطلب اليوم</p></div></div><div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(instantReview)}</p><p className="text-xs text-yellow-200 mt-2 font-mono">إيصال #{instantReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(instantReview.dateTime || instantReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(instantReview.photoNo) ? instantReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}{getExplicitInstantPrintItems(instantReview).map((item, idx) => <span key={`instant-${idx}`} className="rounded-lg border border-yellow-500/25 bg-yellow-950/40 px-2 py-1 text-[10px] font-black text-yellow-100">فوري: {item.qty} × {item.unitPrice} ج.م</span>)}</div></div><button type="button" onClick={() => resolveInstantReview(instantReview)} className="w-full rounded-xl bg-yellow-500 hover:bg-yellow-400 px-4 py-3 text-sm font-black text-slate-950"><i className="ph-fill ph-check-circle ml-1"></i> تمت المراجعة</button></div></div></div>}
-                {overdueReview && <div className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-amber-500 to-red-500"></div><div className="p-5 sm:p-6 text-right"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300"><i className="ph-fill ph-warning-circle text-3xl"></i></div><div><h3 className="text-lg font-black text-white">مراجعة شغل متأخر</h3><p className="text-xs text-slate-400 mt-1">مرّ أكثر من يوم دون إكمال هذا الطلب</p></div></div><div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(overdueReview)}</p><p className="text-xs text-amber-200 mt-2 font-mono">إيصال #{overdueReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(overdueReview.dateTime || overdueReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(overdueReview.photoNo) ? overdueReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}</div><p className="text-[11px] text-slate-400 mt-3">هل تم الانتهاء من العمل؟</p></div><div className="grid grid-cols-1 gap-2"><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 5 : 2)} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 text-sm font-black text-white"><i className="ph-fill ph-check-circle ml-1"></i> تم الانتهاء — جاهز للتسليم</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 6 : 3)} className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-3 text-sm font-black text-white"><i className="ph-fill ph-package ml-1"></i> تم الانتهاء — تم الاستلام</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, Number(overdueReview.status || 0), true)} className="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-3 text-sm font-bold text-slate-200">مراجعة الطلبات في وقت آخر</button><button type="button" onClick={snoozeOverdueReviews} className="rounded-xl border border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/40 px-4 py-3 text-xs font-bold text-amber-200"><i className="ph-fill ph-clock ml-1"></i> الخروج الآن والتذكير بعد 30 دقيقة</button></div></div></div></div>}
+                {instantReview && <div className="fixed inset-0 z-[245] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-yellow-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-yellow-400 to-amber-600"></div><div key={instantReview.id} className="p-5 sm:p-6 text-right animate-fadeIn"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-500/15 text-yellow-300"><i className="ph-fill ph-lightning text-3xl"></i></div><div><h3 className="text-lg font-black text-white">تذكير بطباعة فورية</h3><p className="text-xs text-slate-400 mt-1">مرّت 30 دقيقة على تسجيل الطلب اليوم</p></div></div>{isSavingInstantReview && <p className="mb-3 rounded-lg border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-[11px] font-bold text-yellow-200 animate-fadeIn">جار حفظ المراجعة والانتقال للإيصال التالي...</p>}<div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(instantReview)}</p><p className="text-xs text-yellow-200 mt-2 font-mono">إيصال #{instantReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(instantReview.dateTime || instantReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(instantReview.photoNo) ? instantReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}{getExplicitInstantPrintItems(instantReview).map((item, idx) => <span key={`instant-${idx}`} className="rounded-lg border border-yellow-500/25 bg-yellow-950/40 px-2 py-1 text-[10px] font-black text-yellow-100">فوري: {item.qty} × {item.unitPrice} ج.م</span>)}</div></div><button type="button" onClick={() => resolveInstantReview(instantReview)} disabled={isSavingInstantReview} className="w-full rounded-xl bg-yellow-500 hover:bg-yellow-400 px-4 py-3 text-sm font-black text-slate-950 disabled:cursor-wait disabled:opacity-60"><i className="ph-fill ph-check-circle ml-1"></i> تمت المراجعة</button></div></div></div>}
+                {overdueReview && <div className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-amber-500 to-red-500"></div><div key={overdueReview.id} className="p-5 sm:p-6 text-right animate-fadeIn"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300"><i className="ph-fill ph-warning-circle text-3xl"></i></div><div><h3 className="text-lg font-black text-white">مراجعة شغل متأخر</h3><p className="text-xs text-slate-400 mt-1">مرّ أكثر من يوم دون إكمال هذا الطلب</p></div></div>{isSavingOverdueReview && <p className="mb-3 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-[11px] font-bold text-amber-200 animate-fadeIn">جار حفظ المراجعة والانتقال للإيصال التالي...</p>}<div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(overdueReview)}</p><p className="text-xs text-amber-200 mt-2 font-mono">إيصال #{overdueReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(overdueReview.dateTime || overdueReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(overdueReview.photoNo) ? overdueReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}</div><p className="text-[11px] text-slate-400 mt-3">هل تم الانتهاء من العمل؟</p></div><div className="grid grid-cols-1 gap-2"><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 5 : 2)} disabled={isSavingOverdueReview} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-60"><i className="ph-fill ph-check-circle ml-1"></i> تم الانتهاء — جاهز للتسليم</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 6 : 3)} disabled={isSavingOverdueReview} className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-60"><i className="ph-fill ph-package ml-1"></i> تم الانتهاء — تم الاستلام</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, Number(overdueReview.status || 0))} disabled={isSavingOverdueReview} className="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-3 text-sm font-bold text-slate-200 disabled:cursor-wait disabled:opacity-60">مراجعة الطلبات في وقت آخر</button><button type="button" onClick={snoozeOverdueReviews} disabled={isSavingOverdueReview} className="rounded-xl border border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/40 px-4 py-3 text-xs font-bold text-amber-200 disabled:cursor-wait disabled:opacity-60"><i className="ph-fill ph-clock ml-1"></i> الخروج الآن والتذكير بعد 30 دقيقة</button></div></div></div></div>}
                 <div className="space-y-6">
                 
                 <div className="grid grid-cols-2 gap-2 bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-800 items-stretch sm:grid-cols-3 xl:grid-cols-5">
