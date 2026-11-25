@@ -11,12 +11,19 @@
     <meta property="og:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta property="og:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية. ذكرياتك بأمان معنا.">
     <meta property="og:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
+    <meta property="og:site_name" content="ستوديو المراكبي - بوابة العملاء">
+    <meta property="og:image:secure_url" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1933">
+    <meta property="og:image:height" content="1016">
+    <meta property="og:image:alt" content="صورة تعريف بوابة العملاء في ستوديو المراكبي">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ستوديو المراكبي - بوابة العملاء">
     <meta name="twitter:description" content="تابع حالة طلبك لحظة بلحظة، واستلم صورك بأعلى جودة، واكتشف أحدث عروضنا الحصرية.">
     <meta name="twitter:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
+    <meta name="twitter:image:alt" content="صورة تعريف بوابة العملاء في ستوديو المراكبي">
 
 
     <link rel="manifest" href="./manifest.webmanifest">
@@ -496,12 +503,28 @@
             .normalize('NFC')
             .replace(/\r\n?/g, '\n');
 
+        // Ensure WhatsApp sees the portal's Open Graph image even when the original URL is external.
+        const ensurePortalPreviewLink = (message) => {
+            const text = normalizeWhatsAppText(message);
+            const firstLink = text.match(/https?:\/\/[^\s<>\"']+/i);
+            if (!firstLink) return text;
+            const portalUrl = new URL(window.location.href);
+            portalUrl.search = '';
+            portalUrl.hash = '';
+            const portalRoot = portalUrl.toString();
+            try {
+                const candidate = new URL(firstLink[0].replace(/[),.;!?]+$/, ''));
+                if (candidate.origin === portalUrl.origin) return text;
+            } catch (error) { /* Add the portal link below so WhatsApp can still preview its image. */ }
+            return `🔗 بوابة العملاء: ${portalRoot}\n\n${text}`;
+        };
+
         const buildWhatsAppUrl = (phone, message) => {
             let formattedPhone = String(phone ?? '').trim().replace(/[^0-9+]/g, '');
             if (formattedPhone.startsWith('+')) formattedPhone = formattedPhone.slice(1);
             if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
             else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
-            const normalizedMessage = normalizeWhatsAppText(message);
+            const normalizedMessage = ensurePortalPreviewLink(message);
             // Encode the complete message exactly once. WhatsApp decodes this query value.
             // فتح WhatsApp Web مباشرة يتجنب تحويل wa.me الوسيط الذي قد يسلم النص
             // إلى تطبيق سطح المكتب بترميز مختلف على بعض إصدارات Windows.
