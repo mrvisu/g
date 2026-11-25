@@ -268,7 +268,7 @@
           welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
           welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
           vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n   🧾 *إيصال عميل إلكتروني*\n   📷 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 *أهلاً بك أ. {name}*\nنورتنا وشرفتنا، ويسعدنا خدمتك دائمًا.\n\n📋 *بيانات الإيصال*\n🔢 رقم الإيصال: *#{receipt}*\n📅 تاريخ الإنشاء: *{date}*\n{phone_line}{pickup_line}\n{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n🔗 *رابط المتابعة والمراجعة*\n{receipt_url}\n\n📌 من خلال الرابط يمكنك متابعة حالة الطلب، مراجعة بيانات الإيصال، ومعرفة موعد الاستلام والسداد عند وجود مبلغ متبقٍ.{identity_note}\n\n💛 شكرًا لثقتك بنا\n📸 *مع تحيات فريق {studio}*\n╰━━━━━━━━━━━━━━━━━━╯",
+          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n   🧾 *إيصال سداد وتأكيد طلب*\n   📷 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 *أهلاً بك أ. {name}*\n✅ تم تسجيل السداد وتحديث حالة طلبك بنجاح.\nنشكرك على ثقتك الغالية، ويسعدنا دائمًا خدمتك.\n\n📋 *بيانات الإيصال*\n🔢 رقم الإيصال: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{phone_line}{pickup_line}\n{details_block}{identity_block}\n━━━━━━━━━━━━━━━━━━\n💰 *ملخص الحساب*\n{portal_block}\n{identity_note}\n\n💛 شكرًا لاختيارك *{studio}*\n📸 نتمنى لك تجربة سعيدة وذكريات جميلة!\n╰━━━━━━━━━━━━━━━━━━╯",
           unpaidInvoice: "🧾 *ملخص طلب التصوير*\n📷 *{studio}*\n\n👋 أهلاً بك أ. {name}\n🔢 رقم الطلب: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{details_block}{identity_block}\n💰 *تفاصيل الحساب*\nإجمالي الطلب: *{total} ج.م*\nالمدفوع: *0 ج.م*\nالمتبقي: *{remaining} ج.م*\n\n⚠️ *تنبيه الطباعة*\n{deposit_warning}\n\n🔗 *رابط الإيصال والمتابعة والسداد:*\n{receipt_url}\n\n📎 بعد التحويل، من فضلك أرسل صورة التحويل على واتساب لتأكيد الدفع.\n\nشكرًا لتفهمك، ونعتذر عن أي إزعاج.\n📸 *مع تحيات فريق {studio}*",
           depositWarning: "حرصًا على عدم طباعة صور غير مطلوبة، لا يتم اعتماد أو بدء طباعة الصور قبل دفع عربون. نعتذر عن أي إزعاج، ونشكركم على تفهمكم.",
           reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
@@ -452,7 +452,10 @@
                 const savedTemplate = settings.waTemplates?.[templateKey] || '';
                 // أي قالب مخصص محفوظ من الإدارة يظل مستخدمًا، مع توفير القالب الافتراضي تلقائيًا.
                 const template = savedTemplate || defaultTemplate;
+                // القوالب القديمة المحفوظة لا تحتوي على placeholder الجديد؛ نضيف القسم تلقائيًا لرسائل السداد.
+                const renderTemplate = templateKey === 'invoice' && !template.includes('{portal_block}') ? `${template}\n\n{portal_block}` : template;
                 const paymentLink = receiptUrl;
+                const portalBlock = `🧾 إجمالي الحساب: *${formatCurrency(txn.total)}*\n✅ المدفوع: *${formatCurrency(txn.paid)}*\n${remaining > 0 ? `💳 المتبقي: *${formatCurrency(remaining)}*` : '🎉 الحالة: *تم سداد الحساب بالكامل*'}\n\n🌟 *بوابة العميل — كل خدماتك في مكان واحد*\n🔗 متابعة حالة الطلب ومراجعة تفاصيل الإيصال: ${receiptUrl}\n🎁 مشاهدة أحدث العروض والخدمات المتاحة\n📅 حجز موعد تصوير جديد بسهولة\n\n📲 افتح الرابط واستمتع بتجربة أسهل وأسرع مع {studio}`;
                 const depositWarningTemplate = settings.waTemplates?.depositWarning || DEFAULT_WA_TEMPLATES.depositWarning;
                 const depositWarning = depositWarningTemplate
                     .replace(/{name}/g, clientName || 'العميل')
@@ -461,7 +464,7 @@
                     .replace(/{studio}/g, settings.studioName || 'الاستوديو')
                     .replace(/{receipt_url}/g, receiptUrl);
                 const detailsContent = isUnpaid ? `${detailsBlock}${photoBlock}` : `${detailsBlock}${photoBlock}${accountBlock}${balanceLine}`;
-                return template
+                return renderTemplate
                     .replace(/{payment_link}/g, paymentLink)
                     .replace(/{deposit_warning}/g, depositWarning)
                     .replace(/{total}/g, txn.total || 0)
@@ -476,6 +479,7 @@
                     .replace(/{identity_block}/g, identityBlock)
                     .replace(/{identity_note}/g, identityNote)
                     .replace(/{receipt_url}/g, receiptUrl)
+                    .replace(/{portal_block}/g, portalBlock.replace(/{studio}/g, settings.studioName || 'الاستوديو'))
                     .replace(/{studio}/g, settings.studioName || 'الاستوديو');
             }
 
@@ -558,6 +562,30 @@
                 return true;
             });
         };
+
+        // الطباعة الفورية لا تُستنتج من نصوص الخدمات؛ لا تدخل الإحصائيات إلا إذا سجّلها الموظف صراحة.
+        const isInstantPrintLabel = (value) => /فور[ىي]|فوري[ةه]|instant\s*print/i.test(String(value || ''));
+        const getExplicitInstantPrintItems = (txn) => {
+            const items = Array.isArray(txn?.instantPrintItems) ? txn.instantPrintItems : [];
+            const explicit = items.map(item => ({
+                name: String(item?.name || 'طباعة فورية'),
+                qty: Math.max(1, Number(item?.qty || item?.quantity || 1)),
+                unitPrice: Math.max(0, Number(item?.unitPrice ?? item?.price ?? 0) || 0)
+            })).filter(item => item.qty > 0);
+            if (explicit.length) return explicit;
+            // توافق مع الإيصالات القديمة: نقرأ فقط صفوف الصور التي تحمل خدمة فورية، ولا نعد الصور العادية.
+            const rows = Array.isArray(txn?.photoNo) ? txn.photoNo : [];
+            const legacy = rows.filter(row => isInstantPrintLabel(typeof row === 'object' ? (row.serviceType || row.service) : row)).map(row => {
+                const name = String(typeof row === 'object' ? (row.serviceType || row.service || 'طباعة فورية') : row);
+                const match = name.match(/^\s*(\d+)\s*[×x]\s*(.+)$/i);
+                return { name: (match ? match[2] : name).trim(), qty: Math.max(1, Number(typeof row === 'object' ? row.instantQty || row.qty || 1 : 1) * (match ? Number(match[1]) : 1)), unitPrice: Math.max(0, Number(typeof row === 'object' ? row.instantPrice || row.unitPrice || 0 : 0) || 0) };
+            });
+            if (legacy.length) return legacy;
+            return txn?.pickupOption === 'instant' ? [{ name: 'طباعة فورية', qty: 1, unitPrice: 0 }] : [];
+        };
+        const getRecordDisplayName = (record) => record?.type === 'wedding'
+            ? `${record.groomName || ''} و ${record.brideName || ''}`.trim()
+            : (record?.clientName || 'عميل');
 
         const calculatePeriodRevenue = (records, targetDateObj, period = 'day') => {
             let total = 0, cash = 0, electronic = 0;
@@ -1722,12 +1750,13 @@
             );
         };
 
-        const StatCard = ({title, value, color, highlight, onClick, hideValue = false}) => {
-            const colors = { green: "bg-green-950/30 text-green-400 border-green-900/50", red: "bg-red-950/30 text-red-400 border-red-900/50", blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", pink: "bg-pink-950/30 text-pink-400 border-pink-900/50", indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50", emerald: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50", rose: "bg-rose-950/30 text-rose-400 border-rose-900/50", yellow: "bg-yellow-950/30 text-yellow-400 border-yellow-900/50" };
+        const StatCard = ({title, value, color, highlight, onClick, hideValue = false, valueType = 'currency'}) => {
+            const colors = { green: "bg-green-950/30 text-green-400 border-green-900/50", red: "bg-red-950/30 text-red-400 border-red-900/50", blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", pink: "bg-pink-950/30 text-pink-400 border-pink-900/50", indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50", emerald: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50", rose: "bg-rose-950/30 text-rose-400 border-rose-900/50", yellow: "bg-yellow-950/30 text-yellow-400 border-yellow-900/50", amber: "bg-amber-950/30 text-amber-300 border-amber-900/50", slate: "bg-slate-800/60 text-slate-300 border-slate-700" };
+            const formattedValue = valueType === 'percent' ? `${Number(value || 0).toFixed(1)}%` : valueType === 'number' ? Number(value || 0).toLocaleString('ar-EG') : formatCurrency(value);
             return (
-              <div onClick={onClick} className={`flex flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color]} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
+              <div onClick={onClick} className={`flex flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color] || colors.blue} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
                 <h4 className="text-[10px] sm:text-xs font-bold opacity-80 mb-1 leading-tight">{title}</h4>
-                <div className="text-sm sm:text-lg font-black">{hideValue ? '••••••' : formatCurrency(value)}</div>
+                <div className="text-sm sm:text-lg font-black">{hideValue ? '••••••' : formattedValue}</div>
               </div>
             );
         };
@@ -2192,6 +2221,7 @@
             const isCreatedToday = new Date(txn.dateTime).toDateString() === new Date().toDateString();
             const hasPaymentToday = txn.payments?.some(p => new Date(p.date).toDateString() === new Date().toDateString());
             const isPastPayment = !isCreatedToday && hasPaymentToday;
+            const pastPayment = isPastPayment ? (txn.payments || []).filter(p => new Date(p.date).toDateString() === new Date().toDateString()).sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null;
 
             const hasPhotoNeedingName = txn.writeNameOnPhoto || (Array.isArray(txn.photoNo) && txn.photoNo.some(p => typeof p === 'object' && p.needsName));
             const clientEditFields = [['name','الاسم'],['nationalId','الرقم القومي'],['branch','الشعبة']].filter(([key]) => txn.clientFieldChanges?.[key]);
@@ -2260,13 +2290,13 @@ ${clientTrackingUrl}
                            {isRepeat && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> عميل مميز ({visitCount})</span>}
                            {txn.clientRating > 0 && <span className="text-yellow-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-yellow-950/30 px-2 py-1 rounded border border-yellow-900/50"><i className="ph-fill ph-star text-sm"></i> {txn.clientRating}/5</span>}
                            {txn.viewedByClient ? <span className="text-blue-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-blue-950/30 px-2 py-1 rounded border border-blue-900/50" title={`تمت المشاهدة في: ${formatDate(txn.viewTime)}`}><i className="ph ph-checks text-sm sm:text-base"></i> تمت المشاهدة</span> : <span className="text-slate-500 flex items-center gap-1 text-[10px] sm:text-xs bg-slate-800/50 px-2 py-1 rounded border border-slate-700" title="لم يتم فتح الرابط بعد"><i className="ph ph-check text-sm sm:text-base"></i> لم يُشاهد</span>}{!isWedding && txn.pickupDate && currentStatus !== statusesToUse[statusesToUse.length - 1].id && (() => { const days=getDiffDays(txn.pickupDate); const label=days===0?'الاستلام اليوم':days>0?`الاستلام بعد ${days} يوم${days===1?'':'اً'}`:`موعد الاستلام متأخر ${Math.abs(days)} يوم`; return <span className="text-white flex items-center gap-1 text-[10px] sm:text-xs font-black bg-emerald-700 px-2 py-1 rounded border border-emerald-400/50" title={`موعد الاستلام: ${formatDateOnly(txn.pickupDate)}`}><i className="ph-fill ph-calendar-check"></i> {label}</span>; })()}
-                           {isPastPayment && <span className="text-purple-400 flex items-center gap-1 text-[10px] sm:text-xs font-bold bg-purple-950/30 px-2 py-1 rounded border border-purple-900/50"><i className="ph-fill ph-clock-counter-clockwise text-sm"></i> سداد من يوم سابق</span>}
                            {isWedding && <><span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 font-mono">#{txn.receiptNo}</span>{cardPhotoItems.some(photo => String(photo.number ?? '').trim()) && <button type="button" onClick={(e) => { e.stopPropagation(); setShowPhotoDetails(true); }} className="flex flex-wrap gap-1 rounded border border-blue-500/25 bg-blue-950/30 px-2 py-1 font-mono text-sm font-black text-blue-100 hover:border-blue-400/50" title="اضغط لعرض كل تفاصيل الصور">{cardPhotoItems.filter(photo => String(photo.number ?? '').trim()).slice(0, 3).map((photo, idx) => <span key={idx} className="rounded bg-slate-950/70 px-1.5">{photo.number}</span>)}</button>}</>}
                         </div>
                       </div>
 
-                      {!isWedding && <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800/70">
+                      {!isWedding && <div className={`grid grid-cols-1 ${isPastPayment ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800/70`}>
                         <div className="bg-emerald-950/40 border border-emerald-500/25 px-3 py-2 rounded-lg min-w-0"><p className="text-emerald-300 text-[10px] font-bold mb-1"><i className="ph-fill ph-calendar-check ml-1"></i>موعد الاستلام</p><p className="text-white text-xs font-black">{txn.pickupDate ? formatDateOnlyEnglish(txn.pickupDate) : 'غير محدد'}</p></div>
+                        {isPastPayment && <div className="flex min-w-0 flex-col justify-center rounded-lg border border-purple-500/25 bg-purple-950/30 px-3 py-2 text-purple-200"><p className="flex items-center gap-1 text-[10px] font-black"><i className="ph-fill ph-clock-counter-clockwise text-sm text-purple-300"></i>سداد من يوم سابق</p><p className="mt-1 text-[10px] font-bold text-purple-100">{pastPayment?.date ? formatDateOnlyEnglish(pastPayment.date) : 'اليوم'} · {pastPayment?.date ? formatTimeOnlyEnglish(pastPayment.date) : '—'}</p></div>}
                         <div className="bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg min-w-0"><p className="text-slate-400 text-[10px] font-bold mb-1"><i className="ph ph-receipt ml-1"></i>رقم الإيصال</p><button onClick={(e)=>{e.stopPropagation();copyToClipboard(String(txn.receiptNo || ''),e)}} className="text-white text-xs font-black font-mono" title="اضغط لنسخ رقم الإيصال">#{txn.receiptNo}</button></div>
                         <div className="min-w-0">{cardPhotoItems.some(photo => String(photo.number ?? '').trim()) ? <button type="button" onClick={(e) => { e.stopPropagation(); setShowPhotoDetails(true); }} aria-label="عرض كل تفاصيل الصور المرتبطة بالإيصال" title="اضغط لعرض جميع أرقام الصور وتفاصيلها" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-right transition hover:border-blue-400/50 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400/40"><span className="mb-1.5 flex items-center gap-1 text-xs font-bold text-blue-200"><i className="ph-fill ph-images"></i> أرقام الصور وتفاصيلها</span><span className="flex flex-wrap gap-1.5">{cardPhotoItems.filter(photo => String(photo.number ?? '').trim()).slice(0, 3).map((photo, idx) => <span key={idx} className="inline-flex rounded-md border border-blue-500/30 bg-slate-950 px-2.5 py-1 font-mono text-sm font-black text-white">{photo.number}</span>)}{cardPhotoItems.filter(photo => String(photo.number ?? '').trim()).length > 3 && <span className="inline-flex items-center rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-xs font-bold text-slate-300">+{cardPhotoItems.filter(photo => String(photo.number ?? '').trim()).length - 3} أخرى</span>}</span></button> : <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2"><p className="text-blue-200 text-xs font-bold mb-1"><i className="ph-fill ph-images ml-1"></i>أرقام الصور وتفاصيلها</p><span className="text-slate-500 text-xs">—</span></div>}</div>
                       </div>}
@@ -2495,7 +2525,7 @@ ${clientTrackingUrl}
                                 return <article key={`${wedding ? 'w' : 't'}-${record.id}`} className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 transition hover:border-cyan-400/25 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2"><span className={`flex h-8 w-8 items-center justify-center rounded-xl ${wedding ? 'bg-pink-500/10 text-pink-300' : 'bg-blue-500/10 text-blue-300'}`}><i className={`ph-fill ${wedding ? 'ph-heart' : 'ph-camera'}`}></i></span><strong className="max-w-full truncate text-sm font-black text-slate-100">{name || 'بدون اسم'}</strong><span className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-[10px] font-black text-cyan-200">إيصال #{record.receiptNo || '—'}</span><span className={`rounded-lg px-2 py-1 text-[10px] font-bold ${wedding ? 'bg-pink-950/40 text-pink-200' : 'bg-blue-950/40 text-blue-200'}`}>{wedding ? 'زفاف' : 'استوديو'}</span></div>
-                                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400"><span><i className="ph ph-phone ml-1"></i>{record.phone || 'لا يوجد هاتف'}</span><span><i className="ph ph-calendar-blank ml-1"></i>{formatDateOnly(record.dateTime)}</span><span><i className="ph ph-currency-circle-dollar ml-1"></i>{formatCurrency(record.total)}</span></div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-400"><span><i className="ph ph-phone ml-1"></i>{record.phone || 'لا يوجد هاتف'}</span><span><i className="ph ph-calendar-blank ml-1"></i>{formatDateOnly(record.dateTime)}</span><span><i className="ph ph-currency-circle-dollar ml-1"></i>{formatCurrency(record.total)}</span>{Array.isArray(record.photoNo) && record.photoNo.some(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()) && <span className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-blue-500/20 bg-blue-950/25 px-2 py-1 text-blue-100"><i className="ph-fill ph-images text-blue-300"></i>{record.photoNo.filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <b key={idx} className="font-mono">{typeof photo === 'object' ? photo.number : photo}</b>)}</span>}{getExplicitInstantPrintItems(record).length > 0 && <span className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-amber-500/25 bg-amber-950/30 px-2 py-1 font-black text-amber-100"><i className="ph-fill ph-lightning text-amber-300"></i>{getExplicitInstantPrintItems(record).map((item, idx) => <b key={idx}>{item.qty} × {item.unitPrice} ج.م</b>)}</span>}</div>
                                         {record.confirmedReceipts?.length > 0 && <div className="mt-2 flex flex-wrap items-center gap-2"><span className="text-[10px] text-slate-500">إيصالات السداد:</span>{record.confirmedReceipts.map((url, index) => <button type="button" key={`${record.id}-receipt-${index}`} onClick={() => setReceiptImageModal(url)} title="عرض إيصال السداد" className="h-8 w-8 overflow-hidden rounded-lg border border-slate-700 transition hover:border-cyan-300"><img src={url} alt="إيصال سداد" className="h-full w-full object-cover" /></button>)}</div>}
                                     </div>
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">{hasRating ? <div className="flex min-h-10 items-center justify-center gap-1 rounded-xl border border-yellow-500/20 bg-yellow-950/20 px-3 text-yellow-200" title={record.clientFeedback || 'تم استلام التقييم'}><b className="text-sm">{record.clientRating}</b><i className="ph-fill ph-star"></i>{record.clientFeedback && <span className="max-w-32 truncate text-[10px] text-yellow-100/70">{record.clientFeedback}</span>}</div> : <button type="button" disabled={!record.phone} onClick={() => sendReviewRequest(record, name, wedding)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-200 transition hover:border-yellow-400/40 hover:text-yellow-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ph ph-star"></i>طلب تقييم</button>}<button type="button" disabled={!record.phone} onClick={() => sendRetargetOffer(record, name)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-3 text-xs font-black text-white shadow-lg shadow-emerald-950/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"><i className="ph-fill ph-whatsapp-logo text-base"></i>إعادة تواصل</button></div>
@@ -2645,7 +2675,7 @@ ${clientTrackingUrl}
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks, onDeleteCustomer }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [showMissingPhotoConfirm, setShowMissingPhotoConfirm] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false, instantPrint: false, instantQty: 1, instantPrice: ''}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, originalInstantPaperQty: 0 });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
             const [showIncompleteReceiptDeleteModal, setShowIncompleteReceiptDeleteModal] = useState(false);
@@ -2656,16 +2686,31 @@ ${clientTrackingUrl}
             const [incompleteReceiptDeleteResult, setIncompleteReceiptDeleteResult] = useState('');
             const [payModal, setPayModal] = useState(null); const [receiptImageModal, setReceiptImageModal] = useState(null); const [historyPhone, setHistoryPhone] = useState(null);
             const [debtPriorityFilter, setDebtPriorityFilter] = useState('all'); const [debtSort, setDebtSort] = useState('priority');
+
+            const [overdueReview, setOverdueReview] = useState(null);
+            const [overdueQueue, setOverdueQueue] = useState([]);
+            const [instantReview, setInstantReview] = useState(null);
+            const [instantQueue, setInstantQueue] = useState([]);
+            const [notificationClock, setNotificationClock] = useState(Date.now());
+            useEffect(() => { const timer = setInterval(() => setNotificationClock(Date.now()), 60000); return () => clearInterval(timer); }, []);
             
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
             const [customDeliveryOptions, setCustomDeliveryOptions] = useState([]);
             const [photoNoteModal, setPhotoNoteModal] = useState(null);
-            const [photoDraft, setPhotoDraft] = useState({ number: '', note: '', serviceType: '', needsName: false, important: false });
+            const [photoDraft, setPhotoDraft] = useState({ number: '', note: '', serviceType: '', needsName: false, important: false, instantPrint: false, instantQty: 1, instantPrice: '' });
             const [pendingPhotoService, setPendingPhotoService] = useState(null);
             const [newDeliveryDays, setNewDeliveryDays] = useState('');
             const deliveryOptions = [{ key: 'instant', label: 'فوري', days: 0, icon: 'ph-lightning', color: 'emerald' }, { key: 'two-days', label: 'بعد يومين', days: 2, icon: 'ph-calendar-plus', color: 'blue' }, { key: 'four-days', label: 'بعد 4 أيام', days: 4, icon: 'ph-calendar-check', color: 'purple' }, ...customDeliveryOptions];
             const getLocalDateAfterDays = (days) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + Number(days || 0)); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; };
-            const applyDeliveryOption = (option) => setFormData(prev => ({ ...prev, pickupOption: option.key, pickupDate: getLocalDateAfterDays(option.days) }));
+            const applyDeliveryOption = (option) => setFormData(prev => {
+                const price = Math.max(0, Number(settings.instantPrintSheetPrice || 0));
+                const currentTotal = parseFloat(prev.total) || 0;
+                const previousInstantTotal = prev.instantPrintEnabled ? price * Math.max(1, Number(prev.instantPaperQty || 1)) : 0;
+                const baseTotal = Math.max(0, currentTotal - previousInstantTotal);
+                const enabled = option.key === 'instant';
+                const nextPhotos = enabled ? [...(prev.photoNo || []).filter(p => !p.autoInstantPaper), { number: '', note: '', serviceType: 'طباعة فورية', needsName: false, important: false, instantPrint: true, instantQty: 1, instantPrice: price, autoInstantPaper: true }] : (prev.photoNo || []).filter(p => !p.autoInstantPaper);
+                return { ...prev, pickupOption: option.key, pickupDate: getLocalDateAfterDays(option.days), instantPrintEnabled: enabled, instantPaperQty: enabled ? 1 : 0, total: baseTotal + (enabled ? price : 0), photoNo: nextPhotos };
+            });
             const addCustomDeliveryOption = () => { const days = parseInt(newDeliveryDays, 10); if (!Number.isFinite(days) || days < 0 || days > 365) return; const key = `custom-${days}-${Date.now()}`; setCustomDeliveryOptions(prev => [...prev, { key, label: `بعد ${days} ${days === 1 ? 'يوم' : 'يومًا'}`, days, icon: 'ph-clock', color: 'amber' }]); setNewDeliveryDays(''); };
 
             const appendPhotoService = (label) => setPhotoDraft(prev => {
@@ -2699,8 +2744,8 @@ ${clientTrackingUrl}
             };
 
             const handleEdit = (txn) => {
-                const savedPhotos = Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false, serviceType: '', important: false} : p).filter(p => (p.number && String(p.number).trim() !== '') || (p.serviceType && String(p.serviceType).trim() !== '')) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false, serviceType: '', important: false})) : []);
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0) });
+                const savedPhotos = Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''} : {...p, instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: p.instantPrice ?? ''}).filter(p => (p.number && String(p.number).trim() !== '') || (p.serviceType && String(p.serviceType).trim() !== '')) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''})) : []);
+                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), instantPrintEnabled: txn.pickupOption === 'instant' || (Array.isArray(txn.instantPrintItems) && txn.instantPrintItems.length > 0), instantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalInstantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0 });
                 setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
                 setIsEditing(true); setShowAddModal(true);
             };
@@ -2725,25 +2770,74 @@ ${clientTrackingUrl}
               let finalReceiptNo = isEditing ? formData.receiptNo : (settings.nextReceiptNo || 1000);
               if (!isEditing && allRecords) { let isDuplicate = true; while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) { finalReceiptNo++; } else { isDuplicate = false; } } }
               
+              const instantPrintItems = photosForSave.filter(p => Boolean(p.instantPrint)).map(p => ({ name: p.serviceType || 'طباعة فورية', qty: Math.max(1, Number(p.instantQty || 1)), unitPrice: Math.max(0, Number(p.instantPrice || settings.instantPrintSheetPrice || 0) || 0) }));
+              const instantPrintPaperQty = instantPrintItems.reduce((sum, item) => sum + item.qty, 0);
+              const originalInstantPaperQty = isEditing ? Math.max(0, Number(formData.originalInstantPaperQty || 0)) : 0;
+              const instantStockDelta = instantPrintPaperQty - originalInstantPaperQty;
+              const availableInstantSheets = Math.max(0, Number(inventory['ورق طباعة صور'] || 0));
+              if (instantStockDelta > availableInstantSheets) { alert(`لا يمكن حفظ العملية: المتاح من أوراق الطباعة الفورية ${availableInstantSheets} بينما المطلوب إضافته ${instantStockDelta}.`); return; }
               const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important)})), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
+              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important), instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: Math.max(0, Number(p.instantPrice || 0) || 0)})), instantPrintItems: instantPrintItems, instantPrintPaperQty: instantPrintPaperQty, writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
 
-              if (!isEditing && formData.soldProducts && formData.soldProducts.length > 0) {
+              if ((!isEditing && formData.soldProducts?.length > 0) || instantStockDelta !== 0) {
                  const newInv = { ...inventory }; let invChanged = false;
-                 formData.soldProducts.forEach(item => { if (settings.products.some(p => (typeof p === 'string' ? p : p.name) === item.name)) { newInv[item.name] = Math.max(0, (newInv[item.name] || 0) - item.qty); invChanged = true; } });
+                 (formData.soldProducts || []).forEach(item => { if (settings.products.some(p => (typeof p === 'string' ? p : p.name) === item.name)) { newInv[item.name] = Math.max(0, (newInv[item.name] || 0) - item.qty); invChanged = true; } });
+                 if (instantStockDelta !== 0) { newInv['ورق طباعة صور'] = Math.max(0, availableInstantSheets - instantStockDelta); invChanged = true; }
                  if (invChanged) { await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv); }
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 });
+              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, instantPaperQty: 0, originalInstantPaperQty: 0 });
               setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
               setCustomerRewards({ earned: 0, used: 0, balance: 0 });
               setIsEditing(false); setShowAddModal(false); setShowMissingPhotoConfirm(false);
             };
 
+            useEffect(() => {
+                const now = Date.now();
+                const snoozedUntil = Number(getSafeLocal('studio_overdue_snooze_until') || 0);
+                const queue = (allRecords || []).filter(record => {
+                    const created = new Date(record.dateTime || record.createdAt || record.date || '').getTime();
+                    const overdueHours = Math.max(1, Number(settings.overdueAlertHours || 24));
+                    if (!created || now - created < overdueHours * 60 * 60 * 1000) return false;
+                    const finalStatus = record.type === 'wedding' ? 6 : 3;
+                    return Number(record.status || 0) < finalStatus && !record.overdueReviewedAt && now >= snoozedUntil;
+                }).sort((a, b) => new Date(a.dateTime || a.createdAt || 0) - new Date(b.dateTime || b.createdAt || 0));
+                setOverdueQueue(queue);
+                if (!overdueReview && queue.length) { playNotificationSound(); setOverdueReview(queue[0]); }
+            }, [allRecords, overdueReview, notificationClock, settings.overdueAlertHours]);
+            useEffect(() => {
+                const now = Date.now();
+                const todayKey = new Date().toDateString();
+                const queue = (allRecords || []).filter(record => {
+                    const createdAt = new Date(record.dateTime || record.createdAt || record.date || '');
+                    const age = now - createdAt.getTime();
+                    return !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === todayKey && age >= 30 * 60 * 1000 && age < 24 * 60 * 60 * 1000 && getExplicitInstantPrintItems(record).length > 0 && !record.instantReminderShownAt;
+                }).sort((a, b) => new Date(a.dateTime || a.createdAt || 0) - new Date(b.dateTime || b.createdAt || 0));
+                setInstantQueue(queue);
+                if (!instantReview && !overdueReview && queue.length) { playNotificationSound(); setInstantReview(queue[0]); }
+            }, [allRecords, instantReview, overdueReview, notificationClock]);
+            const resolveOverdueReview = async (record, nextStatus, keepReviewing = false) => {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const collectionName = record.type === 'wedding' ? 'weddings' : 'transactions';
+                await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { status: nextStatus, statusUpdatedAt: new Date().toISOString(), overdueReviewedAt: new Date().toISOString(), statusNotificationId: `${record.id}-overdue-${Date.now()}` }, { merge: true });
+                const remaining = overdueQueue.filter(item => item.id !== record.id);
+                setOverdueQueue(remaining); setOverdueReview(keepReviewing ? (remaining[0] || null) : null);
+            };
+            const snoozeOverdueReviews = () => {
+                setSafeLocal('studio_overdue_snooze_until', String(Date.now() + 30 * 60 * 1000));
+                setOverdueReview(null);
+            };
+            const resolveInstantReview = async (record) => {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                const collectionName = record.type === 'wedding' ? 'weddings' : 'transactions';
+                await setDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, record.id), { instantReminderShownAt: new Date().toISOString() }, { merge: true });
+                const remaining = instantQueue.filter(item => item.id !== record.id);
+                setInstantQueue(remaining); setInstantReview(remaining[0] || null);
+            };
             const handleDelete = async (phone, recordId, collectionName) => onDeleteCustomer(phone, recordId, collectionName);
             const openIncompleteReceiptDelete = async () => {
                 setIncompleteReceiptDeleteResult(''); setIncompleteReceiptPreviewCount(0); setIncompleteReceiptPreviewIds([]);
@@ -2836,6 +2930,29 @@ ${clientTrackingUrl}
             const dayRevenue = calculatePeriodRevenue(transactions, filterDate ? new Date(filterDate) : new Date(), 'day');
             const currentTotalCollected = dayRevenue.total;
             const revenueLabel = filterDate ? `يومية ${formatDateOnly(filterDate)}` : 'يومية اليوم';
+            const getInstantPhotoSummary = (records, monthKey) => {
+                const summary = { photos: 0, total: 0, unpriced: 0 };
+                (records || []).forEach(record => {
+                    const date = new Date(record.dateTime || record.createdAt || record.date || '');
+                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey) return;
+                    // مهم: نقرأ فقط instantPrintItems الصريحة، ولا نفحص soldProducts أو نصوص photoNo.
+                    getExplicitInstantPrintItems(record).forEach(item => {
+                        summary.photos += item.qty;
+                        if (item.unitPrice > 0) summary.total += item.qty * item.unitPrice;
+                        else summary.unpriced += item.qty;
+                    });
+                });
+                return summary;
+            };
+            const monthlyInstantSummary = useMemo(() => { const now = new Date(); return getInstantPhotoSummary(transactions, `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`); }, [transactions]);
+            const todayKey = (() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; })();
+            const todayInstantSummary = useMemo(() => {
+                const todayTransactions = (transactions || []).filter(record => {
+                    const date = new Date(record.dateTime || record.createdAt || record.date || '');
+                    return !Number.isNaN(date.getTime()) && `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` === todayKey;
+                });
+                return getInstantPhotoSummary(todayTransactions, todayKey.slice(0, 7));
+            }, [transactions, settings.services, settings.products, todayKey]);
             
             const debtRecords = useMemo(() => (transactions || []).filter(t => (parseFloat(t.remaining) || 0) > 0 && !t.debtRemoved), [transactions]);
             const totalDebts = useMemo(() => debtRecords.reduce((sum, t) => sum + (parseFloat(t.remaining) || 0), 0), [debtRecords]);
@@ -2849,7 +2966,10 @@ ${clientTrackingUrl}
             const displayFinalTotal = formData.useReward && !isEditing ? Math.max(0, (parseFloat(formData.total) || 0) - customerRewards.balance) : (parseFloat(formData.total) || 0);
 
             return (
-              <div className="space-y-6">
+                <>
+                {instantReview && <div className="fixed inset-0 z-[245] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-yellow-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-yellow-400 to-amber-600"></div><div className="p-5 sm:p-6 text-right"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-500/15 text-yellow-300"><i className="ph-fill ph-lightning text-3xl"></i></div><div><h3 className="text-lg font-black text-white">تذكير بطباعة فورية</h3><p className="text-xs text-slate-400 mt-1">مرّت 30 دقيقة على تسجيل الطلب اليوم</p></div></div><div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(instantReview)}</p><p className="text-xs text-yellow-200 mt-2 font-mono">إيصال #{instantReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(instantReview.dateTime || instantReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(instantReview.photoNo) ? instantReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}{getExplicitInstantPrintItems(instantReview).map((item, idx) => <span key={`instant-${idx}`} className="rounded-lg border border-yellow-500/25 bg-yellow-950/40 px-2 py-1 text-[10px] font-black text-yellow-100">فوري: {item.qty} × {item.unitPrice} ج.م</span>)}</div></div><button type="button" onClick={() => resolveInstantReview(instantReview)} className="w-full rounded-xl bg-yellow-500 hover:bg-yellow-400 px-4 py-3 text-sm font-black text-slate-950"><i className="ph-fill ph-check-circle ml-1"></i> تمت المراجعة</button></div></div></div>}
+                {overdueReview && <div className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/40 bg-slate-900 shadow-2xl"><div className="h-1.5 bg-gradient-to-l from-amber-500 to-red-500"></div><div className="p-5 sm:p-6 text-right"><div className="flex items-center gap-3 mb-4"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300"><i className="ph-fill ph-warning-circle text-3xl"></i></div><div><h3 className="text-lg font-black text-white">مراجعة شغل متأخر</h3><p className="text-xs text-slate-400 mt-1">مرّ أكثر من يوم دون إكمال هذا الطلب</p></div></div><div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 mb-5"><p className="text-sm font-black text-white">{getRecordDisplayName(overdueReview)}</p><p className="text-xs text-amber-200 mt-2 font-mono">إيصال #{overdueReview.receiptNo}</p><p className="text-[11px] text-slate-400 mt-2">التسجيل: {formatDate(overdueReview.dateTime || overdueReview.createdAt)}</p><div className="mt-3 flex flex-wrap gap-1.5">{(Array.isArray(overdueReview.photoNo) ? overdueReview.photoNo : []).filter(photo => String(typeof photo === 'object' ? photo.number || '' : photo).trim()).map((photo, idx) => <span key={idx} className="rounded-lg border border-blue-500/25 bg-blue-950/40 px-2 py-1 text-[10px] font-mono font-black text-blue-100">صورة {typeof photo === 'object' ? photo.number : photo}</span>)}</div><p className="text-[11px] text-slate-400 mt-3">هل تم الانتهاء من العمل؟</p></div><div className="grid grid-cols-1 gap-2"><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 5 : 2)} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 text-sm font-black text-white"><i className="ph-fill ph-check-circle ml-1"></i> تم الانتهاء — جاهز للتسليم</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, overdueReview.type === 'wedding' ? 6 : 3)} className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-3 text-sm font-black text-white"><i className="ph-fill ph-package ml-1"></i> تم الانتهاء — تم الاستلام</button><button type="button" onClick={() => resolveOverdueReview(overdueReview, Number(overdueReview.status || 0), true)} className="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-3 text-sm font-bold text-slate-200">مراجعة الطلبات في وقت آخر</button><button type="button" onClick={snoozeOverdueReviews} className="rounded-xl border border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/40 px-4 py-3 text-xs font-bold text-amber-200"><i className="ph-fill ph-clock ml-1"></i> الخروج الآن والتذكير بعد 30 دقيقة</button></div></div></div></div>}
+                <div className="space-y-6">
                 
                 <div className="grid grid-cols-2 gap-2 bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-800 items-stretch sm:grid-cols-3 xl:grid-cols-5">
                   <button onClick={() => { setIsEditing(false); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false }); setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0 }); setShowAddModal(true); setCustomerRewards({ earned: 0, used: 0, balance: 0 }); }} className="w-full h-14 min-w-0 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/50 text-xs sm:text-sm whitespace-nowrap"><i className="ph ph-plus-circle text-lg"></i><span className="truncate">إضافة عملية</span></button>
@@ -2866,10 +2986,12 @@ ${clientTrackingUrl}
                 
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-slate-100 border-b border-slate-800 pb-4">
-                    <div className="flex items-center gap-2"><i className="ph ph-files text-blue-400 text-2xl"></i> {isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}</div>
+                    <div className="flex flex-wrap items-center gap-2"><i className="ph ph-files text-blue-400 text-2xl"></i> <span>{isFiltering ? 'نتائج البحث والفلتر' : 'عمليات اليوم'}</span></div>
                     <div className="flex flex-wrap items-center gap-2 justify-end">
                         <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-money text-base sm:text-lg"></i> {revenueLabel}: {formatCurrency(currentTotalCollected)}</span>
                         <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm"><i className="ph-fill ph-chart-bar text-base sm:text-lg"></i> {displayTxns.length} عملية</span>
+                        <span className="bg-yellow-500/10 text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm" title="عدد وقيمة الطباعة الفورية المسجلة اليوم"><i className="ph-fill ph-lightning"></i> فوري اليوم: {todayInstantSummary.photos} صورة · {formatCurrency(todayInstantSummary.total)}</span>
+                        <span className="bg-amber-500/10 text-amber-200 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1.5 shadow-sm" title="عدد الطباعات الفورية خلال الشهر الحالي"><i className="ph-fill ph-printer"></i> طباعات الشهر: {monthlyInstantSummary.photos}</span>
                     </div>
                   </h2>
                   <div className="space-y-4">
@@ -2950,6 +3072,7 @@ ${clientTrackingUrl}
                                 <div className="grid grid-cols-3 gap-2">{deliveryOptions.map(option => <button key={option.key} type="button" onClick={() => applyDeliveryOption(option)} className={`p-2 rounded-xl border text-[10px] font-black transition-all flex flex-col items-center justify-center gap-1 ${formData.pickupOption === option.key ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/40 scale-[1.02]' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500/70 hover:text-blue-200'}`}><i className={`ph-fill ${option.icon} text-base`}></i>{option.label}</button>)}</div>
                                 <div className="flex gap-2"><input type="number" min="0" max="365" value={newDeliveryDays} onChange={e => setNewDeliveryDays(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomDeliveryOption(); } }} placeholder="مدة أخرى بالأيام" className="flex-1 min-w-0 h-9 px-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-lg outline-none focus:border-amber-500 text-[10px] font-bold" /><button type="button" onClick={addCustomDeliveryOption} className="h-9 px-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1" title="إضافة مدة أخرى"><i className="ph-bold ph-plus"></i> إضافة</button></div>
                                 {formData.pickupDate && <div className="bg-blue-950/40 border border-blue-500/25 rounded-xl px-2.5 py-2 text-center"><span className="text-[9px] text-slate-400 block">تاريخ التسليم المحسوب</span><strong className="text-blue-200 text-xs block mt-1">{formatDateOnlyEnglish(formData.pickupDate)}</strong></div>}
+                                {formData.instantPrintEnabled && <div className="rounded-xl border border-yellow-500/30 bg-yellow-950/25 p-3"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-black text-yellow-200"><i className="ph-fill ph-lightning"></i>طباعة فورية</span><span className="rounded-lg bg-yellow-400/10 px-2 py-1 text-[10px] font-black text-yellow-200">ورقة واحدة</span></div><div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-400">سعر الورقة للعميل</span><strong className="text-yellow-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div><p className="mt-1 text-[9px] text-yellow-100/70">سيتم خصم ورقة من مخزون «ورق طباعة صور» وإضافة السعر تلقائيًا عند الحفظ.</p>{!(Number(settings.instantPrintSheetPrice) > 0) && <p className="mt-1 text-[9px] font-bold text-red-300">يرجى تحديد سعر الورقة من قسم المصروفات والمخزون.</p>}</div>}
                                 <div className="flex items-center gap-2 mt-auto"><span className="text-[9px] text-slate-500 whitespace-nowrap">أو تاريخ مخصص:</span><input type="date" lang="en" dir="ltr" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupOption:'custom',pickupDate:e.target.value})} className="flex-1 min-w-0 h-8 px-2 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-[10px] font-bold" /></div>
                             </div>
 
@@ -3017,7 +3140,8 @@ ${clientTrackingUrl}
                   </div>}
                 <PaymentModal payModal={payModal} setPayModal={setPayModal} db={db} />
                 <VisitHistoryModal phone={historyPhone} allRecords={allRecords} onClose={() => setHistoryPhone(null)} />
-            </div>
+                </div>
+                </>
             );
         };
 
@@ -3298,6 +3422,8 @@ ${clientTrackingUrl}
                                     </div>
                                     <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center min-w-0">
                                         <select value={pObj.serviceType || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].serviceType = e.target.value; setFormData({...formData, photoNo: newArr}); }} className="w-full sm:w-36 shrink-0 p-2.5 bg-slate-950 text-blue-200 outline-none text-[11px] font-bold border-b sm:border-b-0 sm:border-r border-slate-700"><option value="">نوع الخدمة...</option>{(settings.services || []).map((srv, si) => { const srvName = typeof srv === 'string' ? srv : srv.name; return <option key={si} value={srvName}>{srvName}</option>; })}</select>
+                                        <label className="flex items-center gap-1.5 px-2 py-2 bg-amber-950/30 border-b sm:border-b-0 sm:border-r border-amber-500/20 text-[10px] font-black text-amber-200 whitespace-nowrap"><input type="checkbox" checked={Boolean(pObj.instantPrint)} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantPrint = e.target.checked; if (e.target.checked && !pObj.instantPrice) { const srv = (settings.services || []).map(x => typeof x === 'string' ? {name:x} : x).find(x => isInstantPrintLabel(x.name)); newArr[idx].instantPrice = srv?.price || ''; } setFormData({...formData, photoNo: newArr}); }} className="accent-amber-400" /> فوري</label>
+                                        {pObj.instantPrint && <><input type="number" min="1" value={pObj.instantQty || 1} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantQty = Math.max(1, parseInt(e.target.value || 1)); setFormData({...formData, photoNo: newArr}); }} className="w-16 p-2.5 bg-slate-950 text-amber-100 text-center outline-none text-[10px] font-black border-b sm:border-b-0 sm:border-r border-slate-700" title="عدد الطباعات الفورية" placeholder="العدد" /><input type="number" min="0" value={pObj.instantPrice ?? ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantPrice = e.target.value; setFormData({...formData, photoNo: newArr}); }} className="w-20 p-2.5 bg-slate-950 text-emerald-100 text-center outline-none text-[10px] font-black border-b sm:border-b-0 sm:border-r border-slate-700" title="سعر الطبعة الواحدة" placeholder="السعر" /></>}
                                         <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 min-w-0 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
                                         <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].needsName = !newArr[idx].needsName; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}><i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i><span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span></button>
                                         {formData.photoNo.length > 1 && <button type="button" onClick={() => { const newArr = formData.photoNo.filter((_, i) => i !== idx); setFormData({...formData, photoNo: newArr}); }} className="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-400 px-4 py-2.5 transition-colors border-r border-slate-700 shrink-0"><i className="ph ph-x font-bold text-sm"></i></button>}
@@ -3346,7 +3472,7 @@ ${clientTrackingUrl}
             );
         };
 
-        const ExpensesTab = ({ settings, expenses, inventory, db }) => {
+        const ExpensesTab = ({ settings, setSettings, expenses, inventory, db }) => {
             const currentMonth = new Date().getMonth() + 1;
             const currentYear = new Date().getFullYear();
             const [expData, setExpData] = useState({ amount: '', category: settings.expenseCategories[0], notes: '', type: 'studio', date: new Date().toISOString().split('T')[0] });
@@ -3354,6 +3480,8 @@ ${clientTrackingUrl}
             
             const [filterMonth, setFilterMonth] = useState(currentMonth);
             const [filterYear, setFilterYear] = useState(currentYear);
+            const [instantSheetPrice, setInstantSheetPrice] = useState(settings.instantPrintSheetPrice || '');
+            const saveInstantSheetPrice = async () => { const value = Math.max(0, Number(instantSheetPrice) || 0); const nextSettings = { ...settings, instantPrintSheetPrice: value }; setSettings(nextSettings); const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), nextSettings, { merge: true }); };
 
             const handleAddExpense = async (e) => {
               e.preventDefault();
@@ -3439,6 +3567,7 @@ ${clientTrackingUrl}
                 <div className="xl:col-span-1">
                    <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 sticky top-24">
                       <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-100 border-b border-slate-800 pb-4"><i className="ph ph-stack text-purple-400 text-2xl"></i> إدارة وإحصائيات المخزون</h2>
+                      <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-4"><div className="flex items-center gap-2 mb-3"><i className="ph-fill ph-lightning text-yellow-300 text-xl"></i><div><h3 className="text-sm font-black text-yellow-100">مخزون الطباعة الفورية</h3><p className="text-[10px] text-yellow-100/60 mt-1">يُخصم تلقائيًا عند اختيار «فوري» في نموذج العملية.</p></div></div><div className="grid grid-cols-2 gap-2 text-center mb-3"><div className="rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">الأوراق المتاحة</span><strong className="text-xl font-black text-yellow-200">{inventory['ورق طباعة صور'] || 0}</strong></div><div className="rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">سعر الورقة</span><strong className="text-xl font-black text-emerald-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div></div><div className="flex gap-2"><input type="number" min="0" value={instantSheetPrice} onChange={e => setInstantSheetPrice(e.target.value)} placeholder="سعر الورقة للعميل" className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white outline-none focus:border-yellow-400" /><button type="button" onClick={saveInstantSheetPrice} className="rounded-lg bg-yellow-500 px-3 py-2 text-xs font-black text-slate-950 hover:bg-yellow-400">حفظ السعر</button></div><p className="mt-2 text-[10px] text-slate-500">استخدم أزرار مخزون «ورق طباعة صور» أسفل البطاقة لإضافة أو خصم الأوراق يدويًا.</p></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-2 gap-4 max-h-[65vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
                          {inventoryItemsList.map((item, idx) => {
                             const isProduct = item.price !== undefined; const itemName = item.name; const currentStock = inventory[itemName] !== undefined ? inventory[itemName] : (item.totalQty || 0);
@@ -3519,6 +3648,22 @@ ${clientTrackingUrl}
             const targetDateObj = new Date(filter.year, filter.month - 1, 1);
             const studioCollectedStats = useMemo(() => calculatePeriodRevenue(transactions, targetDateObj, 'month'), [transactions, filter]);
             const wedCollectedStats = useMemo(() => calculatePeriodRevenue(weddings, targetDateObj, 'month'), [weddings, filter]);
+            const summarizeInstant = (year, month) => {
+                const summary = { photos: 0, total: 0, unpriced: 0, receipts: 0, services: {} };
+                const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+                (transactions || []).forEach(record => {
+                    const date = new Date(record.dateTime || record.createdAt || record.date || '');
+                    if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey) return;
+                    const items = getExplicitInstantPrintItems(record); if (!items.length) return;
+                    summary.receipts += 1;
+                    items.forEach(item => { const value = item.qty * item.unitPrice; summary.photos += item.qty; summary.total += value; if (!item.unitPrice) summary.unpriced += item.qty; const name = item.name || 'طباعة فورية'; if (!summary.services[name]) summary.services[name] = { photos: 0, total: 0 }; summary.services[name].photos += item.qty; summary.services[name].total += value; });
+                });
+                summary.average = summary.photos ? summary.total / summary.photos : 0; return summary;
+            };
+            const monthlyInstantSummary = useMemo(() => summarizeInstant(filter.year, filter.month), [transactions, filter]);
+            const previousInstantMonth = useMemo(() => { const d = new Date(Number(filter.year), Number(filter.month) - 2, 1); return summarizeInstant(d.getFullYear(), d.getMonth() + 1); }, [transactions, filter]);
+            const instantRevenueShare = (studioCollectedStats.total + wedCollectedStats.total) > 0 ? (monthlyInstantSummary.total / (studioCollectedStats.total + wedCollectedStats.total)) * 100 : 0;
+            const topInstantServices = Object.entries(monthlyInstantSummary.services).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
 
             const studioExpTotal = useMemo(() => filteredExp.filter(e => e.type !== 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
             const weddingExpTotal = useMemo(() => filteredExp.filter(e => e.type === 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
@@ -3641,6 +3786,13 @@ ${clientTrackingUrl}
                         <StatCard hideValue={!showAmounts} title="محصل نقدي (كاش)" value={studioStats.cash} color="emerald" />
                         <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={studioStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (استوديو)', data: transactions.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
                     </div>
+                  </div>
+
+                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-amber-500/20 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2 h-full bg-amber-400"></div>
+                    <h3 className="text-lg font-bold text-amber-300 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-lightning"></i> التقرير المالي للطباعة الفورية</span><span className="text-[10px] font-bold text-slate-500">{filter.month}/{filter.year}</span></h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"><StatCard hideValue={!showAmounts} title="إجمالي أسعار الفوري" value={monthlyInstantSummary.total} color="amber" highlight /><StatCard hideValue={!showAmounts} title="عدد الطباعات" value={monthlyInstantSummary.photos} color="yellow" valueType="number" /><StatCard hideValue={!showAmounts} title="عدد الإيصالات" value={monthlyInstantSummary.receipts} color="blue" valueType="number" /><StatCard hideValue={!showAmounts} title="متوسط سعر الطبعة" value={monthlyInstantSummary.average} color="green" /><StatCard hideValue={!showAmounts} title="مساهمة الفوري من الإيراد" value={instantRevenueShare} color="indigo" valueType="percent" /><StatCard hideValue={!showAmounts} title="إجمالي الشهر السابق" value={previousInstantMonth.total} color="slate" /></div>
+                    <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2"><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">مقارنة بالشهر السابق</p><p className={`text-sm font-black ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'text-emerald-300' : 'text-red-300'}`}><i className={`ph-fill ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'ph-trend-up' : 'ph-trend-down'} ml-1`}></i>{formatCurrency(monthlyInstantSummary.total - previousInstantMonth.total)} {monthlyInstantSummary.total >= previousInstantMonth.total ? 'زيادة' : 'انخفاض'} في الإيراد</p><p className="mt-1 text-[10px] text-slate-500">الشهر السابق: {formatCurrency(previousInstantMonth.total)} · {previousInstantMonth.photos} صورة · {previousInstantMonth.receipts} إيصال</p></div><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">الخدمات الفورية الأكثر طلبًا</p>{topInstantServices.length ? <div className="flex flex-wrap gap-2">{topInstantServices.map(([name, data]) => <span key={name} className="rounded-lg border border-amber-400/20 bg-amber-950/20 px-2.5 py-1.5 text-[10px] font-bold text-amber-100">{name}: {data.photos} صورة · {formatCurrency(data.total)}</span>)}</div> : <p className="text-[10px] text-slate-500">لا توجد طباعات فورية مسجلة في الشهر المحدد.</p>}</div></div>
                   </div>
 
                   {/* قسم تقرير حجوزات الزفاف */}
@@ -3811,6 +3963,7 @@ ${clientTrackingUrl}
                           <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                         </label>
                     </div>
+                    <div className="mb-3 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3"><label className="block text-xs font-black text-amber-100 mb-2">مدة تأخير تنبيه الشغل المتأخر (بالساعات)</label><div className="flex items-center gap-2"><input type="number" min="1" max="720" value={settings.overdueAlertHours ?? 24} onChange={e => setSettings({...settings, overdueAlertHours: Math.min(720, Math.max(1, Number(e.target.value) || 24))})} className="w-full rounded-xl border border-amber-500/30 bg-slate-950 p-3 text-white outline-none focus:border-amber-300" /><span className="text-xs font-bold text-amber-200">ساعة</span></div><p className="mt-1 text-[10px] text-amber-200/70">يظهر التنبيه عندما يمر هذا العدد من الساعات على تسجيل الإيصال دون إكماله.</p></div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label>
@@ -4214,7 +4367,7 @@ ${clientTrackingUrl}
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
-            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
+            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
           const settingsRef = useRef(settings);
           settingsRef.current = settings;
@@ -4339,6 +4492,8 @@ ${clientTrackingUrl}
                     if (!data.miniProducts) data.miniProducts = DEFAULT_MINI_PRODUCTS;
                     if (data.rewardPercentStudio === undefined) data.rewardPercentStudio = 5;
                     if (!data.workingHours) data.workingHours = 'يومياً من 10 صباحاً حتى 10 مساءً';
+                    if (data.overdueAlertHours === undefined) data.overdueAlertHours = 24;
+                    if (data.instantPrintSheetPrice === undefined) data.instantPrintSheetPrice = 0;
                     if (!data.appointmentSettings) data.appointmentSettings = { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' };
                     setSettings(data);
                 }
@@ -4729,7 +4884,7 @@ ${clientTrackingUrl}
                       <div dir="rtl" className={`relative mb-3 w-full max-w-md overflow-hidden rounded-2xl border ${isWedding ? 'border-pink-400/25 bg-gradient-to-l from-pink-950/60 via-slate-900 to-slate-900' : 'border-blue-400/25 bg-gradient-to-l from-blue-950/60 via-slate-900 to-slate-900'} px-4 py-3 shadow-xl shadow-black/20`}>
                           <div className={`absolute inset-y-0 right-0 w-1 ${isWedding ? 'bg-gradient-to-b from-pink-300 to-rose-600' : 'bg-gradient-to-b from-cyan-300 to-blue-600'}`}></div>
                           <div className="flex items-center justify-between gap-3">
-                              <div className="flex min-w-0 items-center gap-3"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${isWedding ? 'border-pink-300/20 bg-pink-400/10 text-pink-200' : 'border-cyan-300/20 bg-cyan-400/10 text-cyan-200'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-receipt'} text-xl`}></i></span><div className="min-w-0"><p className="truncate text-sm font-black text-white">{settings.studioName || 'ستوديو المراكبي'}</p><p className="mt-0.5 text-[10px] font-semibold text-slate-400">إيصال إلكتروني · متابعة الطلب</p></div></div>
+                              <div className="flex min-w-0 items-center gap-3"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${isWedding ? 'border-pink-300/20 bg-pink-400/10 text-pink-200' : 'border-cyan-300/20 bg-cyan-400/10 text-cyan-200'}`}><i className={`ph-fill ${isWedding ? 'ph-heart' : 'ph-receipt'} text-xl`}></i></span><div className="min-w-0"><p className="truncate text-sm font-black text-white">{settings.studioName || 'ستوديو المراكبي'}</p></div></div>
                               <span className="shrink-0 rounded-lg border border-white/10 bg-slate-950/60 px-2.5 py-1.5 font-mono text-xs font-black text-slate-100">#{txn.receiptNo || '—'}</span>
                           </div>
                       </div>
@@ -5139,7 +5294,7 @@ ${clientTrackingUrl}
                         {activeTab === 'dashboard' && <DashboardTab settings={settings} setSettings={setSettings} transactions={transactions} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} onDeleteCustomer={deleteCustomerPermanently} />}
                         {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} db={db} settings={settings} onDeleteCustomer={deleteCustomerPermanently} />}
                         {activeTab === 'weddings' && <WeddingsTab settings={settings} setSettings={setSettings} weddings={weddings} inventory={inventory} db={db} allRecords={allRecords} uniqueCustomersCount={uniqueCustomersCount} avgRating={avgRating} feedbacks={feedbacks} onDeleteCustomer={deleteCustomerPermanently} />}
-                        {activeTab === 'expenses' && <ExpensesTab settings={settings} expenses={expenses} inventory={inventory} db={db} />}
+                        {activeTab === 'expenses' && <ExpensesTab settings={settings} setSettings={setSettings} expenses={expenses} inventory={inventory} db={db} />}
                         {activeTab === 'reports' && <ReportsTab settings={settings} transactions={transactions} weddings={weddings} expenses={expenses} setReceiptImageModal={setReceiptImageModal} />}
                         {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} inventory={inventory} updateInventoryExact={updateInventoryExact} saveSettingsToDB={saveSettingsToDB} />}
                     </>
