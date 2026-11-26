@@ -274,20 +274,20 @@
         ];
 
         const DEFAULT_WA_TEMPLATES = {
-          welcome: "أهلاً بك أ. {name} في {studio} 📸. نورتنا وشرفتنا! تم تسجيل طلبك بنجاح. \nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالمدفوع: {paid} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م تقدر تستخدمه في زيارتك الجاية!\n\n📍 لمتابعة حالة طلبك: {track_url}",
-          welcomeBack: "أهلاً بك أ. {name} من جديد في {studio} 🌟! سعيدين جداً بثقتك المستمرة وعودتك لتوثيق ذكرياتك معنا. تم تسجيل طلبك بنجاح.\nتفاصيل الطلب: {services}\nالإجمالي: {total} ج.م\nالباقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n📍 لمتابعة حالة طلبك: {track_url}",
-          vipDiscount: "مرحباً بك أ. {name} 🌟\nبصفتك من عملائنا المميزين في {studio}، يسعدنا أن نقدم لك خصم خاص بنسبة 10% على زيارتك القادمة كهدية بسيطة وتقديراً لثقتك المستمرة بنا! 🎁✨\nرصيد مكافآتك المتاح: {reward_balance} ج.م\n📍 رابط بوابة العملاء الخاص بك: {track_url}",
-          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n     🧾 *إيصال سداد إلكتروني*\n     📸 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 *أهلًا بك أ. {name}*\n🌟 تم تحديث إيصالك وتسجيل السداد بنجاح.\nنقدّر ثقتك بنا، ونسعد بخدمتك دائمًا.\n\n🗂️ *بيانات الإيصال*\n🔖 رقم الإيصال: *#{receipt}*\n🗓️ تاريخ التسجيل: *{date}*\n{phone_line}{pickup_line}{details_block}{identity_block}\n\n{account_summary}\n{promotions_block}{identity_note}\n\n🔗 *رابط المعاينة والإيصال*\nيمكنك من خلاله متابعة حالة الطلب ومراجعة التفاصيل وبيانات الطباعة:\n{receipt_url}\n\n🤝 شكرًا لاختيارك *{studio}*\n📷 نتمنى لك تجربة مميزة وذكريات جميلة.\n╰━━━━━━━━━━━━━━━━━━╯",
-          unpaidInvoice: "🧾 *ملخص طلب التصوير*\n📷 *{studio}*\n\n👋 أهلاً بك أ. {name}\n🔢 رقم الطلب: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{details_block}{identity_block}\n💰 *تفاصيل الحساب*\nإجمالي الطلب: *{total} ج.م*\nالمدفوع: *0 ج.م*\nالمتبقي: *{remaining} ج.م*\n\n⚠️ *تنبيه الطباعة*\n{deposit_warning}\n\n{portal_description}\n🔗 *رابط الإيصال والمتابعة والسداد:*\n{receipt_url}\n\n📎 بعد التحويل، من فضلك أرسل صورة التحويل على واتساب لتأكيد الدفع.\n\nشكرًا لتفهمك، ونعتذر عن أي إزعاج.\n📸 *مع تحيات فريق {studio}*",
-          depositWarning: "حرصًا على عدم طباعة صور غير مطلوبة، لا يتم اعتماد أو بدء طباعة الصور قبل دفع عربون. نعتذر عن أي إزعاج، ونشكركم على تفهمكم.",
-          reminder: "مرحباً بك أ. {name} 🌟\nيسعدنا تواصلك معنا من {studio}. نود تذكيرك بلطف بأن هناك مبلغاً متبقياً لحسابكم بقيمة {remaining} ج.م (رقم الإيصال: #{receipt}).\n\nلراحتك، يمكنك سداد المبلغ إلكترونياً عبر الرابط التالي:\n{track_url}\n\nشكراً لثقتك بنا، ونسعد دائماً بخدمتك! 📸✨",
-          ready: "أهلاً بك أ. {name} 🎉\nيسعدنا إبلاغك بأن طلبك (إيصال #{receipt}) قد اكتمل وهو الآن جاهز للاستلام في {studio}!\n\nإجمالي المبلغ المتبقي: {remaining} ج.م.\n\nيمكنك مراجعة تفاصيل طلبك من خلال الرابط التالي:\n{track_url}\n\nننتظر زيارتك بكل ود! 📸✨",
-          deposit: "تم استلام عربون بقيمة {paid} ج.م من أ. {name} في {studio} 💸. \nإجمالي الطلب: {total} ج.م \nالمتبقي: {remaining} ج.م. شكراً لك!\n📍 تابع طلبك: {track_url}",
-          tracking: "مرحباً أ. {name} 👋\nيمكنك الآن متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n{track_url}\n\n💡 متاح سداد باقي الحساب إلكترونياً (إنستاباي/محافظ).\nشرفتنا في {studio} 📸✨",
-          cardInquiry: "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص: *{item_title}*",
-          promoInquiry: "مرحباً {studio} 👋\nأود الاستفسار/الحجز بخصوص العرض: *{item_title}*",
-          rewardPrintInquiry: "مرحباً {studio} 👋\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م (إيصال #{receipt}) وأريد استخدامه لطباعة صور من الموبايل.",
-          printReview: "السلام عليكم أ. {name} 👋\n\n🪪 *مراجعة بيانات الطباعة — {studio}*\nحرصًا على ظهور بياناتك بشكل صحيح، نرجو فتح الرابط ومراجعة البيانات التالية قبل اعتماد الطباعة:\n\n✍️ الاسم على الصورة: *{photo_name}*\n🔢 الرقم القومي: *{national_id}*\n🎓 الشعبة / المسار: *{branch}*\n🧾 رقم الإيصال: *#{receipt}*\n\n✅ إذا كانت البيانات صحيحة اضغط «تأكيد بيانات الإيصال».\n✏️ إذا وجدت أي خطأ، عدّل البيانات ثم احفظها قبل اعتماد الطباعة.\n\n🔗 *رابط مراجعة البيانات:*\n{track_url}\n\n🙏 شكرًا لتعاونكم وثقتكم بنا."
+          welcome: "👋 أهلاً بك أ. {name} في {studio} 📸\nيسعدنا خدمتك، وتم تسجيل طلبك بنجاح.\n\n📋 *تفاصيل الطلب*\n{services}\n\n💰 الإجمالي: {total} ج.م\n✅ المدفوع: {paid} ج.م\n💳 المتبقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م — يمكنك استخدامه في زيارتك القادمة.\n\n🔗 لمتابعة حالة طلبك: {track_url}\n🤝 شكرًا لاختيارك {studio}.",
+          welcomeBack: "🌟 أهلاً بعودتك أ. {name} إلى {studio} 📸\nسعداء بثقتك المتجددة، وتم تسجيل طلبك بنجاح.\n\n📋 *تفاصيل الطلب*\n{services}\n\n💰 الإجمالي: {total} ج.م\n💳 المتبقي: {remaining} ج.م\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n🔗 تابع طلبك من هنا: {track_url}\n🙏 شكرًا لثقتك الدائمة بنا.",
+          vipDiscount: "🌟 مرحبًا أ. {name}،\nبصفتك من عملائنا المميزين في {studio}، يسعدنا إهداؤك خصمًا خاصًا بنسبة 10% على زيارتك القادمة، تقديرًا لثقتك بنا. 🎁\n\n💳 رصيد مكافآتك المتاح: {reward_balance} ج.م\n🔗 رابط بوابة العملاء: {track_url}\n🤝 نتطلع إلى خدمتك مجددًا.",
+          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n🧾 *إيصال سداد إلكتروني*\n📸 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 أهلًا بك أ. {name}\n✅ تم تحديث إيصالك وتسجيل السداد بنجاح.\nنقدّر ثقتك بنا ونسعد بخدمتك دائمًا.\n\n🗂️ *بيانات الإيصال*\n🔖 رقم الإيصال: *#{receipt}*\n🗓️ تاريخ التسجيل: *{date}*\n{phone_line}{pickup_line}{details_block}{identity_block}\n\n{account_summary}\n{promotions_block}{identity_note}\n\n🔗 *رابط الإيصال والمتابعة*\nافتح الرابط لمراجعة تفاصيل الطلب ومراحل التنفيذ وبيانات الطباعة:\n{receipt_url}\n\n🤝 شكرًا لاختيارك *{studio}*\n📷 نتمنى لك تجربة مميزة وذكريات جميلة.\n╰━━━━━━━━━━━━━━━━━━╯",
+          unpaidInvoice: "🧾 *ملخص طلب التصوير*\n📸 *{studio}*\n\n👋 أهلًا بك أ. {name}\n🔢 رقم الطلب: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{details_block}{identity_block}\n💰 *تفاصيل الحساب*\n🧾 إجمالي الطلب: *{total} ج.م*\n✅ المدفوع: *0 ج.م*\n💳 المتبقي: *{remaining} ج.م*\n\n⚠️ *تنبيه قبل الطباعة*\n{deposit_warning}\n\n{portal_description}\n🔗 *رابط الإيصال والمتابعة والسداد:*\n{receipt_url}\n\n📎 بعد التحويل، يرجى إرسال صورة الإيصال على واتساب لتأكيد الدفع.\n\n🙏 شكرًا لتفهمك، ونسعد بخدمتك.\n📷 *مع تحيات فريق {studio}*",
+          depositWarning: "⚠️ تنبيه مهم: حرصًا على تنفيذ طلبك بدقة، لا يبدأ اعتماد أو طباعة الصور قبل سداد العربون المطلوب. نعتذر عن أي إزعاج، ونشكرك على تفهمك وثقتك بنا. 📸",
+          reminder: "⏰ أهلًا بك أ. {name} 🌟\nنود تذكيرك بلطف بوجود مبلغ متبقٍ على إيصالك في {studio}.\n\n🔖 رقم الإيصال: #{receipt}\n💳 المبلغ المتبقي: {remaining} ج.م\n\n🔗 يمكنك مراجعة التفاصيل والسداد من الرابط التالي:\n{track_url}\n\n🙏 شكرًا لثقتك بنا، ويسعدنا خدمتك دائمًا. 📸",
+          ready: "🎉 خبر سار أ. {name}!\nاكتمل طلبك رقم #{receipt} وأصبح جاهزًا للاستلام من {studio}. 📦\n\n💳 المبلغ المتبقي: {remaining} ج.م\n🔗 لمراجعة تفاصيل الطلب: {track_url}\n\nيسعدنا استقبالكم، وننتظركم بكل ترحاب. 🤝📸",
+          deposit: "💸 تم استلام عربون بقيمة {paid} ج.م من أ. {name} لدى {studio}.\n\n🧾 إجمالي الطلب: {total} ج.م\n💳 المبلغ المتبقي: {remaining} ج.م\n🔗 لمتابعة طلبك: {track_url}\n\n✅ شكرًا لك، وتم تحديث بيانات السداد بنجاح.",
+          tracking: "📍 أهلًا بك أ. {name}\nيمكنك متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n🔗 {track_url}\n\n💡 يتوفر سداد المبلغ المتبقي إلكترونيًا عبر إنستاباي أو المحافظ.\n🤝 شكرًا لاختيارك {studio}، ونسعد بخدمتك. 📸",
+          cardInquiry: "🖼️ مرحبًا {studio}،\nأرغب في الاستفسار أو الحجز بخصوص المنتج التالي:\n✨ *{item_title}*\n\nيرجى تزويدي بالتفاصيل المتاحة، شكرًا لكم.",
+          promoInquiry: "🎁 مرحبًا {studio}،\nأرغب في معرفة تفاصيل العرض التالي وإمكانية الحجز:\n✨ *{item_title}*\n\nبانتظار ردكم، شكرًا لكم.",
+          rewardPrintInquiry: "🎁 مرحبًا {studio}،\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م على الإيصال رقم #{receipt}، وأرغب في استخدامه لطباعة صور من الهاتف. 📱\n\nيرجى توضيح الخطوات المتاحة، شكرًا لكم.",
+          printReview: "🪪 السلام عليكم أ. {name}،\n\n*مراجعة بيانات الطباعة — {studio}* 📸\nحرصًا على ظهور بياناتك بشكل صحيح، نرجو فتح الرابط ومراجعة المعلومات التالية قبل اعتماد الطباعة:\n\n✍️ الاسم على الصورة: *{photo_name}*\n🔢 الرقم القومي: *{national_id}*\n🎓 الشعبة / المسار: *{branch}*\n🧾 رقم الإيصال: *#{receipt}*\n\n✅ إذا كانت البيانات صحيحة، اضغط «تأكيد بيانات الإيصال».\n✏️ إذا وجدت أي خطأ، عدّل البيانات ثم احفظها قبل اعتماد الطباعة.\n\n🔗 *رابط مراجعة البيانات:*\n{track_url}\n\n🙏 شكرًا لتعاونك وثقتك بنا."
         };
 
         const defaultFirebaseConfig = {
@@ -537,13 +537,22 @@
             return `${portalRoot}\n\n${text}`;
         };
 
+        const applyWhatsAppRTL = (message) => normalizeWhatsAppText(message)
+            .split('\n')
+            .map(line => {
+                // Keep a bare URL untouched so WhatsApp can still detect and preview it.
+                if (!line.trim() || /^\s*https?:\/\//i.test(line)) return line;
+                return `\u200F${line}`;
+            })
+            .join('\n');
+
         const buildWhatsAppUrl = (phone, message) => {
             // Normalize Arabic-Indic digits as well as the usual Egyptian format.
             let formattedPhone = normalizeCustomerPhone(phone);
             if (formattedPhone.startsWith('+')) formattedPhone = formattedPhone.slice(1);
             if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
             else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
-            const normalizedMessage = ensurePortalPreviewLink(message);
+            const normalizedMessage = applyWhatsAppRTL(ensurePortalPreviewLink(message));
             // Encode the complete message exactly once. WhatsApp decodes this query value.
             // فتح WhatsApp Web مباشرة يتجنب تحويل wa.me الوسيط الذي قد يسلم النص
             // إلى تطبيق سطح المكتب بترميز مختلف على بعض إصدارات Windows.
@@ -4530,9 +4539,10 @@
                         <div className="relative flex-1 flex flex-col">
                             <textarea 
                                 rows="5" 
+                                dir="rtl"
                                 value={settings.waTemplates[key]} 
                                 onChange={e => setSettings({...settings, waTemplates: {...settings.waTemplates, [key]: e.target.value}})} 
-                                className="w-full flex-1 p-4 border border-slate-700 bg-slate-900 text-green-50 rounded-md focus:border-green-500 focus:bg-slate-950 focus:ring-1 focus:ring-green-500/30 outline-none text-sm font-mono custom-scrollbar transition-all leading-relaxed shadow-inner resize-y" 
+                                className="w-full flex-1 p-4 border border-slate-700 bg-slate-900 text-green-50 text-right rounded-md focus:border-green-500 focus:bg-slate-950 focus:ring-1 focus:ring-green-500/30 outline-none text-sm font-mono custom-scrollbar transition-all leading-relaxed shadow-inner resize-y" 
                                 placeholder="اكتب قالب الرسالة هنا..."
                             />
                         </div>
@@ -4851,6 +4861,11 @@
                         }
                         if (!data.waTemplates.printReview) data.waTemplates.printReview = DEFAULT_WA_TEMPLATES.printReview;
                     }
+                    const templateEmojiByKey = { welcome: '👋', welcomeBack: '🌟', vipDiscount: '🎁', invoice: '🧾', unpaidInvoice: '📌', depositWarning: '⚠️', reminder: '⏰', ready: '🎉', deposit: '💸', tracking: '📍', cardInquiry: '🖼️', promoInquiry: '🎟️', rewardPrintInquiry: '📱', printReview: '🪪' };
+                    Object.entries(templateEmojiByKey).forEach(([key, emoji]) => {
+                        const template = data.waTemplates[key];
+                        if (typeof template === 'string' && !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(template)) data.waTemplates[key] = `${emoji} ${template.trim()}`;
+                    });
                     if (!data.adminPassword) data.adminPassword = '1234';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
@@ -5117,7 +5132,7 @@
               const cleanedDisplayReqs = String(displayReqs || '').split('\n').filter(line => !photoServiceNames.some(serviceName => serviceName && line.includes(serviceName))).join('\n').trim();
               const clientDisplayReqs = cleanedDisplayReqs;
               const clientPhotoRows = trackingPhotoItems.filter(photo => photo.serviceType || photo.service || photo.note);
-              const hasPhotoNameRequest = Boolean(txn.writeNameOnPhoto && String(txn.photoName || '').trim() && String(txn.nationalId || '').trim() && String(txn.branch || '').trim());
+              const hasPhotoNameRequest = Boolean(txn.writeNameOnPhoto || txn.identityConfirmed || String(txn.photoName || '').trim() || String(txn.nationalId || '').trim() || String(txn.branch || '').trim());
               const photoItemsWithNotes = trackingPhotoItems.filter(photo => String(photo.note || '').trim());
               const photoItemsWithoutNotes = trackingPhotoItems.filter(photo => !String(photo.note || '').trim());
               const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
