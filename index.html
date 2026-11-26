@@ -57,7 +57,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
         
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{
             -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
@@ -69,14 +68,13 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-        
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
+        
         /* Responsive administration layout: fluid on every screen size */
         *, *::before, *::after { box-sizing: border-box; }
         .admin-app { width: 100%; min-width: 0; overflow-x: hidden; }
         .admin-app main { width: 100%; max-width: none !important; min-width: 0; margin-inline: 0; }
-        .admin-app .max-w-7xl { max-width: none !important; width: 100%; }
         .admin-app [class*="grid"] > *, .admin-app .flex > * { min-width: 0; }
         .admin-app input, .admin-app select, .admin-app textarea, .admin-app button { max-width: 100%; }
         .admin-app .overflow-x-auto { max-width: 100%; overscroll-behavior-x: contain; }
@@ -117,6 +115,37 @@
             box-shadow: 0 10px 28px rgba(2, 6, 23, .18);
         }
         .settings-panel .overflow-y-auto { scrollbar-gutter: stable; }
+
+        /* A cohesive visual layer across the complete application. */
+        #root button {
+            transition: filter .18s ease, box-shadow .18s ease, outline-color .18s ease;
+        }
+        #root button:not(:disabled):hover {
+            filter: brightness(1.08) saturate(1.06);
+            box-shadow: 0 5px 16px rgba(2, 6, 23, .28);
+        }
+        #root button:not(:disabled):active { filter: brightness(.96) saturate(1.04); }
+        #root button:focus-visible {
+            outline: 2px solid rgba(125, 211, 252, .9);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, .18);
+        }
+        #root button:disabled { cursor: not-allowed; filter: saturate(.72); }
+        #root .bg-slate-900.rounded-2xl {
+            background-image: linear-gradient(135deg, rgba(148, 163, 184, .035), transparent 58%);
+            box-shadow: 0 12px 30px rgba(2, 6, 23, .24);
+            transition: box-shadow .2s ease, background-image .2s ease;
+        }
+        #root .bg-slate-900.rounded-2xl:hover { box-shadow: 0 16px 36px rgba(2, 6, 23, .32); }
+        #root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus-visible,
+        #root select:focus-visible,
+        #root textarea:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, .18);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #root button, #root .bg-slate-900.rounded-2xl { transition: none !important; }
+        }
 
     </style>
 </head>
@@ -405,9 +434,11 @@
             return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
         };
 
+        const getTransactionPackageNames = (txn) => txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : 'بدون باقة محددة');
+
         const getReqsText = (txn) => {
             if (txn.type === 'wedding') {
-                const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : 'بدون باقة محددة');
+                const pkgs = getTransactionPackageNames(txn);
                 const casualText = txn.casualShootDate ? formatDateOnly(txn.casualShootDate) : 'لا يوجد';
                 let addonsText = txn.addons?.length > 0 ? txn.addons.map(a => a.name + (a.notes ? ` (${a.notes})` : '')).join(' + ') : 'لا يوجد';
                 return `الباقات: ${pkgs}\nالسيشن: ${txn.sessionType || 'غير محدد'}\nالكاجوال: ${casualText}\nإضافات: ${addonsText}`;
@@ -532,7 +563,7 @@
             let msg = settings.waTemplates[templateKey] || '';
             let reqs = '';
             if (isWedding) {
-                const pkgs = txn.packages?.length > 0 ? txn.packages.map(p=>p.name).join(' + ') : (txn.package ? txn.package.name : 'بدون باقة محددة');
+                const pkgs = getTransactionPackageNames(txn);
                 reqs = [`📦 الباقات: ${pkgs}`, `📸 نوع السيشن: ${safe(txn.sessionType, 'غير محدد')}`, txn.weddingDate ? `📅 موعد الزفاف: ${formatDateOnly(txn.weddingDate)}` : '', txn.requirements ? `📝 تفاصيل إضافية: ${txn.requirements.trim()}` : ''].filter(Boolean).join('\n');
             } else reqs = safe(txn.requirements, 'خدمات تصوير');
             return msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{national_id}/g, txn.nationalId || 'غير مسجل').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime)).replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو').replace(/{reward_balance}/g, rewards.balance).replace(/{track_url}/g, receiptUrl);
@@ -814,9 +845,6 @@
             const [miniProdImgIndex, setMiniProdImgIndex] = useState(0);
             const [localVisits, setLocalVisits] = useState(settings.portalVisits || 1);
 
-            // Tab state for the combined Details Card (Stages & Archive)
-            const [activeSubTab, setActiveSubTab] = useState('stages');
-            
             // Booking Modal State
             const [showBookingModal, setShowBookingModal] = useState(false);
             const [bookingData, setBookingData] = useState({
@@ -905,26 +933,6 @@
                 setHasLiked(true);
                 setSafeLocal('studio_liked', 'true');
                 onLikeStudio();
-            };
-
-            const handleShare = async () => {
-                const shareUrl = window.location.href;
-                const shareText = `📸 سجل أجمل لحظاتك مع ${settings.studioName}!\nأحدث عروض التصوير، منتجات حصرية، وأعلى جودة. احجز جلستك الآن واكتشف عالمنا ✨\n\nتصفح العروض من هنا:`;
-                
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: settings.studioName,
-                            text: shareText,
-                            url: shareUrl
-                        });
-                    } catch (err) {
-                        console.log('Share canceled or failed', err);
-                    }
-                } else {
-                    navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                    alert("تم نسخ الرابط النص التسويقي بنجاح! يمكنك الآن مشاركته.");
-                }
             };
 
             const handleSearch = async (e) => {
@@ -4200,7 +4208,13 @@
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+                  <section className="lg:col-span-2 rounded-2xl border border-teal-400/25 bg-gradient-to-br from-teal-950/30 via-slate-900 to-slate-900 p-4 sm:p-5 shadow-sm">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-teal-400/15 pb-3"><div><h3 className="flex items-center gap-2 text-base font-black text-teal-100"><i className="ph-fill ph-chart-line-up text-teal-300"></i>صافي ربح الطباعة العادية والفورية</h3><p className="mt-1 text-[10px] text-slate-400">الربح هنا = إيرادات الطباعة − تكلفة الورق/الطباعة المباشرة، ولا يشمل المصروفات العامة.</p></div><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-xl border border-slate-700 bg-slate-950 p-1"><button type="button" onClick={() => setPrintProfitPeriod('day')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'day' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>يومي</button><button type="button" onClick={() => setPrintProfitPeriod('week')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'week' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>أسبوعي</button></div><input type="date" lang="en" dir="ltr" value={printProfitDate} onChange={event => setPrintProfitDate(event.target.value)} aria-label="تاريخ تقرير ربح الطباعة" className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-bold text-white outline-none focus:border-teal-400"/><span className="text-[10px] text-teal-100/70">{printProfitRange.start === printProfitRange.end ? printProfitRange.start : `${printProfitRange.start} — ${printProfitRange.end}`}</span></div></div>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 auto-rows-fr items-stretch [&>*]:h-full [&>*]:min-h-[88px]"><StatCard hideValue={!showAmounts} title="إجمالي المبيعات" value={combinedPrintProfit.revenue} color="blue" /><StatCard hideValue={!showAmounts} title="تكلفة الورق والطباعة" value={combinedPrintProfit.cost} color="amber" /><StatCard hideValue={!showAmounts} title="صافي الربح المباشر" value={combinedPrintProfit.netProfit} color="emerald" highlight /><StatCard hideValue={!showAmounts} title="إجمالي الطبعات" value={combinedPrintProfit.photos} color="indigo" valueType="number" /></div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 [&>*]:min-h-[86px]"><div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-950/15 p-3"><h4 className="mb-2 text-xs font-black text-fuchsia-100">الطباعة العادية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.regular.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.regular.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.regular.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.regular.photos} صورة</p></div><div className="rounded-xl border border-amber-400/20 bg-amber-950/15 p-3"><h4 className="mb-2 text-xs font-black text-amber-100">الطباعة الفورية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.instant.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.instant.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.instant.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.instant.photos} صورة</p></div></div>
+                    {combinedPrintProfit.uncosted > 0 && <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-[10px] font-bold text-amber-200">الربح تقديري: لم تُسجّل تكلفة الوحدة لـ {combinedPrintProfit.uncosted} طبعة ضمن الفترة. أدخل التكاليف من إعدادات قوالب خدمات التصوير ومن بطاقة مخزون الطباعة الفورية. الإيصالات القديمة لا تحتوي على تكاليف محفوظة.</p>}
+                  </section>
                   
                   {/* قسم تقرير الاستوديو */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
@@ -4208,7 +4222,7 @@
                     <h3 className="text-lg font-bold text-blue-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
                         <span className="flex items-center gap-2"><i className="ph-fill ph-camera"></i> تقرير الاستوديو (تفصيلي)</span>
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
                       <StatCard hideValue={!showAmounts} title="إجمالي الشغل المطلوب (هذا الشهر)" value={studioStats.expected} color="blue" />
                       <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={studioStats.collected} color="green" />
                       <StatCard hideValue={!showAmounts} title="إجمالي مصروفات الاستوديو (هذا الشهر)" value={studioStats.expenses} color="red" />
@@ -4221,7 +4235,26 @@
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+                  {/* قسم تقرير حجوزات الزفاف */}
+                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2 h-full bg-pink-500"></div>
+                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
+                        <span className="flex items-center gap-2"><i className="ph-fill ph-heart"></i> تقرير حجوزات الزفاف (تفصيلي)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
+                      <StatCard hideValue={!showAmounts} title="إجمالي الحجوزات (المسجلة هذا الشهر)" value={wedStats.expected} color="pink" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={wedStats.collected} color="green" />
+                      <StatCard hideValue={!showAmounts} title="إجمالي مصروفات الزفاف (هذا الشهر)" value={wedStats.expenses} color="red" />
+                      <StatCard hideValue={!showAmounts} title="ديون متبقية للحجوزات (هذا الشهر)" value={wedStats.debts} color="rose" />
+                      <StatCard hideValue={!showAmounts} title="صافي ربح الزفاف الفعلي" value={wedStats.netProfit} color="yellow" highlight />
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3 max-w-lg">
+                        <StatCard hideValue={!showAmounts} title="محصل نقدي (كاش)" value={wedStats.cash} color="emerald" />
+                        <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: weddings.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:col-span-2 lg:grid-cols-2 gap-4 items-stretch">
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-amber-500/20 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-amber-400"></div>
                     <h3 className="text-lg font-bold text-amber-300 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-lightning"></i> التقرير المالي للطباعة الفورية</span><span className="text-[10px] font-bold text-slate-500">{filter.month}/{filter.year}</span></h3>
@@ -4237,31 +4270,9 @@
                     <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-1 text-xs font-black text-slate-300">مقارنة بالشهر السابق</p><p className={`text-sm font-black ${monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'text-emerald-300' : 'text-red-300'}`}><i className={`ph-fill ${monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'ph-trend-up' : 'ph-trend-down'} ml-1`}></i>{formatCurrency(monthlyRegularPrintFinancial.total - previousRegularPrintFinancial.total)} {monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'زيادة' : 'انخفاض'} في مبيعات الطباعة</p></div>
                   </div>
                   </div>
-                  <section className="rounded-2xl border border-teal-400/25 bg-gradient-to-br from-teal-950/30 via-slate-900 to-slate-900 p-4 sm:p-5 shadow-sm">
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-teal-400/15 pb-3"><div><h3 className="flex items-center gap-2 text-base font-black text-teal-100"><i className="ph-fill ph-chart-line-up text-teal-300"></i>صافي ربح الطباعة العادية والفورية</h3><p className="mt-1 text-[10px] text-slate-400">الربح هنا = إيرادات الطباعة − تكلفة الورق/الطباعة المباشرة، ولا يشمل المصروفات العامة.</p></div><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-xl border border-slate-700 bg-slate-950 p-1"><button type="button" onClick={() => setPrintProfitPeriod('day')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'day' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>يومي</button><button type="button" onClick={() => setPrintProfitPeriod('week')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'week' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>أسبوعي</button></div><input type="date" lang="en" dir="ltr" value={printProfitDate} onChange={event => setPrintProfitDate(event.target.value)} aria-label="تاريخ تقرير ربح الطباعة" className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-bold text-white outline-none focus:border-teal-400"/><span className="text-[10px] text-teal-100/70">{printProfitRange.start === printProfitRange.end ? printProfitRange.start : `${printProfitRange.start} — ${printProfitRange.end}`}</span></div></div>
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 auto-rows-fr items-stretch [&>*]:h-full [&>*]:min-h-[88px]"><StatCard hideValue={!showAmounts} title="إجمالي المبيعات" value={combinedPrintProfit.revenue} color="blue" /><StatCard hideValue={!showAmounts} title="تكلفة الورق والطباعة" value={combinedPrintProfit.cost} color="amber" /><StatCard hideValue={!showAmounts} title="صافي الربح المباشر" value={combinedPrintProfit.netProfit} color="emerald" highlight /><StatCard hideValue={!showAmounts} title="إجمالي الطبعات" value={combinedPrintProfit.photos} color="indigo" valueType="number" /></div>
-                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 [&>*]:min-h-[86px]"><div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-950/15 p-3"><h4 className="mb-2 text-xs font-black text-fuchsia-100">الطباعة العادية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.regular.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.regular.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.regular.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.regular.photos} صورة</p></div><div className="rounded-xl border border-amber-400/20 bg-amber-950/15 p-3"><h4 className="mb-2 text-xs font-black text-amber-100">الطباعة الفورية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.instant.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.instant.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.instant.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.instant.photos} صورة</p></div></div>
-                    {combinedPrintProfit.uncosted > 0 && <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-[10px] font-bold text-amber-200">الربح تقديري: لم تُسجّل تكلفة الوحدة لـ {combinedPrintProfit.uncosted} طبعة ضمن الفترة. أدخل التكاليف من إعدادات قوالب خدمات التصوير ومن بطاقة مخزون الطباعة الفورية. الإيصالات القديمة لا تحتوي على تكاليف محفوظة.</p>}
-                  </section>
+                  
 
-                  {/* قسم تقرير حجوزات الزفاف */}
-                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-2 h-full bg-pink-500"></div>
-                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between">
-                        <span className="flex items-center gap-2"><i className="ph-fill ph-heart"></i> تقرير حجوزات الزفاف (تفصيلي)</span>
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                      <StatCard hideValue={!showAmounts} title="إجمالي الحجوزات (المسجلة هذا الشهر)" value={wedStats.expected} color="pink" />
-                      <StatCard hideValue={!showAmounts} title="إجمالي المحصل الفعلي (هذا الشهر)" value={wedStats.collected} color="green" />
-                      <StatCard hideValue={!showAmounts} title="إجمالي مصروفات الزفاف (هذا الشهر)" value={wedStats.expenses} color="red" />
-                      <StatCard hideValue={!showAmounts} title="ديون متبقية للحجوزات (هذا الشهر)" value={wedStats.debts} color="rose" />
-                      <StatCard hideValue={!showAmounts} title="صافي ربح الزفاف الفعلي" value={wedStats.netProfit} color="yellow" highlight />
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3 max-w-lg">
-                        <StatCard hideValue={!showAmounts} title="محصل نقدي (كاش)" value={wedStats.cash} color="emerald" />
-                        <StatCard hideValue={!showAmounts} title="محصل إلكتروني (محافظ/انستاباي)" value={wedStats.electronic} color="indigo" onClick={() => setElectronicDetails({ title: 'الدفع الإلكتروني (زفاف)', data: weddings.filter(t => t.payments && t.payments.some(p => p.method === 'electronic' && new Date(p.date).getMonth() + 1 == filter.month && new Date(p.date).getFullYear() == filter.year)) })} />
-                    </div>
-                  </div>
+                  
 
                 </div>
 
@@ -4795,7 +4806,6 @@
           const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
           const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
           const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
-          const [showOrderDetails, setShowOrderDetails] = useState(false);
           const [showConfirmData, setShowConfirmData] = useState(false);
           const [editingConfirmData, setEditingConfirmData] = useState(false);
           
@@ -4813,7 +4823,6 @@
           const [clientPaymentReceiptFile, setClientPaymentReceiptFile] = useState(null);
           const [clientPaymentReceiptPreview, setClientPaymentReceiptPreview] = useState('');
           const clientPaymentReceiptInputRef = useRef(null);
-          const [hasAutoShownPayment, setHasAutoShownPayment] = useState(false);
           const [showPaymentCard, setShowPaymentCard] = useState(false);
 
           const [transactions, setTransactions] = useState([]);
@@ -5227,12 +5236,6 @@
               const hasPhotoNameRequest = Boolean(txn.writeNameOnPhoto || txn.identityConfirmed || String(txn.photoName || '').trim() || String(txn.nationalId || '').trim() || String(txn.branch || '').trim());
               const photoItemsWithNotes = trackingPhotoItems.filter(photo => String(photo.note || '').trim());
               const photoItemsWithoutNotes = trackingPhotoItems.filter(photo => !String(photo.note || '').trim());
-              const instantPrintService = (settings.services || []).map(s => typeof s === 'string' ? { name: s, price: 0 } : s).find(s => /فور|فورى|فوري/i.test(s.name || ''));
-              const instantPrintName = instantPrintService?.name || 'طباعة فورية';
-              const instantPrintCost = Number(instantPrintService?.price || settings.appointmentSettings?.instantPrintPrice || 90);
-              const instantPrintPaid = Math.min(instantPrintCost, Number(txn.paid) || 0);
-              const instantPrintTotalDue = Math.max(0, instantPrintCost - instantPrintPaid);
-
               const handleProfilePicUpload = async (e) => {
                   const file = e.target.files[0];
                   if (!file) return;
@@ -5315,21 +5318,6 @@
                   if (paymentMethod === 'electronic') {
                       alert('تم فتح محادثة الاستوديو مباشرةً مع نص التحويل. أرفق صورة الإيصال المختارة داخل واتساب ثم اضغط إرسال؛ لا تُرسل الصورة تلقائياً من صفحة العميل.');
                   }
-              };
-
-              const handleInstantPrintRequest = () => {
-                  const msg = `مرحباً فريق ${settings.studioName || 'الاستوديو'}،
-أرغب في طلب طباعة فورية للصور الخاصة بي.
-
-رقم الإيصال: #${txn.receiptNo}
-الاسم: ${txn.photoName || txn.clientName || displayName || 'العميل'}
-الخدمة: ${instantPrintName}
-تكلفة الطباعة الفورية: ${formatCurrencyEnglish(instantPrintCost)}
-المدفوع المحتسب للطباعة الفورية: ${formatCurrencyEnglish(instantPrintPaid)}
-المتبقي لاستكمال الطباعة الفورية: ${formatCurrencyEnglish(instantPrintTotalDue)}
-
-برجاء تأكيد الطلب وموعد جاهزية الطباعة. شكراً لحضراتكم.`;
-                  openWhatsApp(settings.studioPhone || '01201260040', msg);
               };
 
               const handleShareTracking = async () => {
