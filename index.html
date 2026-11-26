@@ -2,7 +2,6 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mrakby Studio - ستوديو المراكبى</title>
     <meta name="description" content="بوابة عملاء ستوديو المراكبي: إيصالك وتفاصيل طلبك وحالة التنفيذ والمدفوع والمتبقي في مكان واحد، مع أحدث عروض التصوير والخدمات.">
@@ -14,7 +13,6 @@
     <meta property="og:url" content="https://mrvisu.github.io/g/">
     <meta property="og:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
     <meta property="og:site_name" content="ستوديو المراكبي - بوابة العملاء">
-    <meta property="og:image:secure_url" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1933">
     <meta property="og:image:height" content="1016">
@@ -24,11 +22,9 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="بوابة عملاء ستوديو المراكبي | إيصالك وعروض التصوير">
     <meta name="twitter:description" content="افتح إيصالك وتابع حالة طلبك وموعد الاستلام، واكتشف عروض التصوير والخدمات من بوابة ستوديو المراكبي.">
-    <meta name="twitter:image" content="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizs2xNHyZb9msMJ1TRqSxrVVYy5smgDw2gcV3x04ZE6mStLsCwPTrrqOjp8ovG18ag1aw3R5JqBom86JM3akzpF8S9lkHsCkvcJW1HSJxY-fJro1aqMZE6M2auyLlZvvKXmNtKmu-AuM12bF89Br2P607ZPDitmAfrU810pr8HMjqkY0kyo5W01rv8zJY/s16000/hughk.png">
     <meta name="twitter:image:alt" content="صورة تعريف بوابة العملاء في ستوديو المراكبي">
 
 
-    <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
     <meta name="theme-color" content="#020617">
     <meta name="mobile-web-app-capable" content="yes">
@@ -96,6 +92,31 @@
         @media (min-width: 1536px) {
             .admin-app main { padding-inline: clamp(1.5rem, 3vw, 4rem); }
         }
+        /* Consistent, responsive controls and cards within the settings workspace. */
+        .settings-panel { --settings-gap: 1rem; min-width: 0; }
+        .settings-panel > * { min-width: 0; }
+        .settings-panel .grid { min-width: 0; align-items: stretch; }
+        .settings-panel .grid > * { min-width: 0; }
+        .settings-panel input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        .settings-panel select,
+        .settings-panel textarea {
+            min-width: 0;
+            min-height: 2.75rem;
+            border-radius: 0.75rem !important;
+            transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+        }
+        .settings-panel input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+        .settings-panel select:focus,
+        .settings-panel textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, .12);
+        }
+        .settings-panel textarea { min-height: 6.5rem; line-height: 1.7; resize: vertical; }
+        .settings-panel .bg-slate-900.rounded-2xl {
+            border-color: rgba(51, 65, 85, .9);
+            box-shadow: 0 10px 28px rgba(2, 6, 23, .18);
+        }
+        .settings-panel .overflow-y-auto { scrollbar-gutter: stable; }
 
     </style>
 </head>
@@ -227,7 +248,7 @@
         ];
 
         const DEFAULT_SERVICES = [
-          { name: "صورة شخصية", price: 70, desc: "مقاس 4x6 استلام بعد يوم من تاريخ التصوير" },
+          { name: "صورة شخصية مقاس 4x6", price: 70, desc: "استلام بعد يوم من تاريخ التصوير" },
           { name: "صورة شخصية فورى", price: 90, desc: "استلام فورى بعد 10 دقائق" },
           { name: "صورة شخصية كارت", price: 70, desc: "مقاس الكارت 15x20 تسليم بعد يومين" },
           { name: "صور فون مقاس 10x15", price: 10, desc: "طباعه من الموبايل السعر لعدد اكتر من 10 صور" },
@@ -640,12 +661,18 @@
 
         // الطباعة الفورية لا تُستنتج من نصوص الخدمات؛ لا تدخل الإحصائيات إلا إذا سجّلها الموظف صراحة.
         const isInstantPrintLabel = (value) => /فور[ىي]|فوري[ةه]|instant\s*print/i.test(String(value || ''));
+        const getPrintSize = (service) => { const text = `${String(service?.name || service || '')} ${String(service?.desc || '')}`; const match = text.match(/(\d+(?:[.,]\d+)?)\s*[×xX*]\s*(\d+(?:[.,]\d+)?)/); return match ? `${match[1].replace(',', '.')}×${match[2].replace(',', '.')}` : ''; };
+        const isInstantPrintService = (service) => isInstantPrintLabel(service?.name || service);
+        const isRegularPrintService = (service) => Boolean(getPrintSize(service)) && !isInstantPrintService(service);
+        const getRegularPrintServices = (services) => (services || []).map(service => typeof service === 'string' ? { name: service, price: 0, desc: '' } : service).filter(isRegularPrintService);
+        const getInstantPrintService = (services) => (services || []).map(service => typeof service === 'string' ? { name: service, price: 0, desc: '' } : service).find(isInstantPrintService) || null;
         const getExplicitInstantPrintItems = (txn) => {
             const items = Array.isArray(txn?.instantPrintItems) ? txn.instantPrintItems : [];
             const explicit = items.map(item => ({
                 name: String(item?.name || 'طباعة فورية'),
                 qty: Math.max(1, Number(item?.qty || item?.quantity || 1)),
-                unitPrice: Math.max(0, Number(item?.unitPrice ?? item?.price ?? 0) || 0)
+                unitPrice: Math.max(0, Number(item?.unitPrice ?? item?.price ?? 0) || 0),
+                unitCost: item?.unitCost != null && item?.unitCost !== '' ? Math.max(0, Number(item.unitCost) || 0) : item?.instantCost != null && item?.instantCost !== '' ? Math.max(0, Number(item.instantCost) || 0) : null
             })).filter(item => item.qty > 0);
             if (explicit.length) return explicit;
             // توافق مع الإيصالات القديمة: نقرأ فقط صفوف الصور التي تحمل خدمة فورية، ولا نعد الصور العادية.
@@ -653,10 +680,10 @@
             const legacy = rows.filter(row => isInstantPrintLabel(typeof row === 'object' ? (row.serviceType || row.service) : row)).map(row => {
                 const name = String(typeof row === 'object' ? (row.serviceType || row.service || 'طباعة فورية') : row);
                 const match = name.match(/^\s*(\d+)\s*[×x]\s*(.+)$/i);
-                return { name: (match ? match[2] : name).trim(), qty: Math.max(1, Number(typeof row === 'object' ? row.instantQty || row.qty || 1 : 1) * (match ? Number(match[1]) : 1)), unitPrice: Math.max(0, Number(typeof row === 'object' ? row.instantPrice || row.unitPrice || 0 : 0) || 0) };
+                return { name: (match ? match[2] : name).trim(), qty: Math.max(1, Number(typeof row === 'object' ? row.instantQty || row.qty || 1 : 1) * (match ? Number(match[1]) : 1)), unitPrice: Math.max(0, Number(typeof row === 'object' ? row.instantPrice || row.unitPrice || 0 : 0) || 0), unitCost: typeof row === 'object' && row.instantCost != null ? Math.max(0, Number(row.instantCost) || 0) : null };
             });
             if (legacy.length) return legacy;
-            return txn?.pickupOption === 'instant' ? [{ name: 'طباعة فورية', qty: 1, unitPrice: 0 }] : [];
+            return txn?.pickupOption === 'instant' ? [{ name: 'طباعة فورية', qty: 1, unitPrice: 0, unitCost: null }] : [];
         };
         const getLocalDateKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const getInstantStatsStartDate = (settings) => {
@@ -1840,9 +1867,9 @@
             const colors = { green: "bg-green-950/30 text-green-400 border-green-900/50", red: "bg-red-950/30 text-red-400 border-red-900/50", blue: "bg-blue-950/30 text-blue-400 border-blue-900/50", pink: "bg-pink-950/30 text-pink-400 border-pink-900/50", indigo: "bg-indigo-950/30 text-indigo-400 border-indigo-900/50", emerald: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50", rose: "bg-rose-950/30 text-rose-400 border-rose-900/50", yellow: "bg-yellow-950/30 text-yellow-400 border-yellow-900/50", amber: "bg-amber-950/30 text-amber-300 border-amber-900/50", slate: "bg-slate-800/60 text-slate-300 border-slate-700" };
             const formattedValue = valueType === 'percent' ? `${Number(value || 0).toFixed(1)}%` : valueType === 'number' ? Number(value || 0).toLocaleString('en-US') : formatCurrency(value);
             return (
-              <div onClick={onClick} className={`flex flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color] || colors.blue} ${highlight ? 'shadow-lg scale-105' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]' : ''}`}>
-                <h4 className="text-[10px] sm:text-xs font-bold opacity-80 mb-1 leading-tight">{title}</h4>
-                <div className="text-sm sm:text-lg font-black">{hideValue ? '••••••' : formattedValue}</div>
+              <div onClick={onClick} className={`flex min-w-0 flex-col justify-center p-3 sm:p-4 rounded-xl border ${colors[color] || colors.blue} ${highlight ? 'shadow-lg' : ''} ${onClick ? 'cursor-pointer hover:opacity-80 transition-all hover:scale-[1.01]' : ''}`}>
+                <h4 className="text-[10px] sm:text-xs font-bold opacity-80 mb-1 leading-snug">{title}</h4>
+                <div className="break-words text-sm sm:text-lg font-black leading-tight tabular-nums">{hideValue ? '••••••' : formattedValue}</div>
               </div>
             );
         };
@@ -1875,11 +1902,12 @@
             );
         };
 
-        const ServicesSettingsList = ({title, items, onAdd, onRemove, colorTheme = 'blue'}) => {
+        const ServicesSettingsList = ({title, items, onAdd, onRemove, colorTheme = 'blue', showCost = false}) => {
             const [newName, setNewName] = useState('');
             const [newPrice, setNewPrice] = useState('');
+            const [newCost, setNewCost] = useState('');
             const [newDesc, setNewDesc] = useState('');
-            const handleEditClick = (item, idx) => { const obj = typeof item === 'string' ? {name: item, price: 0, desc: ''} : item; setNewName(obj.name); setNewPrice(obj.price); setNewDesc(obj.desc); onRemove(idx); };
+            const handleEditClick = (item, idx) => { const obj = typeof item === 'string' ? {name: item, price: 0, desc: ''} : item; setNewName(obj.name); setNewPrice(obj.price); setNewCost(obj.cost ?? ''); setNewDesc(obj.desc); onRemove(idx); };
             const isBlue = colorTheme === 'blue'; const isPink = colorTheme === 'pink';
             const colorClass = isBlue ? 'focus:border-blue-500' : isPink ? 'focus:border-pink-500' : 'focus:border-purple-500';
             const btnClass = isBlue ? 'bg-blue-600 hover:bg-blue-500' : isPink ? 'bg-pink-600 hover:bg-pink-500' : 'bg-purple-600 hover:bg-purple-500';
@@ -1888,13 +1916,14 @@
               <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                 <h3 className="font-bold text-slate-100 mb-4 border-b border-slate-800 pb-2">{title}</h3>
                 <div className="flex flex-col gap-3 mb-5">
-                  <div className="flex gap-2">
-                    <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="الاسم..."/>
-                    <input type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className={`w-24 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="السعر..."/>
+                  <div className={`grid grid-cols-1 gap-2 ${showCost ? 'sm:grid-cols-[minmax(0,1fr)_minmax(120px,0.42fr)_minmax(120px,0.42fr)]' : 'sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.42fr)]'}`}>
+                    <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full min-w-0 p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="اسم الخدمة..."/>
+                    <input type="number" min="0" step="0.01" value={newPrice} onChange={e=>setNewPrice(e.target.value)} className="w-full min-w-0 p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none placeholder-slate-500 text-sm" placeholder="سعر البيع"/>
+                    {showCost && <input type="number" min="0" step="0.01" value={newCost} onChange={e=>setNewCost(e.target.value)} className="w-full min-w-0 p-3 border border-slate-700 bg-slate-950 text-white rounded-xl outline-none placeholder-slate-500 text-sm focus:border-amber-500" placeholder="تكلفة الورق"/>}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                     <input type="text" value={newDesc} onChange={e=>setNewDesc(e.target.value)} className={`flex-1 p-3 border border-slate-700 bg-slate-950 text-white rounded-lg outline-none ${colorClass} placeholder-slate-500 text-sm`} placeholder="تفاصيل صغيرة (اختياري)..."/>
-                    <button onClick={()=>{if(newName){onAdd({name:newName, price:parseFloat(newPrice)||0, desc:newDesc});setNewName('');setNewPrice('');setNewDesc('');}}} className={`${btnClass} text-white px-5 rounded-lg transition-colors flex items-center justify-center`}><i className="ph ph-plus text-xl"></i></button>
+                    <button type="button" onClick={()=>{if(newName){const service={name:newName,price:parseFloat(newPrice)||0,desc:newDesc,...(showCost?{cost:newCost.trim()===''?null:Math.max(0,Number(newCost)||0)}:{})};onAdd(service);setNewName('');setNewPrice('');setNewCost('');setNewDesc('');}}} className={`${btnClass} h-11 w-12 text-white rounded-xl transition-colors flex items-center justify-center shrink-0`}><i className="ph ph-plus text-xl"></i></button>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] custom-scrollbar pr-2">
@@ -1903,7 +1932,7 @@
                     return (
                     <div key={idx} className="bg-slate-800 p-3 rounded-xl flex justify-between items-start border border-slate-700">
                       <div className="flex flex-col">
-                        <span className="text-slate-300 text-sm font-bold flex items-center gap-2">{srv.name} {srv.price > 0 && <span className={`text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ${textClass}`}>{srv.price} ج.م</span>}</span>
+                        <span className="text-slate-300 text-sm font-bold flex items-center gap-2">{srv.name} {srv.price > 0 && <span className={`text-[10px] bg-slate-950 px-1.5 py-0.5 rounded ${textClass}`}>بيع {srv.price} ج.م</span>}{showCost && srv.cost != null && <span className="text-[10px] bg-amber-950/40 text-amber-200 px-1.5 py-0.5 rounded">تكلفة {srv.cost} ج.م</span>}</span>
                         {srv.desc && <span className="text-xs text-slate-500 mt-1">{srv.desc}</span>}
                       </div>
                       <div className="flex items-center">
@@ -2536,6 +2565,7 @@
                 if (Number.isNaN(date.getTime()) || date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear || !isInstantStatsRecordIncluded(record, settings)) return count;
                 return count + getExplicitInstantPrintItems(record).reduce((sum, item) => sum + item.qty, 0);
             }, 0), [transactions, currentMonth, currentYear, settings.instantStatsStartDate]);
+            const monthlyRegularPrintSummary = useMemo(() => { const summary = { total: 0, bySize: {} }; (transactions || []).forEach(record => { const date = new Date(record.dateTime || record.createdAt || record.date || ''); if (Number.isNaN(date.getTime()) || date.getMonth() + 1 !== currentMonth || date.getFullYear() !== currentYear) return; (Array.isArray(record.regularPrintItems) ? record.regularPrintItems : []).forEach(item => { const qty = Math.max(0, Number(item.qty) || 0); const size = String(item.size || getPrintSize(item) || 'مقاس آخر'); summary.total += qty; summary.bySize[size] = (summary.bySize[size] || 0) + qty; }); }); return summary; }, [transactions, currentMonth, currentYear]);
 
             const completedRecords = useMemo(() => (allRecords || []).filter(record => {
                 const wedding = record.type === 'wedding' || !!record.groomName || !!record.brideName;
@@ -2603,6 +2633,7 @@
                             <button type="button" onClick={() => setShowRepeatReceipts(true)} title="عرض أرقام إيصالات العملاء الأكثر زيارة" className="min-w-0 rounded-xl border border-blue-400/20 bg-blue-950/30 px-3 py-2 text-center transition hover:border-blue-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-blue-100/70">إجمالي الإيصالات</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-blue-200"><i className="ph-fill ph-receipt"></i>{(allRecords || []).length}</strong></button>
                             <span className="min-w-0 rounded-xl border border-cyan-400/20 bg-cyan-950/30 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-cyan-100/70">مكتملة</span><strong className="mt-0.5 block text-base font-black text-cyan-200">{completedRecords.length}</strong></span>
                             <div className="min-w-0 rounded-xl border border-yellow-400/25 bg-gradient-to-br from-yellow-950/45 to-amber-950/20 px-3 py-2 text-center shadow-sm shadow-yellow-950/20 xl:w-[160px] xl:flex-none" title="ملخص مخزون الطباعة الفورية وعدد الطباعات خلال الشهر الحالي"><span className="block truncate text-[10px] font-bold text-yellow-100/80"><i className="ph-fill ph-printer ml-1 text-yellow-300"></i>ملخص الطباعة الفورية</span><div className="mt-1.5 grid grid-cols-2 divide-x divide-x-reverse divide-yellow-400/15"><div className="px-1"><span className="block text-[9px] text-slate-400">ورق متاح</span><strong className="mt-0.5 block text-sm font-black text-yellow-200">{Number(inventory?.['ورق طباعة صور'] || 0).toLocaleString('en-US')}</strong></div><div className="px-1"><span className="block text-[9px] text-slate-400">طباعات الشهر</span><strong className="mt-0.5 block text-sm font-black text-amber-200">{monthlyInstantPrintCount.toLocaleString('en-US')}</strong></div></div></div>
+                            <div className="min-w-0 rounded-xl border border-fuchsia-400/25 bg-gradient-to-br from-fuchsia-950/40 to-violet-950/25 px-3 py-2 text-center shadow-sm xl:w-[190px] xl:flex-none" title="عدد طباعات المقاسات العادية خلال الشهر الحالي"><span className="block truncate text-[10px] font-bold text-fuchsia-100/85"><i className="ph-fill ph-image ml-1 text-fuchsia-300"></i>ملخص الطباعة العادية</span><strong className="mt-1 block text-sm font-black text-fuchsia-200">{monthlyRegularPrintSummary.total.toLocaleString('en-US')} طبعة هذا الشهر</strong><span className="mt-1 block truncate text-[9px] text-fuchsia-100/65">{Object.entries(monthlyRegularPrintSummary.bySize).map(([size, qty]) => `${size}: ${qty}`).join(' · ') || 'لا توجد طباعات مسجلة هذا الشهر'}</span></div>
                             <span className="min-w-0 rounded-xl border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-amber-100/70">بانتظار التقييم</span><strong className="mt-0.5 block text-base font-black text-amber-200">{pendingRatingCount}</strong></span>
                             <span title="عدد التقييمات بالنجوم المستلمة من بوابة العملاء" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/20 px-3 py-2 text-center xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">تقييمات العملاء</span><strong className="mt-0.5 block text-base font-black text-yellow-200">{ratedCount}</strong></span>
                             <button type="button" onClick={() => setShowMonthlyStarsModal(true)} title="عرض عملاء نجوم الشهر وإعادة استهدافهم" className="min-w-0 rounded-xl border border-yellow-400/20 bg-yellow-950/25 px-3 py-2 text-center transition hover:border-yellow-300/50 xl:w-[136px] xl:flex-none"><span className="block truncate text-[10px] text-yellow-100/70">نجوم الشهر</span><strong className="mt-0.5 flex items-center justify-center gap-1 text-base font-black text-yellow-200"><i className="ph-fill ph-star"></i>{topCustomers.length}</strong></button>
@@ -2773,7 +2804,7 @@
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks, onDeleteCustomer }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [showMissingPhotoConfirm, setShowMissingPhotoConfirm] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false, instantPrint: false, instantQty: 1, instantPrice: ''}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, originalInstantPaperQty: 0 });
+            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false, instantPrint: false, instantQty: 1, instantPrice: ''}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, originalInstantPaperQty: 0, regularPrintItems: [] });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
             const [showIncompleteReceiptDeleteModal, setShowIncompleteReceiptDeleteModal] = useState(false);
@@ -2804,15 +2835,21 @@
             const [newDeliveryDays, setNewDeliveryDays] = useState('');
             const deliveryOptions = [{ key: 'instant', label: 'فوري', days: 0, icon: 'ph-lightning', color: 'emerald' }, { key: 'two-days', label: 'بعد يومين', days: 2, icon: 'ph-calendar-plus', color: 'blue' }, { key: 'four-days', label: 'بعد 4 أيام', days: 4, icon: 'ph-calendar-check', color: 'purple' }, ...customDeliveryOptions];
             const getLocalDateAfterDays = (days) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + Number(days || 0)); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; };
-            const applyDeliveryOption = (option) => setFormData(prev => {
+            const applyDeliveryOption = (option) => {
+              const enabled = option.key === 'instant';
+              const draftNumber = String(photoDraft.number || '').trim();
+              const draftNote = String(photoDraft.note || '').trim();
+              const draftImportant = Boolean(photoDraft.important || draftNote);
+              if (enabled && draftNumber) setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
+              return setFormData(prev => {
                 const price = Math.max(0, Number(settings.instantPrintSheetPrice || 0));
                 const currentTotal = parseFloat(prev.total) || 0;
                 const previousInstantTotal = prev.instantPrintEnabled ? price * Math.max(1, Number(prev.instantPaperQty || 1)) : 0;
                 const baseTotal = Math.max(0, currentTotal - previousInstantTotal);
-                const enabled = option.key === 'instant';
-                const nextPhotos = enabled ? [...(prev.photoNo || []).filter(p => !p.autoInstantPaper), { number: '', note: '', serviceType: 'طباعة فورية', needsName: false, important: false, instantPrint: true, instantQty: 1, instantPrice: price, autoInstantPaper: true }] : (prev.photoNo || []).filter(p => !p.autoInstantPaper);
+                const nextPhotos = enabled ? [...(prev.photoNo || []).filter(p => !p.autoInstantPaper), { number: draftNumber, note: draftNote, serviceType: 'طباعة فورية', needsName: false, important: draftImportant, instantPrint: true, instantQty: 1, instantPrice: price, instantCost: settings.instantPrintCost == null ? null : Math.max(0, Number(settings.instantPrintCost) || 0), autoInstantPaper: true }] : (prev.photoNo || []).filter(p => !p.autoInstantPaper);
                 return { ...prev, pickupOption: option.key, pickupDate: getLocalDateAfterDays(option.days), instantPrintEnabled: enabled, instantPaperQty: enabled ? 1 : 0, total: baseTotal + (enabled ? price : 0), photoNo: nextPhotos };
-            });
+              });
+            };
             const addCustomDeliveryOption = () => { const days = parseInt(newDeliveryDays, 10); if (!Number.isFinite(days) || days < 0 || days > 365) return; const key = `custom-${days}-${Date.now()}`; setCustomDeliveryOptions(prev => [...prev, { key, label: `بعد ${days} ${days === 1 ? 'يوم' : 'يومًا'}`, days, icon: 'ph-clock', color: 'amber' }]); setNewDeliveryDays(''); };
 
             const appendPhotoService = (label) => setPhotoDraft(prev => {
@@ -2829,10 +2866,30 @@
                  return { ...prev, total: (parseFloat(prev.total) || 0) + addedPrice, soldProducts: newProductsList };
               });
             };
-            const handlePickPhotoService = (srv, qty) => {
-              const validQty = parseInt(qty) || 1;
-              const serviceLabel = validQty > 1 ? `${validQty} × ${srv.name}` : srv.name;
-              setPendingPhotoService({ label: serviceLabel, price: (parseFloat(srv.price) || 0) * validQty });
+            const handleAdjustRegularPrint = (srv, delta) => {
+              const itemName = String(srv?.name || '').trim(); if (!itemName || !delta) return; const unitPrice = Math.max(0, Number(srv.price) || 0);
+              setFormData(prev => { const items = [...(prev.regularPrintItems || [])]; const index = items.findIndex(item => item.name === itemName); const oldQty = index >= 0 ? Math.max(0, Number(items[index].qty) || 0) : 0; const nextQty = Math.max(0, oldQty + delta); if (nextQty === 0) { if (index >= 0) items.splice(index, 1); } else if (index >= 0) items[index] = { ...items[index], qty: nextQty, unitPrice, unitCost: srv.cost == null || srv.cost === '' ? null : Math.max(0, Number(srv.cost) || 0) }; else items.push({ name: itemName, size: getPrintSize(srv), qty: nextQty, unitPrice, unitCost: srv.cost == null || srv.cost === '' ? null : Math.max(0, Number(srv.cost) || 0) }); return { ...prev, total: Math.max(0, (Number(prev.total) || 0) + ((nextQty - oldQty) * unitPrice)), regularPrintItems: items }; });
+            };
+            const handleAdjustInstantTemplate = (service, delta) => {
+              const unitPrice = Math.max(0, Number(settings.instantPrintSheetPrice || service?.price || 0)); const unitCost = settings.instantPrintCost == null || settings.instantPrintCost === '' ? null : Math.max(0, Number(settings.instantPrintCost) || 0);
+              setFormData(prev => { const photos = [...(prev.photoNo || [])]; const index = photos.findIndex(item => item.autoInstantPaper); const oldQty = index >= 0 ? Math.max(0, Number(photos[index].instantQty) || 1) : 0; const nextQty = Math.max(0, oldQty + delta); if (nextQty === 0) { if (index >= 0) photos.splice(index, 1); } else if (index >= 0) photos[index] = { ...photos[index], instantQty: nextQty, instantPrice: unitPrice, instantCost: unitCost, serviceType: service?.name || 'طباعة فورية' }; else photos.push({ number: '', note: '', serviceType: service?.name || 'طباعة فورية', needsName: false, important: false, instantPrint: true, instantQty: nextQty, instantPrice: unitPrice, instantCost: unitCost, autoInstantPaper: true }); return { ...prev, total: Math.max(0, (Number(prev.total) || 0) + ((nextQty - oldQty) * unitPrice)), photoNo: photos, instantPrintEnabled: nextQty > 0, instantPaperQty: nextQty }; });
+            };
+            const handleLinkPrintServiceToPhoto = (srv) => { if (!String(photoDraft.number || '').trim()) { alert('أدخل رقم الصورة أولًا في خانة رقم الصورة، ثم اضغط ربط خدمة 4×6.'); return; } appendPhotoService(srv.name); };
+            const handleLinkInstantPrintToPhoto = (service) => {
+              const number = String(photoDraft.number || '').trim();
+              if (!number) { alert('أدخل رقم الصورة الجاري أولًا، ثم اضغط ربط الطباعة الفورية.'); return; }
+              const unitPrice = Math.max(0, Number(settings.instantPrintSheetPrice || service?.price || 0));
+              const unitCost = settings.instantPrintCost == null || settings.instantPrintCost === '' ? null : Math.max(0, Number(settings.instantPrintCost) || 0);
+              setFormData(prev => {
+                const photos = [...(prev.photoNo || [])];
+                const index = photos.findIndex(item => (item.autoInstantPaper || item.instantPrint) && !String(item.number || '').trim());
+                const draftNote = String(photoDraft.note || '').trim();
+                const important = Boolean(photoDraft.important || draftNote);
+                if (index >= 0) photos[index] = { ...photos[index], number, note: photos[index].note || draftNote, important: Boolean(photos[index].important || important), instantPrint: true, instantPrice: unitPrice, instantCost: photos[index].instantCost ?? unitCost, serviceType: service?.name || photos[index].serviceType || 'طباعة فورية' };
+                else { photos.push({ number, note: draftNote, serviceType: service?.name || 'طباعة فورية', needsName: false, important, instantPrint: true, instantQty: 1, instantPrice: unitPrice, instantCost: unitCost, autoInstantPaper: true }); return { ...prev, photoNo: photos, total: Math.max(0, (Number(prev.total) || 0) + unitPrice), instantPrintEnabled: true, instantPaperQty: Math.max(0, Number(prev.instantPaperQty) || 0) + 1 }; }
+                return { ...prev, photoNo: photos, instantPrintEnabled: true };
+              });
+              setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
             };
             const applyPendingPhotoService = (withPhotoNumber) => {
               if (!pendingPhotoService) return;
@@ -2847,7 +2904,7 @@
 
             const handleEdit = (txn) => {
                 const savedPhotos = Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''} : {...p, instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: p.instantPrice ?? ''}).filter(p => (p.number && String(p.number).trim() !== '') || (p.serviceType && String(p.serviceType).trim() !== '')) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''})) : []);
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), instantPrintEnabled: txn.pickupOption === 'instant' || (Array.isArray(txn.instantPrintItems) && txn.instantPrintItems.length > 0), instantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalInstantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0 });
+                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), instantPrintEnabled: txn.pickupOption === 'instant' || (Array.isArray(txn.instantPrintItems) && txn.instantPrintItems.length > 0), instantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalInstantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, regularPrintItems: Array.isArray(txn.regularPrintItems) ? txn.regularPrintItems : [] });
                 setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
                 setIsEditing(true); setShowAddModal(true);
             };
@@ -2857,7 +2914,7 @@
               const draftHasContent = String(photoDraft.number || '').trim() || String(photoDraft.serviceType || '').trim();
               const photosForSave = [...(formData.photoNo || []), ...(draftHasContent ? [{...photoDraft, number: String(photoDraft.number || '').trim(), important: Boolean(photoDraft.important || String(photoDraft.note || '').trim())}] : [])];
               const hasPhotoNumber = photosForSave.some(photo => String(photo?.number || '').trim());
-              if (!isEditing && !hasPhotoNumber && !allowMissingPhotoNo) { setShowMissingPhotoConfirm(true); return; }
+              if (!isEditing && !hasPhotoNumber && !(formData.regularPrintItems || []).length && !(Number(formData.instantPaperQty) > 0) && !allowMissingPhotoNo) { setShowMissingPhotoConfirm(true); return; }
               let total = parseFloat(formData.total) || 0; 
               const paid = parseFloat(formData.paid) || 0;
               let rewardDiscount = 0;
@@ -2872,14 +2929,14 @@
               let finalReceiptNo = isEditing ? formData.receiptNo : (settings.nextReceiptNo || 1000);
               if (!isEditing && allRecords) { let isDuplicate = true; while(isDuplicate) { if (allRecords.some(t => t.receiptNo === finalReceiptNo)) { finalReceiptNo++; } else { isDuplicate = false; } } }
               
-              const instantPrintItems = photosForSave.filter(p => Boolean(p.instantPrint)).map(p => ({ name: p.serviceType || 'طباعة فورية', qty: Math.max(1, Number(p.instantQty || 1)), unitPrice: Math.max(0, Number(p.instantPrice || settings.instantPrintSheetPrice || 0) || 0) }));
+              const instantPrintItems = photosForSave.filter(p => Boolean(p.instantPrint)).map(p => ({ name: p.serviceType || 'طباعة فورية', qty: Math.max(1, Number(p.instantQty || 1)), unitPrice: Math.max(0, Number(p.instantPrice || settings.instantPrintSheetPrice || 0) || 0), unitCost: p.instantCost !== undefined ? p.instantCost : p.unitCost !== undefined ? p.unitCost : null }));
               const instantPrintPaperQty = instantPrintItems.reduce((sum, item) => sum + item.qty, 0);
               const originalInstantPaperQty = isEditing ? Math.max(0, Number(formData.originalInstantPaperQty || 0)) : 0;
               const instantStockDelta = instantPrintPaperQty - originalInstantPaperQty;
               const availableInstantSheets = Math.max(0, Number(inventory['ورق طباعة صور'] || 0));
               if (instantStockDelta > availableInstantSheets) { alert(`لا يمكن حفظ العملية: المتاح من أوراق الطباعة الفورية ${availableInstantSheets} بينما المطلوب إضافته ${instantStockDelta}.`); return; }
               const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important), instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: Math.max(0, Number(p.instantPrice || 0) || 0)})), instantPrintItems: instantPrintItems, instantPrintPaperQty: instantPrintPaperQty, writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
+              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important), instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: Math.max(0, Number(p.instantPrice || 0) || 0)})), instantPrintItems: instantPrintItems, instantPrintPaperQty: instantPrintPaperQty, regularPrintItems: (formData.regularPrintItems || []).map(item => ({ ...item, qty: Math.max(1, Number(item.qty) || 1), unitPrice: Math.max(0, Number(item.unitPrice) || 0) })), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
@@ -2892,7 +2949,7 @@
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, instantPaperQty: 0, originalInstantPaperQty: 0 });
+              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, instantPaperQty: 0, originalInstantPaperQty: 0, regularPrintItems: [] });
               setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
               setCustomerRewards({ earned: 0, used: 0, balance: 0 });
               setIsEditing(false); setShowAddModal(false); setShowMissingPhotoConfirm(false);
@@ -3161,8 +3218,17 @@
                             <div><label className="block text-[11px] text-slate-500 mb-1">الاسم الأساسي للإيصال (يُسجّل من الاستوديو)</label><input type="text" placeholder="اسم العميل" required className="w-full p-3 border border-slate-700 bg-slate-950 text-white placeholder-slate-500 rounded-xl focus:border-blue-500 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} /></div>
                             <div><label className="block text-[11px] text-slate-500 mb-1">رقم الهاتف <span className="text-slate-600">(اختياري)</span></label><input type="tel" inputMode="numeric" maxLength="15" placeholder="01XXXXXXXXX" aria-invalid={!!formData.phone && !isValidCustomerPhone(formData.phone)} className={`w-full p-3 border bg-slate-950 text-white placeholder-slate-500 rounded-xl outline-none text-sm ${formData.phone && !isValidCustomerPhone(formData.phone) ? 'border-amber-500 focus:border-amber-400' : 'border-slate-700 focus:border-blue-500'}`} value={formData.phone} onChange={e => handlePhoneChange(e.target.value)} onBlur={() => { if (formData.phone && !isValidCustomerPhone(formData.phone)) setFormData(prev => ({...prev, phone: ''})); }} />{formData.phone && !isValidCustomerPhone(formData.phone) && <small className="mt-1 block text-[10px] text-amber-300">رقم غير مطابق؛ سيُحفظ العميل بلا هاتف إذا لم يُصحح.</small>}</div>
                         </div>
-                        <div className="bg-gradient-to-l from-purple-950/60 to-slate-950 p-4 rounded-xl border border-purple-500/40 mb-4"><label className="flex items-center gap-3 font-bold text-purple-200 cursor-pointer"><input type="checkbox" checked={formData.writeNameOnPhoto || false} onChange={e=>setFormData({...formData,writeNameOnPhoto:e.target.checked})} className="w-5 h-5 accent-purple-500"/> أرغب في كتابة اسمي على الصورة</label>{formData.writeNameOnPhoto && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3"><input value={formData.photoName || ''} onChange={e=>setFormData({...formData,photoName:e.target.value})} placeholder="الاسم المطلوب كتابته على الصورة" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/><input value={formData.nationalId || ''} onChange={e=>setFormData({...formData,nationalId:e.target.value.replace(/\D/g,'').slice(0,14)})} maxLength="14" placeholder="الرقم القومي الظاهر بجوار الاسم" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/><input value={formData.branch || ''} onChange={e=>setFormData({...formData,branch:e.target.value})} placeholder="الشعبة / المسار" className="w-full p-3 bg-slate-950 border border-purple-500/40 rounded-xl text-white"/></div>}</div>
-                        <div className="grid grid-cols-1 lg:grid-cols-[1.65fr_1fr] gap-4 mb-5 items-stretch">
+                        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] gap-3 mb-4 items-stretch">
+                          <div className="h-full rounded-2xl border border-blue-500/25 bg-slate-950 p-4 shadow-inner hover:border-blue-500/60 transition-colors min-w-0">
+                            <label className="flex min-h-10 items-center gap-2.5 rounded-xl border border-purple-400/20 bg-purple-950/25 px-3 py-2 text-xs font-black text-purple-100 cursor-pointer"><input type="checkbox" checked={formData.writeNameOnPhoto || false} onChange={e=>setFormData({...formData,writeNameOnPhoto:e.target.checked})} className="h-4 w-4 accent-purple-500 shrink-0"/><i className="ph-fill ph-pencil-simple text-purple-300"></i><span>أرغب بكتابة اسمي على الصورة</span></label>
+                            {formData.writeNameOnPhoto && <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-2"><input value={formData.photoName || ''} onChange={e=>setFormData({...formData,photoName:e.target.value})} placeholder="الاسم على الصورة" className="w-full min-w-0 p-2.5 bg-slate-950 border border-purple-500/35 rounded-xl text-white text-xs outline-none focus:border-purple-300"/><input value={formData.nationalId || ''} onChange={e=>setFormData({...formData,nationalId:e.target.value.replace(/\D/g,'').slice(0,14)})} maxLength="14" placeholder="الرقم القومي" className="w-full min-w-0 p-2.5 bg-slate-950 border border-purple-500/35 rounded-xl text-white text-xs outline-none focus:border-purple-300"/><input value={formData.branch || ''} onChange={e=>setFormData({...formData,branch:e.target.value})} placeholder="الشعبة / المسار" className="w-full min-w-0 p-2.5 bg-slate-950 border border-purple-500/35 rounded-xl text-white text-xs outline-none focus:border-purple-300"/></div>}
+                          </div>
+                          <div className="h-full min-w-0 rounded-2xl border border-blue-500/25 bg-slate-950 p-4 shadow-inner hover:border-blue-500/60 transition-colors flex flex-col justify-between gap-3">
+                            <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 min-w-0"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-yellow-400/25 bg-yellow-500/10 text-yellow-300"><i className="ph-fill ph-gift text-lg"></i></span><div className="min-w-0"><h4 className="text-xs font-black text-yellow-100">رصيد مكافآت العميل</h4><p className="text-[9px] text-slate-500">الرصيد المتاح لهذه العملية</p></div></div><strong className="shrink-0 rounded-xl border border-yellow-400/20 bg-yellow-950/40 px-3 py-2 text-sm font-black text-yellow-300">{customerRewards.balance} <span className="text-[10px]">ج.م</span></strong></div>
+                            {!isEditing && customerRewards.balance > 0 ? <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-[10px] hover:border-yellow-500/60"><input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="h-4 w-4 accent-yellow-500 shrink-0"/><span className="font-bold text-slate-200">استخدام الرصيد كخصم</span></label> : <div className="rounded-xl bg-slate-900/60 px-3 py-2 text-center text-[10px] text-slate-500">لا يوجد رصيد متاح حاليًا</div>}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] gap-3 mb-5 items-stretch">
                             <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950/30 p-4 rounded-2xl border border-blue-500/30 shadow-inner hover:border-blue-400/60 transition-colors min-w-0">
                                 <div className="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-blue-500/15">
                                     <div className="flex items-start gap-3 min-w-0">
@@ -3195,29 +3261,26 @@
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-3 min-w-0">
-                            <div className="bg-slate-950 p-4 rounded-2xl border border-blue-500/25 flex flex-col gap-3 shadow-inner hover:border-blue-500/60 transition-colors">
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-blue-500/25 flex h-full min-w-0 flex-col gap-3 shadow-inner hover:border-blue-500/60 transition-colors">
                                 <div className="flex items-start gap-3"><div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-calendar-check text-xl"></i></div><div><label className="block text-sm font-black text-blue-200">موعد التسليم المتوقع</label><p className="text-[10px] text-slate-500 mt-1 leading-relaxed">اختر المدة وسيُضاف التاريخ تلقائيًا</p></div></div>
                                 <div className="grid grid-cols-3 gap-2">{deliveryOptions.map(option => <button key={option.key} type="button" onClick={() => applyDeliveryOption(option)} className={`p-2 rounded-xl border text-[10px] font-black transition-all flex flex-col items-center justify-center gap-1 ${formData.pickupOption === option.key ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/40 scale-[1.02]' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500/70 hover:text-blue-200'}`}><i className={`ph-fill ${option.icon} text-base`}></i>{option.label}</button>)}</div>
                                 <div className="flex gap-2"><input type="number" min="0" max="365" value={newDeliveryDays} onChange={e => setNewDeliveryDays(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomDeliveryOption(); } }} placeholder="مدة أخرى بالأيام" className="flex-1 min-w-0 h-9 px-2 border border-slate-700 bg-slate-900 text-white placeholder-slate-500 rounded-lg outline-none focus:border-amber-500 text-[10px] font-bold" /><button type="button" onClick={addCustomDeliveryOption} className="h-9 px-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1" title="إضافة مدة أخرى"><i className="ph-bold ph-plus"></i> إضافة</button></div>
                                 {formData.pickupDate && <div className="bg-blue-950/40 border border-blue-500/25 rounded-xl px-2.5 py-2 text-center"><span className="text-[9px] text-slate-400 block">تاريخ التسليم المحسوب</span><strong className="text-blue-200 text-xs block mt-1">{formatDateOnlyEnglish(formData.pickupDate)}</strong></div>}
-                                {formData.instantPrintEnabled && <div className="rounded-xl border border-yellow-500/30 bg-yellow-950/25 p-3"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-black text-yellow-200"><i className="ph-fill ph-lightning"></i>طباعة فورية</span><span className="rounded-lg bg-yellow-400/10 px-2 py-1 text-[10px] font-black text-yellow-200">ورقة واحدة</span></div><div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-400">سعر الورقة للعميل</span><strong className="text-yellow-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div><p className="mt-1 text-[9px] text-yellow-100/70">سيتم خصم ورقة من مخزون «ورق طباعة صور» وإضافة السعر تلقائيًا عند الحفظ.</p>{!(Number(settings.instantPrintSheetPrice) > 0) && <p className="mt-1 text-[9px] font-bold text-red-300">يرجى تحديد سعر الورقة من قسم المصروفات والمخزون.</p>}</div>}
+                                {formData.instantPrintEnabled && <div className="rounded-xl border border-yellow-500/30 bg-yellow-950/25 p-3"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-black text-yellow-200"><i className="ph-fill ph-lightning"></i>طباعة فورية</span><span className="rounded-lg bg-yellow-400/10 px-2 py-1 text-[10px] font-black text-yellow-200">{Math.max(1, Number(formData.instantPaperQty) || 1)} ورقة</span></div><div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-400">سعر البيع / تكلفة الطباعة</span><strong className="text-yellow-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div><p className="mt-1 text-[9px] text-yellow-100/70">سيتم خصم ورقة من مخزون «ورق طباعة صور» وإضافة السعر تلقائيًا عند الحفظ.</p>{!(Number(settings.instantPrintSheetPrice) > 0) && <p className="mt-1 text-[9px] font-bold text-red-300">يرجى تحديد سعر الورقة من قسم المصروفات والمخزون.</p>}{(formData.photoNo || []).some(item => (item.autoInstantPaper || item.instantPrint) && !String(item.number || '').trim()) ? <button type="button" onClick={() => handleLinkInstantPrintToPhoto(getInstantPrintService(settings.services))} className="mt-2 w-full rounded-lg border border-cyan-300/25 bg-cyan-950/30 px-2.5 py-2 text-[10px] font-black text-cyan-100 hover:bg-cyan-900/40"><i className="ph ph-link ml-1"></i>{photoDraft.number ? `ربط برقم الصورة ${photoDraft.number}` : 'ربط الفوري برقم الصورة الجاري'}</button> : <span className="mt-2 block rounded-lg border border-emerald-400/20 bg-emerald-950/20 px-2.5 py-2 text-center text-[10px] font-bold text-emerald-200"><i className="ph-fill ph-check-circle ml-1"></i>{(formData.photoNo || []).filter(item => (item.autoInstantPaper || item.instantPrint) && String(item.number || '').trim()).length ? 'تم ربط الطباعة الفورية برقم الصورة' : 'أدخل رقم الصورة الجاري لربط الطباعة الفورية'}</span>}</div>}
                                 <div className="flex items-center gap-2 mt-auto"><span className="text-[9px] text-slate-500 whitespace-nowrap">أو تاريخ مخصص:</span><input type="date" lang="en" dir="ltr" value={formData.pickupDate || ''} onChange={e=>setFormData({...formData,pickupOption:'custom',pickupDate:e.target.value})} className="flex-1 min-w-0 h-8 px-2 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-blue-500 text-[10px] font-bold" /></div>
-                            </div>
-
-                            <div className="bg-slate-950 p-4 rounded-2xl border border-yellow-500/25 flex flex-col justify-between gap-3 shadow-inner hover:border-yellow-500/60 transition-colors">
-                                <div className="flex items-start gap-3"><div className="w-10 h-10 rounded-xl bg-yellow-500/15 border border-yellow-400/25 text-yellow-300 flex items-center justify-center shrink-0"><i className="ph-fill ph-gift text-xl"></i></div><div><h4 className="text-sm font-black text-yellow-200">رصيد المكافآت للعميل</h4><p className="text-[10px] text-slate-500 mt-1">الرصيد المتاح للاستخدام في هذه العملية</p></div></div>
-                                <div className="bg-yellow-950/25 border border-yellow-500/20 rounded-xl p-3 text-center"><span className="block text-[10px] text-yellow-200/70">الرصيد الحالي</span><strong className="block text-xl text-yellow-300 font-black mt-1">{customerRewards.balance} <span className="text-xs">ج.م</span></strong></div>
-                                {!isEditing && customerRewards.balance > 0 ? <label className="flex items-center gap-2 cursor-pointer bg-slate-900 border border-slate-700 px-3 py-2.5 rounded-xl hover:border-yellow-500 transition-colors w-full"><input type="checkbox" checked={formData.useReward} onChange={(e) => setFormData({...formData, useReward: e.target.checked})} className="w-4 h-4 accent-yellow-500 shrink-0" /><span className="text-xs font-bold text-slate-300">استخدام الرصيد كخصم</span></label> : <div className="text-[10px] text-slate-600 bg-slate-900/60 rounded-lg px-3 py-2.5 text-center">لا يوجد رصيد متاح حاليًا</div>}
-                            </div>
                             </div>
                         </div>
 
                         <PromoSelector settings={settings} selectedPromos={formData.selectedPromos} onChange={(selected) => setFormData({...formData, selectedPromos: selected})} />
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-                          {settings.services.map((srv, idx) => { const srvObj = typeof srv === 'string' ? {name: srv, price: 0, desc: ''} : srv; return <QuickServiceCard key={`srv-${idx}`} srvObj={srvObj} onAdd={() => {}} onPhotoPick={handlePickPhotoService} colorTheme="blue" />; })}
-                        </div>
+                        {(getRegularPrintServices(settings.services).length > 0 || getInstantPrintService(settings.services)) && <div className="mb-4 rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-950/35 via-slate-950 to-violet-950/25 p-3 sm:p-4 shadow-inner">
+                          <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="text-sm font-black text-fuchsia-100"><i className="ph-fill ph-printer ml-1 text-fuchsia-300"></i>قوالب الطباعة العادية</h3><p className="mt-1 text-[10px] text-fuchsia-100/60">استخدم + و− لضبط العدد. الأسعار من إعدادات خدمات التصوير. قالب فوري يحسب الورق من المخزون.</p></div><span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-400/10 px-2 py-1 text-[9px] font-black text-fuchsia-100">{(formData.regularPrintItems || []).reduce((sum, item) => sum + (Number(item.qty) || 0), 0) + (Number(formData.instantPaperQty) || 0)} طبعة</span></div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {getRegularPrintServices(settings.services).map((srv, idx) => { const size = getPrintSize(srv); const selected = (formData.regularPrintItems || []).find(item => item.name === srv.name); const qty = Number(selected?.qty) || 0; const isPhoto46 = /^(4\.?(?:0)?×6(?:\.0)?|4x6)$/i.test(size.replace(/\s/g,'')); return <div key={`regular-print-${srv.name}-${idx}`} className="rounded-xl border border-fuchsia-300/25 bg-fuchsia-950/35 p-3"><div className="flex items-start justify-between gap-2"><div><strong className="text-xs font-black text-fuchsia-100">{srv.name}</strong><span className="mt-1 block text-[10px] text-fuchsia-100/65">مقاس {size} · {formatCurrency(srv.price || 0)}</span></div><span className="rounded-md bg-fuchsia-400/10 px-2 py-1 text-[10px] font-black text-fuchsia-100">العدد {qty}</span></div><div className="mt-2 flex items-center gap-2"><button type="button" onClick={() => handleAdjustRegularPrint(srv, -1)} disabled={!qty} aria-label={`تقليل عدد ${srv.name}`} className="h-9 w-10 rounded-lg border border-fuchsia-300/25 bg-slate-950 text-fuchsia-200 hover:bg-fuchsia-900/50 disabled:opacity-40">−</button><button type="button" onClick={() => handleAdjustRegularPrint(srv, 1)} aria-label={`زيادة عدد ${srv.name}`} className="h-9 flex-1 rounded-lg bg-fuchsia-600 text-xs font-black text-white hover:bg-fuchsia-500">+ إضافة طبعة</button></div>{isPhoto46 && <button type="button" onClick={() => handleLinkPrintServiceToPhoto(srv)} className="mt-2 w-full rounded-lg border border-cyan-300/25 bg-cyan-950/30 px-2 py-2 text-[10px] font-black text-cyan-100 hover:bg-cyan-900/40"><i className="ph ph-link ml-1"></i>ربط خدمة 4×6 برقم الصورة الجاري</button>}</div>; })}
+                            {getInstantPrintService(settings.services) && (() => { const srv = getInstantPrintService(settings.services); const qty = (formData.photoNo || []).filter(item => item.autoInstantPaper).reduce((sum, item) => sum + (Number(item.instantQty) || 0), 0); const price = Math.max(0, Number(settings.instantPrintSheetPrice || srv.price || 0)); return <div className="rounded-xl border border-amber-300/35 bg-gradient-to-br from-amber-950/55 to-yellow-950/25 p-3"><div className="flex items-start justify-between gap-2"><div><strong className="text-xs font-black text-amber-100">{srv.name || 'طباعة فورية'}</strong><span className="mt-1 block text-[10px] text-amber-100/65">سعر الطبعة {formatCurrency(price)} · تخصم من مخزون الورق</span></div><span className="rounded-md bg-amber-400/10 px-2 py-1 text-[10px] font-black text-amber-100">العدد {qty}</span></div><div className="mt-2 flex items-center gap-2"><button type="button" onClick={() => handleAdjustInstantTemplate(srv, -1)} disabled={!qty} aria-label="تقليل عدد الطباعات الفورية" className="h-9 w-10 rounded-lg border border-amber-300/25 bg-slate-950 text-amber-200 hover:bg-amber-900/40 disabled:opacity-40">−</button><button type="button" onClick={() => handleAdjustInstantTemplate(srv, 1)} aria-label="زيادة عدد الطباعات الفورية" className="h-9 flex-1 rounded-lg bg-amber-500 text-xs font-black text-slate-950 hover:bg-amber-400">+ إضافة فوري</button></div><button type="button" onClick={() => handleLinkInstantPrintToPhoto(srv)} className="mt-2 w-full rounded-lg border border-cyan-300/25 bg-cyan-950/30 px-2 py-2 text-[10px] font-black text-cyan-100 hover:bg-cyan-900/40"><i className="ph ph-link ml-1"></i>ربط الفوري برقم الصورة الجاري</button></div>; })()}
+                          </div>
+                          {(formData.regularPrintItems || []).length > 0 && <div className="mt-3 flex flex-wrap gap-2 border-t border-fuchsia-300/15 pt-3">{formData.regularPrintItems.map(item => <span key={item.name} className="rounded-lg border border-fuchsia-300/20 bg-slate-950/70 px-2.5 py-1.5 text-[10px] text-fuchsia-100">{item.name}: {item.qty} × {formatCurrency(item.unitPrice)} = {formatCurrency(item.qty * item.unitPrice)}</span>)}</div>}
+                        </div>}
 
                         {isEditing && <>
                         <div className="flex justify-between items-center mb-3 border-t border-slate-800 pt-4"><label className="text-sm font-bold text-slate-400"><i className="ph ph-package text-purple-400 text-lg align-middle"></i> البضاعة والمنتجات:</label></div>
@@ -3553,7 +3616,7 @@
                                     </div>
                                     <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center min-w-0">
                                         <select value={pObj.serviceType || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].serviceType = e.target.value; setFormData({...formData, photoNo: newArr}); }} className="w-full sm:w-36 shrink-0 p-2.5 bg-slate-950 text-blue-200 outline-none text-[11px] font-bold border-b sm:border-b-0 sm:border-r border-slate-700"><option value="">نوع الخدمة...</option>{(settings.services || []).map((srv, si) => { const srvName = typeof srv === 'string' ? srv : srv.name; return <option key={si} value={srvName}>{srvName}</option>; })}</select>
-                                        <label className="flex items-center gap-1.5 px-2 py-2 bg-amber-950/30 border-b sm:border-b-0 sm:border-r border-amber-500/20 text-[10px] font-black text-amber-200 whitespace-nowrap"><input type="checkbox" checked={Boolean(pObj.instantPrint)} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantPrint = e.target.checked; if (e.target.checked && !pObj.instantPrice) { const srv = (settings.services || []).map(x => typeof x === 'string' ? {name:x} : x).find(x => isInstantPrintLabel(x.name)); newArr[idx].instantPrice = srv?.price || ''; } setFormData({...formData, photoNo: newArr}); }} className="accent-amber-400" /> فوري</label>
+                                        <label className="flex items-center gap-1.5 px-2 py-2 bg-amber-950/30 border-b sm:border-b-0 sm:border-r border-amber-500/20 text-[10px] font-black text-amber-200 whitespace-nowrap"><input type="checkbox" checked={Boolean(pObj.instantPrint)} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantPrint = e.target.checked; if (e.target.checked && !pObj.instantPrice) { const srv = (settings.services || []).map(x => typeof x === 'string' ? {name:x} : x).find(x => isInstantPrintLabel(x.name)); newArr[idx].instantPrice = srv?.price || ''; } if (e.target.checked && newArr[idx].instantCost === undefined) newArr[idx].instantCost = settings.instantPrintCost == null ? null : Math.max(0, Number(settings.instantPrintCost) || 0); setFormData({...formData, photoNo: newArr}); }} className="accent-amber-400" /> فوري</label>
                                         {pObj.instantPrint && <><input type="number" min="1" value={pObj.instantQty || 1} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantQty = Math.max(1, parseInt(e.target.value || 1)); setFormData({...formData, photoNo: newArr}); }} className="w-16 p-2.5 bg-slate-950 text-amber-100 text-center outline-none text-[10px] font-black border-b sm:border-b-0 sm:border-r border-slate-700" title="عدد الطباعات الفورية" placeholder="العدد" /><input type="number" min="0" value={pObj.instantPrice ?? ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].instantPrice = e.target.value; setFormData({...formData, photoNo: newArr}); }} className="w-20 p-2.5 bg-slate-950 text-emerald-100 text-center outline-none text-[10px] font-black border-b sm:border-b-0 sm:border-r border-slate-700" title="سعر الطبعة الواحدة" placeholder="السعر" /></>}
                                         <input type="text" placeholder={pObj.needsName ? "اكتب الاسم المطلوب طباعته هنا..." : "ملاحظات للصورة (اختياري)..."} className="flex-1 min-w-0 p-2.5 bg-transparent text-white outline-none text-xs px-3" value={pObj.note || ''} onChange={e => { const newArr = [...formData.photoNo]; newArr[idx].note = e.target.value; setFormData({...formData, photoNo: newArr}); }} />
                                         <button type="button" onClick={() => { const newArr = [...formData.photoNo]; newArr[idx].needsName = !newArr[idx].needsName; setFormData({...formData, photoNo: newArr}); }} className={`px-3 py-2.5 border-r border-slate-700 transition-colors flex items-center justify-center gap-1 shrink-0 ${pObj.needsName ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}><i className={`${pObj.needsName ? 'ph-fill' : 'ph'} ph-text-t text-sm`}></i><span className="text-[10px] font-bold hidden sm:inline">{pObj.needsName ? 'إلغاء الاسم' : 'كتابة اسم'}</span></button>
@@ -3622,6 +3685,8 @@
             const [filterMonth, setFilterMonth] = useState(currentMonth);
             const [filterYear, setFilterYear] = useState(currentYear);
             const [instantSheetPrice, setInstantSheetPrice] = useState(settings.instantPrintSheetPrice || '');
+            const [instantPrintCostDraft, setInstantPrintCostDraft] = useState(settings.instantPrintCost ?? '');
+            useEffect(() => setInstantPrintCostDraft(settings.instantPrintCost ?? ''), [settings.instantPrintCost]);
             const [inventoryDrafts, setInventoryDrafts] = useState({});
             useEffect(() => {
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
@@ -3652,6 +3717,7 @@
                 });
             }, [inventory]);
             const saveInstantSheetPrice = async () => { const value = Math.max(0, Number(instantSheetPrice) || 0); const nextSettings = { ...settings, instantPrintSheetPrice: value }; setSettings(nextSettings); const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), nextSettings, { merge: true }); };
+            const saveInstantPrintCost = async () => { const value = instantPrintCostDraft === '' ? null : Math.max(0, Number(instantPrintCostDraft) || 0); const nextSettings = { ...settings, instantPrintCost: value }; setSettings(nextSettings); const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/settings`, 'main'), nextSettings, { merge: true }); };
 
             const handleAddExpense = async (e) => {
               e.preventDefault();
@@ -3910,7 +3976,7 @@
                    <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5 lg:p-6">
                       <h2 className="mb-2 flex items-center gap-2 border-b border-slate-800 pb-4 text-lg font-bold text-slate-100 sm:text-xl"><i className="ph ph-stack text-2xl text-purple-400"></i> إدارة وإحصائيات المخزون</h2>
                       <p className="mb-3 text-[10px] text-slate-400">أدخل الكمية مباشرةً ثم اضغط «حفظ»، أو استخدم زري الزيادة والنقصان.</p>
-                      <div className="mb-4 min-w-0 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-3 sm:p-4"><div className="mb-3 flex min-w-0 items-start gap-2"><i className="ph-fill ph-lightning mt-0.5 shrink-0 text-xl text-yellow-300"></i><div className="min-w-0"><h3 className="text-sm font-black text-yellow-100">مخزون الطباعة الفورية</h3><p className="mt-1 text-[10px] text-yellow-100/60">يُخصم تلقائيًا عند اختيار «فوري» في نموذج العملية.</p></div></div><div className="mb-3 grid grid-cols-2 gap-2 text-center"><div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">الأوراق المتاحة</span><strong className="break-all text-xl font-black text-yellow-200">{inventory['ورق طباعة صور'] || 0}</strong></div><div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">سعر الورقة</span><strong className="break-all text-xl font-black text-emerald-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div></div><div className="flex min-w-0 gap-2"><input type="number" min="0" value={instantSheetPrice} onChange={e => setInstantSheetPrice(e.target.value)} placeholder="سعر الورقة للعميل" className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white outline-none focus:border-yellow-400" /><button type="button" onClick={saveInstantSheetPrice} className="shrink-0 rounded-lg bg-yellow-500 px-3 py-2 text-xs font-black text-slate-950 hover:bg-yellow-400">حفظ السعر</button></div><p className="mt-2 text-[10px] text-slate-500">استخدم أزرار مخزون «ورق طباعة صور» أسفل البطاقة لإضافة أو خصم الأوراق يدويًا.</p></div>
+                      <div className="mb-4 min-w-0 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-3 sm:p-4"><div className="mb-3 flex min-w-0 items-start gap-2"><i className="ph-fill ph-lightning mt-0.5 shrink-0 text-xl text-yellow-300"></i><div className="min-w-0"><h3 className="text-sm font-black text-yellow-100">مخزون الطباعة الفورية</h3><p className="mt-1 text-[10px] text-yellow-100/60">يُخصم تلقائيًا عند اختيار «فوري» في نموذج العملية.</p></div></div><div className="mb-3 grid grid-cols-2 gap-2 text-center"><div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">الأوراق المتاحة</span><strong className="break-all text-xl font-black text-yellow-200">{inventory['ورق طباعة صور'] || 0}</strong></div><div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">سعر الورقة</span><strong className="break-all text-xl font-black text-emerald-200">{formatCurrency(settings.instantPrintSheetPrice || 0)}</strong></div><div className="min-w-0 rounded-xl border border-amber-400/20 bg-slate-950/70 p-2"><span className="block text-[10px] text-slate-400">تكلفة الورقة</span><strong className="break-all text-xl font-black text-amber-200">{settings.instantPrintCost == null ? "غير محددة" : formatCurrency(settings.instantPrintCost)}</strong></div></div><div className="grid grid-cols-1 gap-2 sm:grid-cols-2"><div className="flex min-w-0 gap-2"><input type="number" min="0" step="0.01" value={instantSheetPrice} onChange={e => setInstantSheetPrice(e.target.value)} placeholder="سعر الطباعة للعميل" aria-label="سعر بيع ورقة الطباعة الفورية" className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white outline-none focus:border-yellow-400" /><button type="button" onClick={saveInstantSheetPrice} className="shrink-0 rounded-lg bg-yellow-500 px-3 py-2 text-xs font-black text-slate-950 hover:bg-yellow-400">حفظ البيع</button></div><div className="flex min-w-0 gap-2"><input type="number" min="0" step="0.01" value={instantPrintCostDraft} onChange={e => setInstantPrintCostDraft(e.target.value)} placeholder="تكلفة الورقة" aria-label="تكلفة ورقة الطباعة الفورية" className="min-w-0 flex-1 rounded-lg border border-amber-400/25 bg-slate-950 p-2 text-xs text-white outline-none focus:border-amber-400" /><button type="button" onClick={saveInstantPrintCost} className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-black text-white hover:bg-amber-500">حفظ التكلفة</button></div></div><p className="mt-2 text-[10px] text-slate-500">استخدم أزرار مخزون «ورق طباعة صور» أسفل البطاقة لإضافة أو خصم الأوراق يدويًا.</p></div>
                       <div className="grid min-w-0 grid-cols-1 gap-3 overflow-y-auto pb-2 pr-1 custom-scrollbar xl:max-h-[65vh] xl:pr-2">
                          {inventoryItemsList.map((item, idx) => {
                             const itemName = item.name;
@@ -3999,6 +4065,8 @@
             const [filter, setFilter] = useState({ month: currentMonth, year: currentYear });
             const [electronicDetails, setElectronicDetails] = useState(null); const [showAmounts, setShowAmounts] = useState(false);
             const [selectedMonthDetails, setSelectedMonthDetails] = useState(null);
+            const [printProfitPeriod, setPrintProfitPeriod] = useState('day');
+            const [printProfitDate, setPrintProfitDate] = useState(() => getLocalDateKey());
             
             const filteredTxns = transactions.filter(t => t.month == filter.month && t.year == filter.year);
             const filteredWeds = weddings.filter(t => t.month == filter.month && t.year == filter.year);
@@ -4008,23 +4076,27 @@
             const studioCollectedStats = useMemo(() => calculatePeriodRevenue(transactions, targetDateObj, 'month'), [transactions, filter]);
             const wedCollectedStats = useMemo(() => calculatePeriodRevenue(weddings, targetDateObj, 'month'), [weddings, filter]);
             const summarizeInstant = (year, month) => {
-                const summary = { photos: 0, total: 0, unpriced: 0, receipts: 0, services: {} };
+                const summary = { photos: 0, total: 0, cost: 0, netProfit: 0, unpriced: 0, uncosted: 0, receipts: 0, services: {} };
                 const monthKey = `${year}-${String(month).padStart(2, '0')}`;
                 (transactions || []).forEach(record => {
                     const date = new Date(record.dateTime || record.createdAt || record.date || '');
                     if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey || !isInstantStatsRecordIncluded(record, settings)) return;
                     const items = getExplicitInstantPrintItems(record); if (!items.length) return;
                     summary.receipts += 1;
-                    items.forEach(item => { const value = item.qty * item.unitPrice; summary.photos += item.qty; summary.total += value; if (!item.unitPrice) summary.unpriced += item.qty; const name = item.name || 'طباعة فورية'; if (!summary.services[name]) summary.services[name] = { photos: 0, total: 0 }; summary.services[name].photos += item.qty; summary.services[name].total += value; });
+                    items.forEach(item => { const qty = Math.max(0, Number(item.qty) || 0); const value = qty * (Number(item.unitPrice) || 0); const hasCost = item.unitCost !== null && item.unitCost !== undefined && item.unitCost !== '' && Number.isFinite(Number(item.unitCost)); const cost = hasCost ? qty * Math.max(0, Number(item.unitCost) || 0) : 0; summary.photos += qty; summary.total += value; summary.cost += cost; if (!hasCost) summary.uncosted += qty; if (!item.unitPrice) summary.unpriced += qty; const name = item.name || 'طباعة فورية'; if (!summary.services[name]) summary.services[name] = { photos: 0, total: 0, cost: 0 }; summary.services[name].photos += qty; summary.services[name].total += value; summary.services[name].cost += cost; });
                 });
-                summary.average = summary.photos ? summary.total / summary.photos : 0; return summary;
+                summary.average = summary.photos ? summary.total / summary.photos : 0; summary.netProfit = summary.total - summary.cost; return summary;
             };
             const monthlyInstantSummary = useMemo(() => summarizeInstant(filter.year, filter.month), [transactions, filter, settings.instantStatsStartDate]);
             const previousInstantMonth = useMemo(() => { const d = new Date(Number(filter.year), Number(filter.month) - 2, 1); return summarizeInstant(d.getFullYear(), d.getMonth() + 1); }, [transactions, filter, settings.instantStatsStartDate]);
-            const instantRevenueShare = (studioCollectedStats.total + wedCollectedStats.total) > 0 ? (monthlyInstantSummary.total / (studioCollectedStats.total + wedCollectedStats.total)) * 100 : 0;
             const topInstantServices = Object.entries(monthlyInstantSummary.services).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
             const instantSheetsAvailable = Math.max(0, Number(inventory?.['ورق طباعة صور'] || 0));
-            const instantSheetPrice = Math.max(0, Number(settings.instantPrintSheetPrice || 0));
+            const summarizeRegularPrint = (year, month) => { const summary = { photos: 0, total: 0, cost: 0, netProfit: 0, receipts: 0, unpriced: 0, uncosted: 0, sizes: {} }; const monthKey = `${year}-${String(month).padStart(2, '0')}`; (transactions || []).forEach(record => { const date = new Date(record.dateTime || record.createdAt || record.date || ''); if (Number.isNaN(date.getTime()) || `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` !== monthKey) return; const items = Array.isArray(record.regularPrintItems) ? record.regularPrintItems : []; if (!items.length) return; summary.receipts += 1; items.forEach(item => { const qty = Math.max(0, Number(item.qty) || 0); const unitPrice = Math.max(0, Number(item.unitPrice) || 0); const value = qty * unitPrice; const hasCost = item.unitCost !== null && item.unitCost !== undefined && item.unitCost !== '' && Number.isFinite(Number(item.unitCost)); const cost = hasCost ? qty * Math.max(0, Number(item.unitCost) || 0) : 0; const size = String(item.size || getPrintSize(item) || item.name || 'مقاس آخر'); summary.photos += qty; summary.total += value; summary.cost += cost; if (!hasCost) summary.uncosted += qty; if (!unitPrice) summary.unpriced += qty; if (!summary.sizes[size]) summary.sizes[size] = { photos: 0, total: 0, cost: 0 }; summary.sizes[size].photos += qty; summary.sizes[size].total += value; summary.sizes[size].cost += cost; }); }); summary.average = summary.photos ? summary.total / summary.photos : 0; summary.netProfit = summary.total - summary.cost; return summary; };
+            const monthlyRegularPrintFinancial = useMemo(() => summarizeRegularPrint(filter.year, filter.month), [transactions, filter]);
+            const previousRegularPrintFinancial = useMemo(() => { const d = new Date(Number(filter.year), Number(filter.month) - 2, 1); return summarizeRegularPrint(d.getFullYear(), d.getMonth() + 1); }, [transactions, filter]);
+            const topRegularPrintSizes = Object.entries(monthlyRegularPrintFinancial.sizes).sort((a, b) => b[1].total - a[1].total).slice(0, 6);
+            const printProfitRange = useMemo(() => { const anchor = new Date(`${printProfitDate}T12:00:00`); const start = new Date(anchor); if (printProfitPeriod === 'week') start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); const end = new Date(start); if (printProfitPeriod === 'week') end.setDate(end.getDate() + 6); return { start: getLocalDateKey(start), end: getLocalDateKey(end) }; }, [printProfitPeriod, printProfitDate]);
+            const combinedPrintProfit = useMemo(() => { const summary = { revenue: 0, cost: 0, netProfit: 0, photos: 0, uncosted: 0, regular: { revenue: 0, cost: 0, profit: 0, photos: 0, uncosted: 0 }, instant: { revenue: 0, cost: 0, profit: 0, photos: 0, uncosted: 0 } }; const add = (item, type) => { const qty = Math.max(0, Number(item.qty) || 0); const price = Math.max(0, Number(item.unitPrice) || 0); const known = item.unitCost !== null && item.unitCost !== undefined && item.unitCost !== '' && Number.isFinite(Number(item.unitCost)); const cost = known ? qty * Math.max(0, Number(item.unitCost) || 0) : 0; const revenue = qty * price; summary.photos += qty; summary.revenue += revenue; summary.cost += cost; if (!known) summary.uncosted += qty; const bucket = summary[type]; bucket.photos += qty; bucket.revenue += revenue; bucket.cost += cost; if (!known) bucket.uncosted += qty; }; (transactions || []).forEach(record => { const raw = String(record.dateTime || record.createdAt || record.date || ''); const parsed = new Date(raw); if (Number.isNaN(parsed.getTime())) return; const day = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : getLocalDateKey(parsed); if (day < printProfitRange.start || day > printProfitRange.end) return; (Array.isArray(record.regularPrintItems) ? record.regularPrintItems : []).forEach(item => add(item, 'regular')); getExplicitInstantPrintItems(record).forEach(item => add(item, 'instant')); }); summary.netProfit = summary.revenue - summary.cost; summary.regular.profit = summary.regular.revenue - summary.regular.cost; summary.instant.profit = summary.instant.revenue - summary.instant.cost; return summary; }, [transactions, printProfitRange]);
 
             const studioExpTotal = useMemo(() => filteredExp.filter(e => e.type !== 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
             const weddingExpTotal = useMemo(() => filteredExp.filter(e => e.type === 'wedding').reduce((sum, e) => sum + e.amount, 0), [filteredExp]);
@@ -4149,13 +4221,28 @@
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-amber-500/20 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-2 h-full bg-amber-400"></div>
                     <h3 className="text-lg font-bold text-amber-300 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-lightning"></i> التقرير المالي للطباعة الفورية</span><span className="text-[10px] font-bold text-slate-500">{filter.month}/{filter.year}</span></h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"><StatCard hideValue={!showAmounts} title="إجمالي أسعار الفوري" value={monthlyInstantSummary.total} color="amber" highlight /><StatCard hideValue={!showAmounts} title="عدد الطباعات" value={monthlyInstantSummary.photos} color="yellow" valueType="number" /><StatCard hideValue={!showAmounts} title="عدد الإيصالات" value={monthlyInstantSummary.receipts} color="blue" valueType="number" /><StatCard hideValue={!showAmounts} title="متوسط سعر الطبعة" value={monthlyInstantSummary.average} color="green" /><StatCard hideValue={!showAmounts} title="مساهمة الفوري من الإيراد" value={instantRevenueShare} color="indigo" valueType="percent" /><StatCard hideValue={!showAmounts} title="إجمالي الشهر السابق" value={previousInstantMonth.total} color="slate" /><StatCard hideValue={!showAmounts} title="الأوراق المتاحة بالمخزون" value={instantSheetsAvailable} color="amber" valueType="number" /><StatCard hideValue={!showAmounts} title="سعر الورقة من المخزون" value={instantSheetPrice} color="green" /></div>
-                    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-950/15 px-3 py-2 text-[10px]"><span className="font-black text-yellow-200"><i className="ph-fill ph-stack ml-1"></i>مرتبط ببطاقة مخزون الطباعة الفورية</span><span className="text-slate-400">المتاح الآن: <b className="text-yellow-200">{instantSheetsAvailable} ورقة</b></span><span className="text-slate-400">المستخدم في الشهر: <b className="text-amber-200">{monthlyInstantSummary.photos} ورقة</b></span><span className="text-emerald-200">الرصيد يتحدث تلقائيًا بعد حفظ أو تعديل أي عملية فورية</span></div>
-                    <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2"><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">مقارنة بالشهر السابق</p><p className={`text-sm font-black ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'text-emerald-300' : 'text-red-300'}`}><i className={`ph-fill ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'ph-trend-up' : 'ph-trend-down'} ml-1`}></i>{formatCurrency(monthlyInstantSummary.total - previousInstantMonth.total)} {monthlyInstantSummary.total >= previousInstantMonth.total ? 'زيادة' : 'انخفاض'} في الإيراد</p><p className="mt-1 text-[10px] text-slate-500">الشهر السابق: {formatCurrency(previousInstantMonth.total)} · {previousInstantMonth.photos} صورة · {previousInstantMonth.receipts} إيصال</p></div><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">الخدمات الفورية الأكثر طلبًا</p>{topInstantServices.length ? <div className="flex flex-wrap gap-2">{topInstantServices.map(([name, data]) => <span key={name} className="rounded-lg border border-amber-400/20 bg-amber-950/20 px-2.5 py-1.5 text-[10px] font-bold text-amber-100">{name}: {data.photos} صورة · {formatCurrency(data.total)}</span>)}</div> : <p className="text-[10px] text-slate-500">لا توجد طباعات فورية مسجلة في الشهر المحدد.</p>}</div></div>
+                    <div className="grid grid-cols-2 gap-4 auto-rows-fr items-stretch [&>*]:h-full [&>*]:min-h-[104px]"><StatCard hideValue={!showAmounts} title="مبيعات الفوري" value={monthlyInstantSummary.total} color="amber" highlight /><StatCard hideValue={!showAmounts} title="عدد الطبعات" value={monthlyInstantSummary.photos} color="yellow" valueType="number" /><StatCard hideValue={!showAmounts} title="تكلفة الورق والطباعة" value={monthlyInstantSummary.cost} color="rose" /><StatCard hideValue={!showAmounts} title="صافي ربح الفوري" value={monthlyInstantSummary.netProfit} color="emerald" highlight /></div>
+                    <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-yellow-500/20 bg-yellow-950/15 px-3 py-3 text-[10px] leading-relaxed"><span className="font-black text-yellow-200"><i className="ph-fill ph-stack ml-1"></i>مرتبط ببطاقة مخزون الطباعة الفورية</span><span className="text-slate-400">المتاح الآن: <b className="text-yellow-200">{instantSheetsAvailable} ورقة</b></span><span className="text-slate-400">المستخدم في الشهر: <b className="text-amber-200">{monthlyInstantSummary.photos} ورقة</b></span><span className="text-emerald-200">الرصيد يتحدث تلقائيًا بعد حفظ أو تعديل أي عملية فورية</span>{monthlyInstantSummary.uncosted > 0 && <span className="w-full font-bold text-amber-200">تنبيه: تكلفة غير مسجلة لـ {monthlyInstantSummary.uncosted} طبعة؛ الربح الحالي تقديري.</span>}</div>
+                    <div className="mt-4 grid grid-cols-1 gap-3 2xl:grid-cols-2 [&>*]:min-h-[108px]"><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">مقارنة بالشهر السابق</p><p className={`text-sm font-black ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'text-emerald-300' : 'text-red-300'}`}><i className={`ph-fill ${monthlyInstantSummary.total >= previousInstantMonth.total ? 'ph-trend-up' : 'ph-trend-down'} ml-1`}></i>{formatCurrency(monthlyInstantSummary.total - previousInstantMonth.total)} {monthlyInstantSummary.total >= previousInstantMonth.total ? 'زيادة' : 'انخفاض'} في الإيراد</p><p className="mt-1 text-[10px] text-slate-500">الشهر السابق: {formatCurrency(previousInstantMonth.total)} · {previousInstantMonth.photos} صورة · {previousInstantMonth.receipts} إيصال</p></div><div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-2 text-xs font-black text-slate-300">الخدمات الفورية الأكثر طلبًا</p>{topInstantServices.length ? <div className="flex flex-wrap gap-2">{topInstantServices.map(([name, data]) => <span key={name} className="rounded-lg border border-amber-400/20 bg-amber-950/20 px-2.5 py-1.5 text-[10px] font-bold text-amber-100">{name}: {data.photos} صورة · {formatCurrency(data.total)}</span>)}</div> : <p className="text-[10px] text-slate-500">لا توجد طباعات فورية مسجلة في الشهر المحدد.</p>}</div></div>
                   </div>
+                  <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-fuchsia-500/25 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2 h-full bg-fuchsia-400"></div>
+                    <h3 className="text-lg font-bold text-fuchsia-300 mb-4 border-b border-slate-800 pb-3 flex items-center justify-between"><span className="flex items-center gap-2"><i className="ph-fill ph-printer"></i> التقرير المالي للطباعة العادية</span><span className="text-[10px] font-bold text-slate-500">{filter.month}/{filter.year}</span></h3>
+                    <div className="grid grid-cols-2 gap-4 auto-rows-fr items-stretch [&>*]:h-full [&>*]:min-h-[104px]"><StatCard hideValue={!showAmounts} title="مبيعات الطباعة العادية" value={monthlyRegularPrintFinancial.total} color="pink" highlight /><StatCard hideValue={!showAmounts} title="عدد الصور المطبوعة" value={monthlyRegularPrintFinancial.photos} color="indigo" valueType="number" /><StatCard hideValue={!showAmounts} title="تكلفة الورق والطباعة" value={monthlyRegularPrintFinancial.cost} color="rose" /><StatCard hideValue={!showAmounts} title="صافي ربح الطباعة العادية" value={monthlyRegularPrintFinancial.netProfit} color="emerald" highlight /></div>
+                    <div className="mt-4 rounded-xl border border-fuchsia-400/20 bg-fuchsia-950/10 p-3"><p className="mb-2 text-xs font-black text-fuchsia-100">تفصيل المقاسات لهذا الشهر</p>{topRegularPrintSizes.length ? <div className="flex flex-wrap gap-2">{topRegularPrintSizes.map(([size, data]) => <span key={size} className="rounded-lg border border-fuchsia-400/20 bg-fuchsia-950/25 px-2.5 py-1.5 text-[10px] font-bold text-fuchsia-100">{size}: {data.photos} صورة · {formatCurrency(data.total)}</span>)}</div> : <p className="text-[10px] text-slate-500">لا توجد طباعات عادية مسجلة في الشهر المحدد.</p>}{monthlyRegularPrintFinancial.unpriced > 0 && <p className="mt-2 text-[10px] font-bold text-amber-200">تنبيه: {monthlyRegularPrintFinancial.unpriced} صورة مسجلة دون سعر بيع.</p>}{monthlyRegularPrintFinancial.uncosted > 0 && <p className="mt-2 text-[10px] font-bold text-amber-200">تكلفة غير مسجلة لـ {monthlyRegularPrintFinancial.uncosted} صورة؛ صافي الربح تقديري.</p>}</div>
+                    <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3"><p className="mb-1 text-xs font-black text-slate-300">مقارنة بالشهر السابق</p><p className={`text-sm font-black ${monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'text-emerald-300' : 'text-red-300'}`}><i className={`ph-fill ${monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'ph-trend-up' : 'ph-trend-down'} ml-1`}></i>{formatCurrency(monthlyRegularPrintFinancial.total - previousRegularPrintFinancial.total)} {monthlyRegularPrintFinancial.total >= previousRegularPrintFinancial.total ? 'زيادة' : 'انخفاض'} في مبيعات الطباعة</p></div>
+                  </div>
+                  </div>
+                  <section className="rounded-2xl border border-teal-400/25 bg-gradient-to-br from-teal-950/30 via-slate-900 to-slate-900 p-4 sm:p-5 shadow-sm">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-teal-400/15 pb-3"><div><h3 className="flex items-center gap-2 text-base font-black text-teal-100"><i className="ph-fill ph-chart-line-up text-teal-300"></i>صافي ربح الطباعة العادية والفورية</h3><p className="mt-1 text-[10px] text-slate-400">الربح هنا = إيرادات الطباعة − تكلفة الورق/الطباعة المباشرة، ولا يشمل المصروفات العامة.</p></div><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-xl border border-slate-700 bg-slate-950 p-1"><button type="button" onClick={() => setPrintProfitPeriod('day')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'day' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>يومي</button><button type="button" onClick={() => setPrintProfitPeriod('week')} className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${printProfitPeriod === 'week' ? 'bg-teal-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>أسبوعي</button></div><input type="date" lang="en" dir="ltr" value={printProfitDate} onChange={event => setPrintProfitDate(event.target.value)} aria-label="تاريخ تقرير ربح الطباعة" className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-bold text-white outline-none focus:border-teal-400"/><span className="text-[10px] text-teal-100/70">{printProfitRange.start === printProfitRange.end ? printProfitRange.start : `${printProfitRange.start} — ${printProfitRange.end}`}</span></div></div>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 auto-rows-fr items-stretch [&>*]:h-full [&>*]:min-h-[88px]"><StatCard hideValue={!showAmounts} title="إجمالي المبيعات" value={combinedPrintProfit.revenue} color="blue" /><StatCard hideValue={!showAmounts} title="تكلفة الورق والطباعة" value={combinedPrintProfit.cost} color="amber" /><StatCard hideValue={!showAmounts} title="صافي الربح المباشر" value={combinedPrintProfit.netProfit} color="emerald" highlight /><StatCard hideValue={!showAmounts} title="إجمالي الطبعات" value={combinedPrintProfit.photos} color="indigo" valueType="number" /></div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 [&>*]:min-h-[86px]"><div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-950/15 p-3"><h4 className="mb-2 text-xs font-black text-fuchsia-100">الطباعة العادية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.regular.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.regular.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.regular.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.regular.photos} صورة</p></div><div className="rounded-xl border border-amber-400/20 bg-amber-950/15 p-3"><h4 className="mb-2 text-xs font-black text-amber-100">الطباعة الفورية</h4><p className="text-[11px] text-slate-300">مبيعات {formatCurrency(combinedPrintProfit.instant.revenue)} <span className="mx-1 text-slate-600">·</span> تكلفة {formatCurrency(combinedPrintProfit.instant.cost)} <span className="mx-1 text-slate-600">·</span> صافي {formatCurrency(combinedPrintProfit.instant.profit)} <span className="mx-1 text-slate-600">·</span> {combinedPrintProfit.instant.photos} صورة</p></div></div>
+                    {combinedPrintProfit.uncosted > 0 && <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2 text-[10px] font-bold text-amber-200">الربح تقديري: لم تُسجّل تكلفة الوحدة لـ {combinedPrintProfit.uncosted} طبعة ضمن الفترة. أدخل التكاليف من إعدادات قوالب خدمات التصوير ومن بطاقة مخزون الطباعة الفورية. الإيصالات القديمة لا تحتوي على تكاليف محفوظة.</p>}
+                  </section>
 
                   {/* قسم تقرير حجوزات الزفاف */}
                   <div className="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col relative overflow-hidden">
@@ -4312,10 +4399,11 @@
             };
 
             return (
-              <div className="settings-panel space-y-8 pb-28">
+              <div className="settings-panel flex flex-col gap-4 pb-32">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-4 text-slate-100"><i className="ph ph-image text-purple-400"></i> هوية الاستوديو وإعدادات النظام</h2>
-                    <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between mb-3">
+                    <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                    <div className="min-w-0 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
                         <div>
                             <p className="font-bold text-xs text-slate-200">تفعيل إشعارات المتصفح للإدارة</p>
                             <p className="text-[10px] text-slate-500 mt-0.5">لتلقي تنبيهات عند استلام تقييمات جديدة من العملاء.</p>
@@ -4325,8 +4413,9 @@
                           <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                         </label>
                     </div>
-                    <div className="mb-3 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3"><label className="block text-xs font-black text-amber-100 mb-2">مدة تأخير تنبيه الشغل المتأخر (بالساعات)</label><div className="flex items-center gap-2"><input type="number" min="1" max="720" value={settings.overdueAlertHours ?? 24} onChange={e => setSettings({...settings, overdueAlertHours: Math.min(720, Math.max(1, Number(e.target.value) || 24))})} className="w-full rounded-xl border border-amber-500/30 bg-slate-950 p-3 text-white outline-none focus:border-amber-300" /><span className="text-xs font-bold text-amber-200">ساعة</span></div><p className="mt-1 text-[10px] text-amber-200/70">يظهر التنبيه عندما يمر هذا العدد من الساعات على تسجيل الإيصال دون إكماله.</p></div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="min-w-0 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3.5"><label className="block text-xs font-black text-amber-100 mb-2">مدة تأخير تنبيه الشغل المتأخر (بالساعات)</label><div className="flex items-center gap-2"><input type="number" min="1" max="720" value={settings.overdueAlertHours ?? 24} onChange={e => setSettings({...settings, overdueAlertHours: Math.min(720, Math.max(1, Number(e.target.value) || 24))})} className="w-full rounded-xl border border-amber-500/30 bg-slate-950 p-3 text-white outline-none focus:border-amber-300" /><span className="text-xs font-bold text-amber-200">ساعة</span></div><p className="mt-1 text-[10px] text-amber-200/70">يظهر التنبيه عندما يمر هذا العدد من الساعات على تسجيل الإيصال دون إكماله.</p></div>
+                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">اسم الاستوديو:</label>
                       <input type="text" value={settings.studioName} onChange={e => setSettings({...settings, studioName: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none" />
@@ -4355,7 +4444,7 @@
                     </div>
 
                     {/* إعدادات نظام المكافآت */}
-                    <div className="md:col-span-2 bg-slate-950 p-4 rounded-2xl border border-yellow-500/30">
+                    <div className="md:col-span-1 bg-slate-950 p-4 rounded-2xl border border-yellow-500/30">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
                             <div>
                                 <h3 className="font-bold text-base text-yellow-400 flex items-center gap-2"><i className="ph-fill ph-gift text-xl"></i> إعدادات نظام المكافآت (Cashback)</h3>
@@ -4380,6 +4469,24 @@
                                     <input type="number" step="0.1" value={settings.rewardPercentWedding ?? 1.5} onChange={e => setSettings({...settings, rewardPercentWedding: parseFloat(e.target.value) || 0})} className="w-full py-2 bg-transparent text-white outline-none font-bold" />
                                     <span className="text-slate-500">%</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* إعدادات بيانات الدفع للعملاء */}
+                    <div className="md:col-span-1 bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/30">
+                        <div className="mb-4 border-b border-indigo-900/50 pb-3">
+                            <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> رقم استلام المدفوعات (للعملاء)</h3>
+                            <p className="text-xs text-slate-400 mt-1">هذا الرقم سيظهر للعميل في رابط التتبع الخاص به ليقوم بتحويل المبالغ المتبقية عليه.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-device-mobile text-indigo-400"></i> رقم الهاتف (محافظ / إنستاباي)</label>
+                                <input type="text" placeholder="مثال: 010XXXXXXXX" value={settings.vodafoneCashNumber || ''} onChange={e => setSettings({...settings, vodafoneCashNumber: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono tracking-widest" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-link text-cyan-400"></i> رابط الدفع المباشر (إنستاباي)</label>
+                                <input type="url" placeholder="https://..." value={settings.instapayLink || ''} onChange={e => setSettings({...settings, instapayLink: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-cyan-500 font-mono text-sm" dir="ltr" />
                             </div>
                         </div>
                     </div>
@@ -4429,23 +4536,7 @@
                         </div>
                     </div>
                     
-                    {/* إعدادات بيانات الدفع للعملاء */}
-                    <div className="md:col-span-1 bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/30">
-                        <div className="mb-4 border-b border-indigo-900/50 pb-3">
-                            <h3 className="font-bold text-base text-indigo-400 flex items-center gap-2"><i className="ph-fill ph-wallet text-xl"></i> رقم استلام المدفوعات (للعملاء)</h3>
-                            <p className="text-xs text-slate-400 mt-1">هذا الرقم سيظهر للعميل في رابط التتبع الخاص به ليقوم بتحويل المبالغ المتبقية عليه.</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-device-mobile text-indigo-400"></i> رقم الهاتف (محافظ / إنستاباي)</label>
-                                <input type="text" placeholder="مثال: 010XXXXXXXX" value={settings.vodafoneCashNumber || ''} onChange={e => setSettings({...settings, vodafoneCashNumber: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-indigo-500 font-mono tracking-widest" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><i className="ph-fill ph-link text-cyan-400"></i> رابط الدفع المباشر (إنستاباي)</label>
-                                <input type="url" placeholder="https://..." value={settings.instapayLink || ''} onChange={e => setSettings({...settings, instapayLink: e.target.value})} className="w-full p-3 border border-slate-700 bg-slate-900 text-white rounded-lg outline-none focus:border-cyan-500 font-mono text-sm" dir="ltr" />
-                            </div>
-                        </div>
-                    </div>
+
 
 
                   </div>
@@ -4453,17 +4544,17 @@
 
 
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                    <MiniProductsSettingsList title="بطاقات العرض الرئيسية في بوابة العملاء" items={settings.miniProducts || DEFAULT_MINI_PRODUCTS} onAdd={v => handleAddList('miniProducts', v)} onRemove={i => handleRemoveList('miniProducts', i)} onUpdateAll={newList => handleUpdateList('miniProducts', newList)} />
-                   <ServicesSettingsList title="قوالب خدمات التصوير" items={settings.services || []} onAdd={v => handleAddList('services', v)} onRemove={i => handleRemoveList('services', i)} colorTheme="blue" />
+                   <ServicesSettingsList title="قوالب خدمات التصوير" items={settings.services || []} onAdd={v => handleAddList('services', v)} onRemove={i => handleRemoveList('services', i)} colorTheme="blue" showCost />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                    <ProductsSettingsList title="قوالب البضاعة والمنتجات" items={settings.products || []} inventory={inventory} onAdd={v => handleAddList('products', v)} onRemove={i => handleRemoveList('products', i)} updateInventoryExact={updateInventoryExact} />
                    <PromotionsSettingsList title="قوالب العروض الترويجية المخصصة (للعملاء)" items={settings.promotions || []} onAdd={v => handleAddList('promotions', v)} onRemove={i => handleRemoveList('promotions', i)} />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <ServicesSettingsList title="باقات الزفاف الأساسية" items={settings.weddingPackages || []} onAdd={v => handleAddList('weddingPackages', v)} onRemove={i => handleRemoveList('weddingPackages', i)} colorTheme="pink" />
                    <ServicesSettingsList title="قوالب إضافات الزفاف (حنة، كتب كتاب...)" items={settings.addonTemplates || []} onAdd={v => handleAddList('addonTemplates', v)} onRemove={i => handleRemoveList('addonTemplates', i)} colorTheme="pink" />
                 </div>
@@ -4509,7 +4600,7 @@
                         <code className="text-yellow-400 font-bold mx-1 bg-slate-900 px-2 py-1 rounded border border-slate-700 mt-2 inline-block shadow-sm">{'{item_title}'}</code>
                      </p>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {Object.keys(settings.waTemplates).map(key => {
                       const getLabel = (k) => {
                         switch(k) {
@@ -4736,7 +4827,7 @@
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
             nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
-            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, instantStatsStartDate: getLocalDateKey(), appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
+            workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, instantPrintCost: null, instantStatsStartDate: getLocalDateKey(), appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
           const settingsRef = useRef(settings);
           settingsRef.current = settings;
@@ -4844,7 +4935,7 @@
             const unsubSettings = onSnapshot(doc(db, basePath, 'settings', 'main'), (docSnap) => {
                 if (docSnap.exists()) {
                     let data = docSnap.data();
-                    if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '' });
+                    if (data.services) data.services = data.services.map(s => typeof s === 'string' ? { name: s, price: 0, desc: '' } : { name: s.name, price: s.price || 0, desc: s.desc || '', ...(s.cost === undefined ? {} : { cost: s.cost === null ? null : Math.max(0, Number(s.cost) || 0) }) });
                     if (!data.products) data.products = DEFAULT_PRODUCTS;
                     else data.products = data.products.map(p => typeof p === 'string' ? { name: p, price: 0, wholesalePrice: 0, totalQty: 0, desc: '' } : { name: p.name, price: p.price || 0, wholesalePrice: p.wholesalePrice || 0, totalQty: p.totalQty || 0, desc: p.desc || '' });
                     try { setSafeLocal(`studio_products_${appId}`, JSON.stringify(data.products)); } catch (cacheError) { console.warn('Products cache could not be saved', cacheError); }
@@ -4875,6 +4966,7 @@
                     if (!data.workingHours) data.workingHours = 'يومياً من 10 صباحاً حتى 10 مساءً';
                     if (data.overdueAlertHours === undefined) data.overdueAlertHours = 24;
                     if (data.instantPrintSheetPrice === undefined) data.instantPrintSheetPrice = 0;
+                    if (data.instantPrintCost === undefined) data.instantPrintCost = null;
                     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data.instantStatsStartDate || ''))) {
                         data.instantStatsStartDate = getLocalDateKey();
                         if (!isTracking && !isClientPortal) setDoc(doc(db, basePath, 'settings', 'main'), { instantStatsStartDate: data.instantStatsStartDate }, { merge: true }).catch(error => console.warn('تعذر حفظ تاريخ بداية إحصائيات الطباعة الفورية:', error));
