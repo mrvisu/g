@@ -355,9 +355,12 @@
         const db = getFirestore(app);
 
         // --- Helper Functions ---
+        const normalizeArabicDigits = (value) => String(value ?? '')
+            .replace(/[٠-٩]/g, digit => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+            .replace(/[۰-۹]/g, digit => '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit));
         const normalizeCustomerPhone = (value) => {
             if (!value) return '';
-            return String(value).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '');
+            return normalizeArabicDigits(value).replace(/\D/g, '');
         };
         const isValidCustomerPhone = (value) => {
             const raw = String(value ?? '').trim();
@@ -572,20 +575,19 @@
             .normalize('NFC')
             .replace(/\r\n?/g, '\n');
 
-        // Put the clean portal URL first: WhatsApp uses the first URL for the rich preview.
-        // Its OG metadata contains the studio advertisement image and the short program description.
-        // WhatsApp يأخذ معاينة الرابط الأول في الرسالة. نضع رابط البوابة النظيف
-        // أولًا فقط عندما تحتوي الرسالة على رابط، ليظهر الإعلان ووصف البرنامج
-        // من بيانات Open Graph الموجودة في الصفحة، من دون إضافة فقرات تسويقية تلقائية.
-        const ensurePortalPreviewLink = (message) => {
-            const text = normalizeWhatsAppText(message);
-            if (!/https?:\/\/[^\s<>"']+/i.test(text)) return text;
+        // Remove a bare homepage/admin entry point from customer messages while preserving
+        // receipt/tracking URLs, which contain their own query parameters.
+        const removeBareAdminPortalLink = (message) => {
             const portalUrl = new URL(window.location.href);
             portalUrl.search = '';
             portalUrl.hash = '';
-            const portalRoot = portalUrl.toString();
-            if (text.startsWith(`${portalRoot}\n`) || text.startsWith(`${portalRoot}\r\n`)) return text;
-            return `${portalRoot}\n\n${text}`;
+            const portalRoot = portalUrl.toString().replace(/\/$/, '');
+            const escapedRoot = portalRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const bareRootPattern = new RegExp(`(^|[\\s(])${escapedRoot}/?(?=\\s|$|[),.;])`, 'gi');
+            return normalizeWhatsAppText(message)
+                .replace(bareRootPattern, '$1')
+                .replace(/^[ \t]*\n+|[ \t]*\n+$/g, '')
+                .replace(/\n{3,}/g, '\n\n');
         };
 
         const applyWhatsAppRTL = (message) => normalizeWhatsAppText(message)
@@ -603,7 +605,7 @@
             if (formattedPhone.startsWith('+')) formattedPhone = formattedPhone.slice(1);
             if (formattedPhone.startsWith('0')) formattedPhone = '2' + formattedPhone;
             else if (!formattedPhone.startsWith('2')) formattedPhone = '20' + formattedPhone;
-            const normalizedMessage = applyWhatsAppRTL(ensurePortalPreviewLink(message));
+            const normalizedMessage = applyWhatsAppRTL(removeBareAdminPortalLink(message));
             // Encode the complete message exactly once. WhatsApp decodes this query value.
             // فتح WhatsApp Web مباشرة يتجنب تحويل wa.me الوسيط الذي قد يسلم النص
             // إلى تطبيق سطح المكتب بترميز مختلف على بعض إصدارات Windows.
@@ -5424,7 +5426,38 @@
                               <i className={`ph-bold ph-caret-${showConfirmData ? 'up' : 'down'} text-indigo-300 text-lg`}></i>
                           </button>
                           {showConfirmData && <div className="border-t border-indigo-500/20 p-4 animate-fadeIn">
-                              {!editingConfirmData && txn.identityConfirmed ? <div className="flex items-start justify-between gap-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl p-3"><div className="min-w-0 flex-1"><p className="text-emerald-300 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> البيانات معتمدة</p><div className="mt-3 rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2"><p className="text-[10px] text-slate-500 font-bold mb-1">الاسم على الصورة</p><p className="text-white text-sm font-bold truncate">{txn.photoName || txn.clientName || '—'}</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">الرقم القومي</p><p className="text-slate-300 text-xs font-mono truncate" dir="ltr">{txn.nationalId || '—'}</p></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-3"><p className="text-[10px] text-slate-500 font-bold mb-1">الشعبة / المسار</p><p className="text-purple-300 text-xs font-bold truncate">{txn.branch || '—'}</p></div></div></div><button type="button" onClick={() => setEditingConfirmData(true)} className="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0" title="تعديل البيانات"><i className="ph ph-pencil-simple"></i></button></div> : <div className="space-y-3"><p className="text-xs text-slate-300 leading-relaxed">يمكنك تعديل الاسم المنفصل للطباعة والرقم القومي والشعبة ثم حفظها. الاسم الأساسي للإيصال ثابت من الاستوديو.</p><div className="space-y-3"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الاسم المنفصل المطلوب كتابته على الصورة</label><input id="client-confirm-name" defaultValue={txn.photoName || txn.clientName || ''} placeholder="الاسم المطلوب كتابته على الصورة" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الرقم القومي للصورة</label><input id="client-confirm-national-id" defaultValue={txn.nationalId || ''} inputMode="numeric" maxLength="14" placeholder="الرقم القومي (14 رقمًا)" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-4"><label className="text-xs text-slate-400 font-bold block mb-1">الشعبة / المسار</label><input id="client-confirm-branch" defaultValue={txn.branch || ''} placeholder="الشعبة / المسار" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div></div></div><p className="text-[11px] leading-relaxed text-amber-200 bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl"><i className="ph-fill ph-warning-circle ml-1"></i>تأكد من صحة الاسم والرقم القومي قبل الحفظ، لأن إعادة الطباعة بسبب بيانات خاطئة تكون على مسؤولية العميل.</p><label className="flex items-start gap-2 text-xs text-indigo-100 bg-slate-950/80 p-3 rounded-xl"><input id="client-confirm-consent" type="checkbox" defaultChecked={txn.identityConfirmed} className="mt-0.5 accent-indigo-500" /><span>أؤكد صحة البيانات وأوافق على كتابتها على الصورة.</span></label><div className="flex gap-2"><button type="button" onClick={async()=>{const name=document.getElementById('client-confirm-name').value.trim(); const nationalId=document.getElementById('client-confirm-national-id').value.trim(); const branch=document.getElementById('client-confirm-branch').value.trim(); if(!name || !/^\d{14}$/.test(nationalId)){alert('يرجى إدخال الاسم والرقم القومي المكوّن من 14 رقمًا.');return;} const consent=document.getElementById('client-confirm-consent'); if(!consent || !consent.checked){alert('يرجى تأكيد صحة البيانات والموافقة على كتابتها على الصورة.');return;} const editedAt=new Date().toISOString(); const previousValues={name:txn.photoName || txn.clientName || '', nationalId:txn.nationalId || '', branch:txn.branch || ''}; const nextValues={name, nationalId, branch}; const clientFieldChanges={...(txn.clientFieldChanges || {})}; Object.keys(nextValues).forEach(key=>{if(nextValues[key] !== previousValues[key]) clientFieldChanges[key]={at:editedAt, previous:previousValues[key], value:nextValues[key]};}); const targetCol=isWedding?'weddings':'transactions'; const appId=typeof __app_id!=='undefined'?__app_id:'studio-marakby'; await setDoc(doc(db,`artifacts/${appId}/public/data/${targetCol}`,txn.id),{nationalId,photoName:name,branch,writeNameOnPhoto:true,identityConfirmed:true,clientFieldChanges},{merge:true}); setShowConfirmData(false); setEditingConfirmData(false); alert('تم حفظ بيانات الإيصال بنجاح.');}} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2"><i className="ph ph-check"></i> حفظ البيانات</button>{editingConfirmData && <button type="button" onClick={() => { setEditingConfirmData(false); setShowConfirmData(false); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 rounded-xl font-bold">إلغاء</button>}</div></div>}
+                              {!editingConfirmData && txn.identityConfirmed ? <div className="flex items-start justify-between gap-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl p-3"><div className="min-w-0 flex-1"><p className="text-emerald-300 text-xs font-black flex items-center gap-1"><i className="ph-fill ph-check-circle"></i> البيانات معتمدة</p><div className="mt-3 rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2"><p className="text-[10px] text-slate-500 font-bold mb-1">الاسم على الصورة</p><p className="text-white text-sm font-bold truncate">{txn.photoName || txn.clientName || '—'}</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"><div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold mb-1">الرقم القومي</p><p className="text-slate-300 text-xs font-mono truncate" dir="ltr">{txn.nationalId || '—'}</p></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-3"><p className="text-[10px] text-slate-500 font-bold mb-1">الشعبة / المسار</p><p className="text-purple-300 text-xs font-bold truncate">{txn.branch || '—'}</p></div></div></div><button type="button" onClick={() => setEditingConfirmData(true)} className="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0" title="تعديل البيانات"><i className="ph ph-pencil-simple"></i></button></div> : <div className="space-y-3"><p className="text-xs text-slate-300 leading-relaxed">يمكنك تعديل الاسم المنفصل للطباعة والرقم القومي والشعبة ثم حفظها. الاسم الأساسي للإيصال ثابت من الاستوديو.</p><div className="space-y-3"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الاسم المنفصل المطلوب كتابته على الصورة</label><input id="client-confirm-name" defaultValue={txn.photoName || txn.clientName || ''} maxLength="120" placeholder="الاسم المطلوب كتابته على الصورة" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="min-w-0"><label className="text-xs text-slate-400 font-bold block mb-1">الرقم القومي للصورة</label><input id="client-confirm-national-id" defaultValue={txn.nationalId || ''} inputMode="numeric" maxLength="14" placeholder="الرقم القومي (14 رقمًا)" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div><div className="min-w-0 sm:border-r sm:border-slate-800 sm:pr-4"><label className="text-xs text-slate-400 font-bold block mb-1">الشعبة / المسار</label><input id="client-confirm-branch" defaultValue={txn.branch || ''} maxLength="80" placeholder="الشعبة / المسار" className="w-full min-w-0 p-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-500" /></div></div></div><p className="text-[11px] leading-relaxed text-amber-200 bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl"><i className="ph-fill ph-warning-circle ml-1"></i>تأكد من صحة الاسم والرقم القومي قبل الحفظ، لأن إعادة الطباعة بسبب بيانات خاطئة تكون على مسؤولية العميل.</p><label className="flex items-start gap-2 text-xs text-indigo-100 bg-slate-950/80 p-3 rounded-xl"><input id="client-confirm-consent" type="checkbox" defaultChecked={txn.identityConfirmed} className="mt-0.5 accent-indigo-500" /><span>أؤكد صحة البيانات وأوافق على كتابتها على الصورة.</span></label><div className="flex gap-2"><button type="button" onClick={async () => {
+                                   const name = document.getElementById('client-confirm-name').value.trim();
+                                   const rawNationalId = document.getElementById('client-confirm-national-id').value.trim();
+                                   const nationalId = normalizeArabicDigits(rawNationalId);
+                                   const branch = document.getElementById('client-confirm-branch').value.trim();
+                                   if (name.length > 120) { alert('الاسم طويل جدًا. الحد الأقصى 120 حرفًا.'); return; }
+                                   if (nationalId && !/^\d{14}$/.test(nationalId)) { alert('إذا أدخلت الرقم القومي، يجب أن يتكون من 14 رقمًا صحيحًا.'); return; }
+                                   if (branch.length > 80) { alert('الشعبة / المسار طويلة جدًا. الحد الأقصى 80 حرفًا.'); return; }
+                                   const consent = document.getElementById('client-confirm-consent');
+                                   if (!consent || !consent.checked) { alert('يرجى تأكيد صحة البيانات والموافقة على كتابتها على الصورة.'); return; }
+                                   const editedAt = new Date().toISOString();
+                                   const previousValues = { name: txn.photoName || txn.clientName || '', nationalId: normalizeArabicDigits(txn.nationalId || ''), branch: txn.branch || '' };
+                                   const nextValues = { name, nationalId, branch };
+                                   const clientFieldChanges = { ...(txn.clientFieldChanges || {}) };
+                                   Object.keys(nextValues).forEach(key => {
+                                       if (nextValues[key] !== previousValues[key]) clientFieldChanges[key] = { at: editedAt, previous: previousValues[key], value: nextValues[key] };
+                                   });
+                                   const targetCol = isWedding ? 'weddings' : 'transactions';
+                                   const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
+                                   try {
+                                       await setDoc(doc(db, `artifacts/${appId}/public/data/${targetCol}`, txn.id), {
+                                           nationalId, photoName: name, branch, writeNameOnPhoto: true,
+                                           identityConfirmed: true, clientFieldChanges
+                                       }, { merge: true });
+                                       setShowConfirmData(false);
+                                       setEditingConfirmData(false);
+                                       alert('تم حفظ بيانات الإيصال بنجاح.');
+                                   } catch (saveError) {
+                                       console.error('تعذر حفظ بيانات تأكيد العميل:', saveError);
+                                       alert('تعذر حفظ البيانات الآن. يرجى المحاولة مرة أخرى.');
+                                   }
+                               }} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2"><i className="ph ph-check"></i> حفظ البيانات</button>{editingConfirmData && <button type="button" onClick={() => { setEditingConfirmData(false); setShowConfirmData(false); }} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 rounded-xl font-bold">إلغاء</button>}</div></div>}
                           </div>}
                       </div>}
                       {/* 2. بطاقة تتبع الطلب ورصيد المكافآت المدمجة */}
