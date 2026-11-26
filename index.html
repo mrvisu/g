@@ -4448,7 +4448,7 @@
                     <div>
                       <label className="block font-bold text-sm text-slate-400 mb-2">كلمة المرور للنظام (الإدارة):</label>
                       <div className="relative w-full">
-                          <input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 1234" />
+                          <input type="text" value={settings.adminPassword || ''} onChange={e => setSettings({...settings, adminPassword: e.target.value})} className="w-full p-3 pr-10 border border-slate-700 bg-slate-950 text-white rounded-lg focus:border-purple-500 outline-none font-mono tracking-wider" placeholder="مثال: 271192@1471990" />
                           <i className="ph ph-lock-key absolute right-3 top-3.5 text-slate-500 text-lg"></i>
                       </div>
                     </div>
@@ -4834,7 +4834,7 @@
           const appointmentsInitializedRef = useRef(false);
           const [inventory, setInventory] = useState({});
           const [settings, setSettings] = useState({
-            nextReceiptNo: 1000, adminPassword: '1234', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
+            nextReceiptNo: 1000, adminPassword: '271192@1471990', studioPhone: '01201260040', enableNotifications: false, services: DEFAULT_SERVICES, products: DEFAULT_PRODUCTS, weddingPackages: DEFAULT_WEDDING_PACKAGES, addonTemplates: DEFAULT_ADDON_TEMPLATES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES, waTemplates: DEFAULT_WA_TEMPLATES, studioName: "Mrakby Studio", studioLogo: "", promotions: DEFAULT_PROMOTIONS, studioLikes: 0, miniProducts: DEFAULT_MINI_PRODUCTS, portalVisits: 0, rewardPercentStudio: 5, rewardPercentWedding: 1.5,
             workingHours: 'يومياً من 10 صباحاً حتى 10 مساءً', overdueAlertHours: 24, instantPrintSheetPrice: 0, instantPrintCost: null, instantStatsStartDate: getLocalDateKey(), appointmentSettings: { enabled: true, officialPrice: 70, cardPrice: 70, showPrice: true, detailsText: 'يرجى الحضور قبل الموعد بـ 10 دقائق لتجهيز الاستوديو.' }
           });
           const settingsRef = useRef(settings);
@@ -4965,7 +4965,7 @@
                         const template = data.waTemplates[key];
                         if (typeof template === 'string' && !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(template)) data.waTemplates[key] = `${emoji} ${template.trim()}`;
                     });
-                    if (!data.adminPassword) data.adminPassword = '1234';
+                    if (!data.adminPassword) data.adminPassword = '271192@1471990';
                     if (!data.studioPhone) data.studioPhone = '01201260040';
                     if (!data.studioLikes) data.studioLikes = 0;
                     if (!data.portalVisits) data.portalVisits = 0;
@@ -5740,7 +5740,7 @@
           }
 
           if (!isTracking && !isAuthenticatedAdmin) {
-              return <LoginScreen validPassword={settings.adminPassword || '1234'} onLogin={() => { setIsAuthenticatedAdmin(true); localStorage.setItem('studioAdminAuth', 'true'); }} navigateTo={navigateTo} />;
+              return <LoginScreen validPassword={settings.adminPassword || '271192@1471990'} onLogin={() => { setIsAuthenticatedAdmin(true); localStorage.setItem('studioAdminAuth', 'true'); }} navigateTo={navigateTo} />;
           }
 
           return (
