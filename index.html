@@ -523,7 +523,19 @@
 
         // Put the clean portal URL first: WhatsApp uses the first URL for the rich preview.
         // Its OG metadata contains the studio advertisement image and the short program description.
-        const ensurePortalPreviewLink = (message) => normalizeWhatsAppText(message);
+        // WhatsApp يأخذ معاينة الرابط الأول في الرسالة. نضع رابط البوابة النظيف
+        // أولًا فقط عندما تحتوي الرسالة على رابط، ليظهر الإعلان ووصف البرنامج
+        // من بيانات Open Graph الموجودة في الصفحة، من دون إضافة فقرات تسويقية تلقائية.
+        const ensurePortalPreviewLink = (message) => {
+            const text = normalizeWhatsAppText(message);
+            if (!/https?:\/\/[^\s<>"']+/i.test(text)) return text;
+            const portalUrl = new URL(window.location.href);
+            portalUrl.search = '';
+            portalUrl.hash = '';
+            const portalRoot = portalUrl.toString();
+            if (text.startsWith(`${portalRoot}\n`) || text.startsWith(`${portalRoot}\r\n`)) return text;
+            return `${portalRoot}\n\n${text}`;
+        };
 
         const buildWhatsAppUrl = (phone, message) => {
             // Normalize Arabic-Indic digits as well as the usual Egyptian format.
