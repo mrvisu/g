@@ -330,7 +330,7 @@
           unpaidInvoice: "🧾 *تفاصيل طلبك — {studio}*\nأهلًا أ. {name}، تم تسجيل طلبك.\n\n🔖 رقم الإيصال: *#{receipt}*\n📅 تاريخ ووقت التصوير / التسجيل: *{date}*\n{phone_line}{details_block}{identity_block}{pickup_line}\n💰 *تفاصيل الحساب*\n🧾 الإجمالي: *{total} ج.م*\n✅ المدفوع: *{paid} ج.م*\n💳 المتبقي: *{remaining} ج.م*\n\n{deposit_warning}\n🔗 *رابط الإيصال ومراجعة البيانات والسداد:*\n{receipt_url}\n\nشكرًا لثقتك بنا.\n*{studio}*",
           depositWarning: "⚠️ تنبيه مهم: حرصًا على تنفيذ طلبك بدقة، لا يبدأ اعتماد أو طباعة الصور قبل سداد العربون المطلوب. نعتذر عن أي إزعاج، ونشكرك على تفهمك وثقتك بنا. 📸",
           reminder: "⏰ أهلًا بك أ. {name} 🌟\nنود تذكيرك بلطف بوجود مبلغ متبقٍ على إيصالك في {studio}.\n\n🔖 رقم الإيصال: #{receipt}\n💳 المبلغ المتبقي: {remaining} ج.م\n\n🔗 يمكنك مراجعة التفاصيل والسداد من الرابط التالي:\n{track_url}\n\n🙏 شكرًا لثقتك بنا، ويسعدنا خدمتك دائمًا. 📸",
-          ready: "🎉 خبر سار أ. {name}!\nاكتمل طلبك رقم #{receipt} وأصبح جاهزًا للاستلام من {studio}. 📦\n\n💳 المبلغ المتبقي: {remaining} ج.م\n🔗 لمراجعة تفاصيل الطلب: {track_url}\n\nيسعدنا استقبالكم، وننتظركم بكل ترحاب. 🤝📸",
+          ready: "🎉 أهلًا أ. {name}، نود إبلاغك أن صورك أصبحت جاهزة للاستلام من *{studio}*.\n\n🔖 رقم الإيصال: *#{receipt}*\n{photo_line}📦 تاريخ الاستلام: *{pickup_date}*\n💳 المبلغ المتبقي: *{remaining} ج.م*\n\n🔗 تفاصيل الطلب وموقع الاستلام: {track_url}\n\nيسعدنا خدمتك، وننتظرك بكل ترحاب.",
           deposit: "💸 تم استلام عربون بقيمة {paid} ج.م من أ. {name} لدى {studio}.\n\n🧾 إجمالي الطلب: {total} ج.م\n💳 المبلغ المتبقي: {remaining} ج.م\n🔗 لمتابعة طلبك: {track_url}\n\n✅ شكرًا لك، وتم تحديث بيانات السداد بنجاح.",
           tracking: "📍 أهلًا بك أ. {name}\nيمكنك متابعة مراحل تجهيز طلبك لحظة بلحظة عبر الرابط التالي:\n🔗 {track_url}\n\n💡 يتوفر سداد المبلغ المتبقي إلكترونيًا عبر إنستاباي أو المحافظ.\n🤝 شكرًا لاختيارك {studio}، ونسعد بخدمتك. 📸",
           cardInquiry: "🖼️ مرحبًا {studio}،\nأرغب في الاستفسار أو الحجز بخصوص المنتج التالي:\n✨ *{item_title}*\n\nيرجى تزويدي بالتفاصيل المتاحة، شكرًا لكم.",
@@ -512,6 +512,10 @@
             const safe = (value, fallback = '') => String(value ?? '').trim() || fallback;
             const receiptUrl = buildCustomerReceiptUrl(txn, isWedding);
             const rewards = getCustomerRewards(txn.phone, allRecords, settings);
+            const photoItemsForMessage = Array.isArray(txn.photoNo) ? txn.photoNo : (txn.photoNo ? String(txn.photoNo).split(',').map(number => ({ number: number.trim() })) : []);
+            const photoNumbersForMessage = photoItemsForMessage.map(item => safe(typeof item === 'string' ? item : item?.number)).filter(Boolean);
+            const photoLine = photoNumbersForMessage.length ? `🖼️ أرقام الصور: ${photoNumbersForMessage.join('، ')}\n` : '';
+            const pickupDisplay = safe(txn.pickupDate) ? formatDateOnlyEnglish(txn.pickupDate) : 'يرجى التواصل مع الاستوديو';
             if (templateKey === 'invoice') {
                 const phoneLine = safe(txn.phone) ? `📞 الهاتف: ${txn.phone}\n` : '';
                 const pickupLine = safe(txn.pickupDate) ? `📦 تاريخ استلام الصور: ${formatDateOnlyEnglish(txn.pickupDate)}\n` : '';
@@ -613,7 +617,7 @@
                 const pkgs = getTransactionPackageNames(txn);
                 reqs = [`📦 الباقات: ${pkgs}`, `📸 نوع السيشن: ${safe(txn.sessionType, 'غير محدد')}`, txn.weddingDate ? `📅 موعد الزفاف: ${formatDateOnly(txn.weddingDate)}` : '', txn.requirements ? `📝 تفاصيل إضافية: ${txn.requirements.trim()}` : ''].filter(Boolean).join('\n');
             } else reqs = safe(txn.requirements, 'خدمات تصوير');
-            return msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{national_id}/g, txn.nationalId || 'غير مسجل').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime)).replace(/{pickup_date}/g, txn.pickupDate ? formatDateOnly(txn.pickupDate) : 'سيتم تحديده مع الاستوديو').replace(/{reward_balance}/g, rewards.balance).replace(/{track_url}/g, receiptUrl).replace(/{portal_url}/g, buildCustomerPortalUrl());
+            return msg.replace(/{name}/g, clientName || 'العميل').replace(/{receipt}/g, txn.receiptNo || '').replace(/{national_id}/g, txn.nationalId || 'غير مسجل').replace(/{total}/g, txn.total || 0).replace(/{paid}/g, txn.paid || 0).replace(/{remaining}/g, txn.remaining || 0).replace(/{services}/g, reqs).replace(/{photo_line}/g, photoLine).replace(/{studio}/g, settings.studioName || 'الاستوديو').replace(/{date}/g, formatDateTimeEnglish(txn.dateTime) || formatDateOnly(txn.dateTime)).replace(/{time}/g, formatTimeOnly(txn.dateTime)).replace(/{pickup_date}/g, pickupDisplay).replace(/{reward_balance}/g, rewards.balance).replace(/{track_url}/g, receiptUrl).replace(/{portal_url}/g, buildCustomerPortalUrl());
         };
 
         const normalizeWhatsAppText = (value) => String(value ?? '')
@@ -3098,7 +3102,7 @@
         const DashboardTab = ({ settings, setSettings, transactions, inventory, db, allRecords, uniqueCustomersCount, avgRating, feedbacks, onDeleteCustomer }) => {
             const [showAddModal, setShowAddModal] = useState(false); const [showBatchModal, setShowBatchModal] = useState(false); const [showDebtsModal, setShowDebtsModal] = useState(false); const [isEditing, setIsEditing] = useState(false);
             const [showMissingPhotoConfirm, setShowMissingPhotoConfirm] = useState(false);
-            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false, instantPrint: false, instantQty: 1, instantPrice: ''}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, originalInstantPaperQty: 0, regularPrintItems: [] });
+            const [formData, setFormData] = useState({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [{number: '', note: '', needsName: false, instantPrint: false, instantQty: 1, instantPrice: ''}], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, originalInstantPaperQty: 0, originalRegularPrintPaperQty: 0, regularPrintItems: [] });
             const [loyaltyAlert, setLoyaltyAlert] = useState(''); const [query, setQuery] = useState(''); const [debtSearch, setDebtSearch] = useState(''); const [filterDate, setFilterDate] = useState('');
             const [invalidPhoneOnly, setInvalidPhoneOnly] = useState(false);
             const [showIncompleteReceiptDeleteModal, setShowIncompleteReceiptDeleteModal] = useState(false);
@@ -3124,7 +3128,7 @@
             const [customerRewards, setCustomerRewards] = useState({ earned: 0, used: 0, balance: 0 });
             const [customDeliveryOptions, setCustomDeliveryOptions] = useState([]);
             const [photoNoteModal, setPhotoNoteModal] = useState(null);
-            const [photoDraft, setPhotoDraft] = useState({ number: '', note: '', serviceType: '', needsName: false, important: false, instantPrint: false, instantQty: 1, instantPrice: '' });
+            const [photoDraft, setPhotoDraft] = useState({ number: '', note: '', serviceType: '', needsName: false, important: false, instantPrint: false, instantQty: 1, instantPrice: '', imageData: '', imageName: '' }); const [isUploadingPhotoDraft, setIsUploadingPhotoDraft] = useState(false);
             const [pendingPhotoService, setPendingPhotoService] = useState(null);
             const [newDeliveryDays, setNewDeliveryDays] = useState('');
             const deliveryOptions = [{ key: 'instant', label: 'فوري', days: 0, icon: 'ph-lightning', color: 'emerald' }, { key: 'two-days', label: 'بعد يومين', days: 2, icon: 'ph-calendar-plus', color: 'blue' }, { key: 'four-days', label: 'بعد 4 أيام', days: 4, icon: 'ph-calendar-check', color: 'purple' }, ...customDeliveryOptions];
@@ -3168,7 +3172,39 @@
               const unitPrice = Math.max(0, Number(settings.instantPrintSheetPrice || service?.price || 0)); const unitCost = settings.instantPrintCost == null || settings.instantPrintCost === '' ? null : Math.max(0, Number(settings.instantPrintCost) || 0);
               setFormData(prev => { const photos = [...(prev.photoNo || [])]; const index = photos.findIndex(item => item.autoInstantPaper); const oldQty = index >= 0 ? Math.max(0, Number(photos[index].instantQty) || 1) : 0; const nextQty = Math.max(0, oldQty + delta); if (nextQty === 0) { if (index >= 0) photos.splice(index, 1); } else if (index >= 0) photos[index] = { ...photos[index], instantQty: nextQty, instantPrice: unitPrice, instantCost: unitCost, serviceType: service?.name || 'طباعة فورية' }; else photos.push({ number: '', note: '', serviceType: service?.name || 'طباعة فورية', needsName: false, important: false, instantPrint: true, instantQty: nextQty, instantPrice: unitPrice, instantCost: unitCost, autoInstantPaper: true }); return { ...prev, total: Math.max(0, (Number(prev.total) || 0) + ((nextQty - oldQty) * unitPrice)), photoNo: photos, instantPrintEnabled: nextQty > 0, instantPaperQty: nextQty }; });
             };
-            const handleLinkPrintServiceToPhoto = (srv) => { if (!String(photoDraft.number || '').trim()) { alert('أدخل رقم الصورة أولًا في خانة رقم الصورة، ثم اضغط ربط خدمة 4×6.'); return; } appendPhotoService(srv.name); };
+            const handleLinkPrintServiceToPhoto = (srv) => {
+              const photoNumber = String(photoDraft.number || '').trim();
+              if (!photoNumber) { alert('أدخل رقم الصورة أولًا، ثم اربط بها خدمة الطباعة العادية.'); return; }
+              const note = String(photoDraft.note || '').trim();
+              const unitPrice = Math.max(0, Number(srv?.price) || 0);
+              setPhotoDraft(prev => ({ ...prev, serviceType: [String(prev.serviceType || '').trim(), String(srv?.name || '').trim()].filter(Boolean).filter((name, index, list) => list.indexOf(name) === index).join('، ') }));
+              setFormData(prev => {
+                const items = [...(prev.regularPrintItems || [])];
+                const index = items.findIndex(item => item.name === srv.name);
+                const oldQty = index >= 0 ? Math.max(0, Number(items[index].qty) || 0) : 0;
+                const refs = index >= 0 && Array.isArray(items[index].photoRefs) ? [...items[index].photoRefs] : [];
+                const refIndex = refs.findIndex(ref => String(ref.number) === photoNumber);
+                if (refIndex >= 0) refs[refIndex] = { number: photoNumber, note };
+                else refs.push({ number: photoNumber, note });
+                if (index >= 0) items[index] = { ...items[index], photoRefs: refs, qty: Math.max(1, oldQty), unitPrice };
+                else items.push({ name: srv.name, size: getPrintSize(srv), qty: 1, unitPrice, unitCost: srv.cost == null || srv.cost === '' ? null : Math.max(0, Number(srv.cost) || 0), photoRefs: refs });
+                return { ...prev, regularPrintItems: items, total: Math.max(0, (Number(prev.total) || 0) + (oldQty === 0 ? unitPrice : 0)) };
+              });
+            };
+            const handlePhotoDraftImage = async (event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              if (!file.type?.startsWith('image/')) { alert('يرجى اختيار ملف صورة صالح.'); return; }
+              if (file.size > 8 * 1024 * 1024) { alert('حجم الصورة كبير؛ اختر صورة لا يتجاوز حجمها 8 ميجابايت.'); return; }
+              setIsUploadingPhotoDraft(true);
+              try {
+                const imageData = await processImage(file, 520);
+                if (!imageData) throw new Error('تعذر قراءة الصورة');
+                setPhotoDraft(prev => ({ ...prev, imageData, imageName: file.name || 'صورة العميل' }));
+              } catch (error) { console.error('تعذر تجهيز صورة العميل:', error); alert('تعذر تجهيز الصورة؛ جرّب صورة أخرى.'); }
+              finally { setIsUploadingPhotoDraft(false); }
+            };
             const handleLinkInstantPrintToPhoto = (service) => {
               const number = String(photoDraft.number || '').trim();
               if (!number) { alert('أدخل رقم الصورة الجاري أولًا، ثم اضغط ربط الطباعة الفورية.'); return; }
@@ -3198,7 +3234,7 @@
 
             const handleEdit = (txn) => {
                 const savedPhotos = Array.isArray(txn.photoNo) ? txn.photoNo.map(p => typeof p === 'string' ? {number: p, note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''} : {...p, instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: p.instantPrice ?? ''}).filter(p => (p.number && String(p.number).trim() !== '') || (p.serviceType && String(p.serviceType).trim() !== '')) : (txn.photoNo ? txn.photoNo.split(',').map(s=>({number: s.trim(), note: '', needsName: false, serviceType: '', important: false, instantPrint: false, instantQty: 1, instantPrice: ''})) : []);
-                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), instantPrintEnabled: txn.pickupOption === 'instant' || (Array.isArray(txn.instantPrintItems) && txn.instantPrintItems.length > 0), instantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalInstantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, regularPrintItems: Array.isArray(txn.regularPrintItems) ? txn.regularPrintItems : [] });
+                setFormData({ id: txn.id, receiptNo: txn.receiptNo, dateTime: txn.dateTime, month: txn.month, year: txn.year, status: txn.status, clientName: txn.clientName || '', nationalId: txn.nationalId || '', branch: txn.branch || '', photoName: txn.photoName || '', pickupDate: txn.pickupDate || '', pickupOption: txn.pickupOption || '', phone: txn.phone || '', photoNo: savedPhotos, writeNameOnPhoto: txn.writeNameOnPhoto || false, requirements: txn.requirements || '', total: txn.total || '', paid: txn.paid || '', electronicPaid: txn.electronicPaid || 0, paymentMethod: txn.electronicPaid > 0 ? 'electronic' : 'cash', soldProducts: txn.soldProducts || [], photosLink: txn.photosLink || '', selectedPromos: txn.selectedPromos || [], rewardDiscount: txn.rewardDiscount || 0, useReward: (txn.rewardDiscount > 0), instantPrintEnabled: txn.pickupOption === 'instant' || (Array.isArray(txn.instantPrintItems) && txn.instantPrintItems.length > 0), instantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalInstantPaperQty: txn.instantPrintPaperQty || txn.instantPrintItems?.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 0, originalRegularPrintPaperQty: Number(txn.regularPrintPaperQty ?? (Array.isArray(txn.regularPrintItems) ? txn.regularPrintItems.reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) : 0)), regularPrintItems: Array.isArray(txn.regularPrintItems) ? txn.regularPrintItems : [] });
                 setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
                 setIsEditing(true); setShowAddModal(true);
             };
@@ -3225,25 +3261,27 @@
               
               const instantPrintItems = photosForSave.filter(p => Boolean(p.instantPrint)).map(p => ({ name: p.serviceType || 'طباعة فورية', qty: Math.max(1, Number(p.instantQty || 1)), unitPrice: Math.max(0, Number(p.instantPrice || settings.instantPrintSheetPrice || 0) || 0), unitCost: p.instantCost !== undefined ? p.instantCost : p.unitCost !== undefined ? p.unitCost : null }));
               const instantPrintPaperQty = instantPrintItems.reduce((sum, item) => sum + item.qty, 0);
+              const regularPrintPaperQty = (formData.regularPrintItems || []).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0);
               const originalInstantPaperQty = isEditing ? Math.max(0, Number(formData.originalInstantPaperQty || 0)) : 0;
-              const instantStockDelta = instantPrintPaperQty - originalInstantPaperQty;
-              const availableInstantSheets = Math.max(0, Number(inventory['ورق طباعة صور'] || 0));
-              if (instantStockDelta > availableInstantSheets) { alert(`لا يمكن حفظ العملية: المتاح من أوراق الطباعة الفورية ${availableInstantSheets} بينما المطلوب إضافته ${instantStockDelta}.`); return; }
+              const originalRegularPrintPaperQty = isEditing ? Math.max(0, Number(formData.originalRegularPrintPaperQty || 0)) : 0;
+              const printPaperStockDelta = (instantPrintPaperQty + regularPrintPaperQty) - (originalInstantPaperQty + originalRegularPrintPaperQty);
+              const availablePrintSheets = Math.max(0, Number(inventory['ورق طباعة صور'] || 0));
+              if (printPaperStockDelta > availablePrintSheets) { alert(`لا يمكن حفظ العملية: المتاح من ورق طباعة الصور ${availablePrintSheets} ورقة، بينما المطلوب خصمه ${printPaperStockDelta} ورقة (عادي وفوري).`); return; }
               const initialPayment = paid > 0 ? [{ amount: paid, method: formData.paymentMethod, date: new Date().toISOString() }] : [];
-              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important), instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: Math.max(0, Number(p.instantPrice || 0) || 0)})), instantPrintItems: instantPrintItems, instantPrintPaperQty: instantPrintPaperQty, regularPrintItems: (formData.regularPrintItems || []).map(item => ({ ...item, qty: Math.max(1, Number(item.qty) || 1), unitPrice: Math.max(0, Number(item.unitPrice) || 0) })), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
+              const newTxn = { id: isEditing ? formData.id : Date.now().toString(), receiptNo: finalReceiptNo, dateTime: isEditing ? formData.dateTime : new Date().toISOString(), clientName: formData.clientName, nationalId: formData.nationalId || '', branch: formData.branch || '', photoName: formData.photoName || '', pickupDate: formData.pickupDate || '', pickupOption: formData.pickupOption || '', phone: safeCustomerPhone(formData.phone), photoNo: photosForSave.filter(p => (p.number && p.number.trim() !== '') || (p.serviceType && p.serviceType.trim() !== '')).map(p => ({...p, number: (p.number || '').trim(), important: Boolean(p.important), instantPrint: Boolean(p.instantPrint), instantQty: Math.max(1, Number(p.instantQty || 1)), instantPrice: Math.max(0, Number(p.instantPrice || 0) || 0)})), instantPrintItems: instantPrintItems, instantPrintPaperQty: instantPrintPaperQty, regularPrintPaperQty: regularPrintPaperQty, regularPrintItems: (formData.regularPrintItems || []).map(item => ({ ...item, qty: Math.max(1, Number(item.qty) || 1), unitPrice: Math.max(0, Number(item.unitPrice) || 0) })), writeNameOnPhoto: formData.writeNameOnPhoto, requirements: formData.requirements, total: total + rewardDiscount, paid: paid, electronicPaid: isEditing ? formData.electronicPaid : (formData.paymentMethod === 'electronic' ? paid : 0), remaining: total - paid, rewardDiscount: rewardDiscount, status: isEditing ? formData.status : 0, month: isEditing ? formData.month : new Date().getMonth() + 1, year: isEditing ? formData.year : new Date().getFullYear(), photosLink: formData.photosLink || '', selectedPromos: formData.selectedPromos || [], payments: isEditing ? (formData.payments || []) : initialPayment };
               
               const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby';
               await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, newTxn.id), newTxn);
 
-              if ((!isEditing && formData.soldProducts?.length > 0) || instantStockDelta !== 0) {
+              if ((!isEditing && formData.soldProducts?.length > 0) || printPaperStockDelta !== 0) {
                  const newInv = { ...inventory }; let invChanged = false;
                  (formData.soldProducts || []).forEach(item => { if (settings.products.some(p => (typeof p === 'string' ? p : p.name) === item.name)) { newInv[item.name] = Math.max(0, (newInv[item.name] || 0) - item.qty); invChanged = true; } });
-                 if (instantStockDelta !== 0) { newInv['ورق طباعة صور'] = Math.max(0, availableInstantSheets - instantStockDelta); invChanged = true; }
+                 if (printPaperStockDelta !== 0) { newInv['ورق طباعة صور'] = Math.max(0, availablePrintSheets - printPaperStockDelta); invChanged = true; }
                  if (invChanged) { await setDoc(doc(db, `artifacts/${appId}/public/data/inventory`, 'main'), newInv); }
               }
               
               if(!isEditing) setSettings({...settings, nextReceiptNo: finalReceiptNo + 1});
-              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, instantPaperQty: 0, originalInstantPaperQty: 0, regularPrintItems: [] });
+              setFormData({ clientName: '', nationalId: '', branch: '', photoName: '', pickupDate: '', pickupOption: '', phone: '', photoNo: [], writeNameOnPhoto: false, requirements: '', total: '', paid: '', paymentMethod: 'cash', soldProducts: [], photosLink: '', selectedPromos: [], useReward: false, rewardDiscount: 0, instantPrintEnabled: false, instantPaperQty: 0, originalInstantPaperQty: 0, originalRegularPrintPaperQty: 0, regularPrintItems: [] });
               setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false });
               setCustomerRewards({ earned: 0, used: 0, balance: 0 });
               setIsEditing(false); setShowAddModal(false); setShowMissingPhotoConfirm(false);
@@ -3367,7 +3405,7 @@
                     setIsDeletingIncompleteReceipts(false);
                 }
             };
-            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = transactions.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated); } };
+            const updateTxnStatus = async (txnId, newStatus) => { const txnToUpdate = transactions.find(t => t.id === txnId); if(txnToUpdate) { const updated = {...txnToUpdate, status: newStatus, statusUpdatedAt: new Date().toISOString(), statusNotificationId: `${txnId}-${newStatus}-${Date.now()}`}; const shouldNotifyReady = Number(newStatus) === 2 && Number(txnToUpdate.status) !== 2; const readyText = shouldNotifyReady ? generateWA_Message('ready', updated, settings, false, allRecords) : ''; const readyWindow = shouldNotifyReady ? window.open('about:blank', WHATSAPP_WINDOW_NAME) : null; const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-marakby'; try { await setDoc(doc(db, `artifacts/${appId}/public/data/transactions`, updated.id), updated); if(shouldNotifyReady) { if(readyWindow && !readyWindow.closed) { readyWindow.location.href = buildWhatsAppUrl(updated.phone, readyText); readyWindow.focus(); } else { alert('تم تحديث الحالة إلى جاهز للاستلام، لكن المتصفح منع فتح واتساب. أرسل رسالة الجاهزية من قائمة رسائل واتساب في بطاقة العميل.'); } } } catch(error) { if(readyWindow && !readyWindow.closed) readyWindow.close(); throw error; } } };
             
             const handlePhoneChange = (val) => {
                 setFormData(prev => ({...prev, phone: val}));
@@ -3541,13 +3579,18 @@
                                         </div>
                                         {photoDraft.serviceType && <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-indigo-500/20 bg-indigo-950/30 px-2.5 py-2 text-[10px] text-indigo-100"><span className="font-black text-indigo-300">الخدمات المختارة:</span><span className="rounded-lg bg-indigo-900/50 border border-indigo-400/25 px-2 py-1 font-bold">{photoDraft.serviceType}</span></div>}
                                         {pendingPhotoService && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/25 px-2.5 py-2"><span className="text-[10px] text-amber-100 font-bold flex-1">{pendingPhotoService.label} — هل لها رقم صورة؟</span><button type="button" onClick={() => applyPendingPhotoService(true)} className="rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 text-[10px] font-black">مع رقم صورة</button><button type="button" onClick={() => applyPendingPhotoService(false)} className="rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 px-2.5 py-1.5 text-[10px] font-black">بدون رقم صورة</button></div> }
-                                        <button type="button" onClick={() => { if (!photoDraft.number.trim() && !photoDraft.serviceType.trim()) return; setFormData({...formData, photoNo: [...formData.photoNo, {...photoDraft, number: photoDraft.number.trim(), important: Boolean(photoDraft.important || photoDraft.note.trim())}]}); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false }); }} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2"><i className="ph ph-floppy-disk"></i> حفظ التفاصيل</button>
+                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                            <button type="button" onClick={() => { if (!String(photoDraft.number || '').trim()) { alert('رقم الصورة مطلوب قبل حفظ تفاصيلها.'); return; } setFormData({...formData, photoNo: [...formData.photoNo, {...photoDraft, number: photoDraft.number.trim(), important: Boolean(photoDraft.important || photoDraft.note.trim())}]}); setPhotoDraft({ number: '', note: '', serviceType: '', needsName: false, important: false, instantPrint: false, instantQty: 1, instantPrice: '', imageData: '', imageName: '' }); }} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2"><i className="ph ph-floppy-disk"></i> حفظ رقم الصورة والتفاصيل</button>
+                                            <input id="photo-draft-image-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoDraftImage} disabled={isUploadingPhotoDraft} />
+                                            <button type="button" onClick={() => document.getElementById('photo-draft-image-upload')?.click()} disabled={isUploadingPhotoDraft} className="rounded-xl border border-violet-300/25 bg-violet-950/35 px-4 py-2.5 text-xs font-black text-violet-100 hover:bg-violet-900/50 disabled:opacity-60"><i className="ph-fill ph-image ml-1"></i>{isUploadingPhotoDraft ? 'جارٍ تجهيز الصورة…' : photoDraft.imageData ? 'صورة أخرى' : 'رفع صورة'}</button>
+                                        </div>
+                                        {photoDraft.imageData && <div className="flex items-center gap-3 rounded-xl border border-violet-300/20 bg-violet-950/20 p-2"><img src={photoDraft.imageData} alt={`معاينة الصورة ${photoDraft.number || ''}`} className="h-16 w-16 rounded-lg border border-white/10 object-cover" /><div className="min-w-0 flex-1"><p className="text-xs font-black text-violet-100">{photoDraft.number ? `الصورة رقم ${photoDraft.number}` : 'صورة مرفقة'}</p><p className="truncate text-[10px] text-slate-400">{photoDraft.imageName || 'صورة العميل'}</p></div><button type="button" onClick={() => setPhotoDraft(prev => ({ ...prev, imageData: '', imageName: '' }))} className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-red-200 hover:bg-red-900/50">إزالة</button></div>}
                                     </div>
                                     {formData.photoNo.map((pObj, idx) => <div key={idx} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-950/70 px-3 py-2.5 text-[10px] min-w-0">
                                         <span className="shrink-0 rounded-lg bg-blue-950/60 text-blue-200 border border-blue-500/20 px-2 py-1 font-black">{pObj.number ? `صورة ${idx + 1}` : 'خدمة بدون رقم'}</span>
                                         {pObj.number && <span className="font-mono text-white font-black rounded-lg bg-slate-900 border border-slate-700 px-2 py-1">{pObj.number}</span>}
                                         <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-950/60 text-indigo-200 border border-indigo-500/30 px-2 py-1 font-bold max-w-full"><i className="ph-fill ph-tag text-indigo-300"></i>{pObj.serviceType || pObj.service || 'خدمة تصوير'}</span>
-                                        {pObj.note && <span className="text-slate-400 rounded-lg bg-slate-900 px-2 py-1 max-w-full truncate" title={pObj.note}><i className="ph ph-note ml-1"></i>{pObj.note}</span>}
+                                        {pObj.note && <span className="text-slate-400 rounded-lg bg-slate-900 px-2 py-1 max-w-full truncate" title={pObj.note}><i className="ph ph-note ml-1"></i>{pObj.note}</span>}{pObj.imageData && <a href={pObj.imageData} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} title="عرض صورة العميل"><img src={pObj.imageData} alt={`صورة العميل ${pObj.number || idx + 1}`} className="h-12 w-12 rounded-lg border border-violet-300/25 object-cover" /></a>}
                                         {pObj.important && <i className="ph-fill ph-star text-amber-300 shrink-0" title="مهم"></i>}
                                         <span className="flex-1"></span>
                                         <button type="button" onClick={() => { setPhotoDraft({...pObj}); setFormData({...formData, photoNo: formData.photoNo.filter((_, i) => i !== idx)}); }} className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white shrink-0 flex items-center justify-center" title="تعديل التفاصيل"><i className="ph ph-pencil-simple text-xs"></i></button>
@@ -5526,7 +5569,7 @@
               const clientPhotoNotes = trackingPhotoItems.map(photo => [photo.serviceType || photo.service, photo.note].map(value => String(value || '').trim()).filter(Boolean).join(' — ')).filter(Boolean).join('، ');
               const cleanedDisplayReqs = String(displayReqs || '').split('\n').filter(line => !photoServiceNames.some(serviceName => serviceName && line.includes(serviceName))).join('\n').trim();
               const clientDisplayReqs = cleanedDisplayReqs;
-              const clientPhotoRows = trackingPhotoItems.filter(photo => photo.serviceType || photo.service || photo.note);
+              const clientPhotoRows = trackingPhotoItems.filter(photo => photo.serviceType || photo.service || photo.note || photo.imageData);
               const hasPhotoNameRequest = Boolean(txn.writeNameOnPhoto || txn.identityConfirmed || String(txn.photoName || '').trim() || String(txn.nationalId || '').trim() || String(txn.branch || '').trim());
               const photoItemsWithNotes = trackingPhotoItems.filter(photo => String(photo.note || '').trim());
               const photoItemsWithoutNotes = trackingPhotoItems.filter(photo => !String(photo.note || '').trim());
@@ -5876,7 +5919,7 @@
                               {clientDisplayReqs && <p className="mb-2 min-w-0 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-300">{clientDisplayReqs}</p>}
                               {clientPhotoRows.length > 0 && <div className="grid w-full min-w-0 grid-cols-2 gap-x-4 gap-y-2">{clientPhotoRows.map((photo, idx) => <div key={idx} className="min-w-0 py-1">
                                   <p className="min-w-0 break-words text-[11px] leading-relaxed text-slate-200"><span className="font-mono font-black text-indigo-300">#{photo.number || idx + 1}</span><span className="mx-1 text-slate-600">—</span><span>{photo.serviceType || photo.service || 'خدمة تصوير'}</span></p>
-                                  {photo.note && <p className="mt-0.5 min-w-0 break-words text-[10px] leading-relaxed text-slate-400">{photo.note}</p>}
+                                  {photo.note && <p className="mt-0.5 min-w-0 break-words text-[10px] leading-relaxed text-slate-400">{photo.note}</p>}{photo.imageData && <a href={photo.imageData} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block"><img src={photo.imageData} alt={`الصورة رقم ${photo.number || idx + 1}`} loading="lazy" className="h-28 w-28 rounded-xl border border-slate-700 object-cover" /></a>}
                               </div>)}</div>}
                           </div>}
                           {txn.paymentPending && <div className="mb-4 bg-amber-950/40 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3 shadow-lg"><i className="ph-fill ph-hourglass-medium text-amber-300 text-2xl shrink-0"></i><div><p className="text-amber-200 font-black text-sm">المبلغ قيد اعتماد الاستوديو</p><p className="text-amber-100/80 text-xs leading-relaxed mt-1">سيتم تحديد واعتماد قيمة الحساب عند حضورك للاستوديو. يمكنك بعد الاعتماد دفع المبلغ كاملاً أو جزء منه حتى الاستلام.</p></div></div>}
