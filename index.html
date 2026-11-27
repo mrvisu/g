@@ -326,8 +326,8 @@
           welcome: "👋 أهلاً بك أ. {name} في {studio} 📸\nيسعدنا خدمتك، وتم تسجيل طلبك بنجاح.\n\n📋 *تفاصيل الطلب*\n{services}\n\n💰 الإجمالي: {total} ج.م\n✅ المدفوع: {paid} ج.م\n💳 المتبقي: {remaining} ج.م\n\n🎁 رصيد مكافآتك: {reward_balance} ج.م — يمكنك استخدامه في زيارتك القادمة.\n\n🔗 لمتابعة حالة طلبك: {track_url}\n🤝 شكرًا لاختيارك {studio}.",
           welcomeBack: "🌟 أهلاً بعودتك أ. {name} إلى {studio} 📸\nسعداء بثقتك المتجددة، وتم تسجيل طلبك بنجاح.\n\n📋 *تفاصيل الطلب*\n{services}\n\n💰 الإجمالي: {total} ج.م\n💳 المتبقي: {remaining} ج.م\n🎁 رصيد مكافآتك الحالي: {reward_balance} ج.م\n\n🔗 تابع طلبك من هنا: {track_url}\n🙏 شكرًا لثقتك الدائمة بنا.",
           vipDiscount: "🌟 مرحبًا أ. {name}،\nبصفتك من عملائنا المميزين في {studio}، يسعدنا إهداؤك خصمًا خاصًا بنسبة 10% على زيارتك القادمة، تقديرًا لثقتك بنا. 🎁\n\n💳 رصيد مكافآتك المتاح: {reward_balance} ج.م\n🔗 رابط بوابة العملاء: {track_url}\n🤝 نتطلع إلى خدمتك مجددًا.",
-          invoice: "╭━━━━━━━━━━━━━━━━━━╮\n🧾 *إيصال سداد إلكتروني*\n📸 *{studio}*\n╰━━━━━━━━━━━━━━━━━━╯\n\n👋 أهلًا بك أ. {name}\n✅ تم تحديث إيصالك وتسجيل السداد بنجاح.\nنقدّر ثقتك بنا ونسعد بخدمتك دائمًا.\n\n🗂️ *بيانات الإيصال*\n🔖 رقم الإيصال: *#{receipt}*\n🗓️ تاريخ التسجيل: *{date}*\n{phone_line}{pickup_line}{details_block}{identity_block}\n\n{account_summary}\n{promotions_block}{identity_note}\n\n🔗 *رابط الإيصال والمتابعة*\nافتح الرابط لمراجعة تفاصيل الطلب ومراحل التنفيذ وبيانات الطباعة:\n{receipt_url}\n\n🤝 شكرًا لاختيارك *{studio}*\n📷 نتمنى لك تجربة مميزة وذكريات جميلة.\n╰━━━━━━━━━━━━━━━━━━╯",
-          unpaidInvoice: "🧾 *ملخص طلب التصوير*\n📸 *{studio}*\n\n👋 أهلًا بك أ. {name}\n🔢 رقم الطلب: *#{receipt}*\n📅 تاريخ التسجيل: *{date}*\n{details_block}{identity_block}\n💰 *تفاصيل الحساب*\n🧾 إجمالي الطلب: *{total} ج.م*\n✅ المدفوع: *0 ج.م*\n💳 المتبقي: *{remaining} ج.م*\n\n⚠️ *تنبيه قبل الطباعة*\n{deposit_warning}\n\n{portal_description}\n🔗 *رابط الإيصال والمتابعة والسداد:*\n{receipt_url}\n\n📎 بعد التحويل، يرجى إرسال صورة الإيصال على واتساب لتأكيد الدفع.\n\n🙏 شكرًا لتفهمك، ونسعد بخدمتك.\n📷 *مع تحيات فريق {studio}*",
+          invoice: "🧾 *تفاصيل طلبك — {studio}*\nأهلًا أ. {name}، تم تسجيل طلبك بنجاح.\n\n🔖 رقم الإيصال: *#{receipt}*\n📅 تاريخ ووقت التصوير / التسجيل: *{date}*\n{phone_line}{details_block}{identity_block}{pickup_line}\n{account_summary}\n{promotions_block}{identity_note}\n🔗 *رابط الإيصال ومراجعة البيانات:*\n{receipt_url}\n\nشكرًا لثقتك بنا، ويسعدنا خدمتك دائمًا.\n*{studio}*",
+          unpaidInvoice: "🧾 *تفاصيل طلبك — {studio}*\nأهلًا أ. {name}، تم تسجيل طلبك.\n\n🔖 رقم الإيصال: *#{receipt}*\n📅 تاريخ ووقت التصوير / التسجيل: *{date}*\n{phone_line}{details_block}{identity_block}{pickup_line}\n💰 *تفاصيل الحساب*\n🧾 الإجمالي: *{total} ج.م*\n✅ المدفوع: *{paid} ج.م*\n💳 المتبقي: *{remaining} ج.م*\n\n{deposit_warning}\n🔗 *رابط الإيصال ومراجعة البيانات والسداد:*\n{receipt_url}\n\nشكرًا لثقتك بنا.\n*{studio}*",
           depositWarning: "⚠️ تنبيه مهم: حرصًا على تنفيذ طلبك بدقة، لا يبدأ اعتماد أو طباعة الصور قبل سداد العربون المطلوب. نعتذر عن أي إزعاج، ونشكرك على تفهمك وثقتك بنا. 📸",
           reminder: "⏰ أهلًا بك أ. {name} 🌟\nنود تذكيرك بلطف بوجود مبلغ متبقٍ على إيصالك في {studio}.\n\n🔖 رقم الإيصال: #{receipt}\n💳 المبلغ المتبقي: {remaining} ج.م\n\n🔗 يمكنك مراجعة التفاصيل والسداد من الرابط التالي:\n{track_url}\n\n🙏 شكرًا لثقتك بنا، ويسعدنا خدمتك دائمًا. 📸",
           ready: "🎉 خبر سار أ. {name}!\nاكتمل طلبك رقم #{receipt} وأصبح جاهزًا للاستلام من {studio}. 📦\n\n💳 المبلغ المتبقي: {remaining} ج.م\n🔗 لمراجعة تفاصيل الطلب: {track_url}\n\nيسعدنا استقبالكم، وننتظركم بكل ترحاب. 🤝📸",
@@ -337,7 +337,7 @@
           promoInquiry: "🎁 مرحبًا {studio}،\nأرغب في معرفة تفاصيل العرض التالي وإمكانية الحجز:\n✨ *{item_title}*\n\nبانتظار ردكم، شكرًا لكم.",
           rewardPrintInquiry: "🎁 مرحبًا {studio}،\nلدي رصيد مكافآت بقيمة {reward_balance} ج.م على الإيصال رقم #{receipt}، وأرغب في استخدامه لطباعة صور من الهاتف. 📱\n\nيرجى توضيح الخطوات المتاحة، شكرًا لكم.",
           printReview: "🪪 السلام عليكم أ. {name}،\n\n*مراجعة بيانات الطباعة — {studio}* 📸\nحرصًا على ظهور بياناتك بشكل صحيح، نرجو فتح الرابط ومراجعة المعلومات التالية قبل اعتماد الطباعة:\n\n✍️ الاسم على الصورة: *{photo_name}*\n🔢 الرقم القومي: *{national_id}*\n🎓 الشعبة / المسار: *{branch}*\n🧾 رقم الإيصال: *#{receipt}*\n\n✅ إذا كانت البيانات صحيحة، اضغط «تأكيد بيانات الإيصال».\n✏️ إذا وجدت أي خطأ، عدّل البيانات ثم احفظها قبل اعتماد الطباعة.\n\n🔗 *رابط مراجعة البيانات:*\n{track_url}\n\n🙏 شكرًا لتعاونك وثقتك بنا.",
-          instantThankYou: "🌟 أهلًا {name}، شكرًا لاختيارك {studio}. سعدنا بخدمتك، وتم تسليم صورك فورًا.\n\n📲 بوابة العملاء وخدمات الاستوديو: {portal_url}\n🧾 إيصالك ومتابعة هذه العملية: {receipt_url}\n\nنتمنى لك صورًا جميلة، ونسعد بخدمتك دائمًا."
+          instantThankYou: "🌟 أهلًا أ. {name}، شكرًا لاختيارك *{studio}*.\nتم تنفيذ وتسليم الخدمة الفورية. ✅\n\n🔖 رقم الإيصال: *#{receipt}*\n💰 إجمالي الطلب: *{total}*\n✅ المدفوع: *{paid}*\n💳 المتبقي: *{remaining}*\n📌 حالة الحساب: *{payment_status}*\n\n📲 للحجز والاستفسار عن خدماتنا: {portal_url}\n🧾 رابط إيصالك وتفاصيل العملية: {receipt_url}\n\nنسعد بخدمتك دائمًا."
         };
 
         const defaultFirebaseConfig = {
@@ -496,11 +496,16 @@
                 name: txn?.clientName || 'العميل العزيز',
                 studio: settings?.studioName || 'ستوديو المراكبي',
                 receipt: txn?.receiptNo || '—',
+                total: formatCurrency(txn?.total || 0),
+                paid: formatCurrency(txn?.paid || 0),
+                remaining: formatCurrency(txn?.remaining || 0),
+                payment_status: Number(txn?.remaining || 0) <= 0 ? 'تم السداد بالكامل' : 'يوجد مبلغ متبقٍ',
                 portal_url: buildCustomerPortalUrl(),
+                booking_url: buildCustomerPortalUrl(),
                 receipt_url: receiptUrl,
                 track_url: receiptUrl
             };
-            return String(template || '').replace(/\{(name|studio|receipt|portal_url|receipt_url|track_url)\}/g, (match, key) => String(values[key] ?? ''));
+            return String(template || '').replace(/\{(name|studio|receipt|total|paid|remaining|payment_status|portal_url|booking_url|receipt_url|track_url)\}/g, (match, key) => String(values[key] ?? ''));
         };
         const generateWA_Message = (templateKey, txn, settings, isWedding = false, allRecords = []) => {
             const clientName = isWedding ? `${txn.groomName || ''} و ${txn.brideName || ''}`.trim() : txn.clientName;
@@ -585,10 +590,7 @@
                     .replace(/{portal_description}/g, portalDescription)
                     .replace(/{portal_block}/g, portalBlock.replace(/{studio}/g, settings.studioName || 'الاستوديو'))
                     .replace(/{studio}/g, settings.studioName || 'الاستوديو');
-                const thankYouText = isImmediateServiceRecord(txn)
-                    ? renderInstantThankYou(txn, settings, receiptUrl)
-                    : '';
-                const invoiceMessage = thankYouText ? `${generatedInvoice}\n\n${thankYouText}` : generatedInvoice;
+                const invoiceMessage = generatedInvoice;
                 const bulkIdentityLines = txn.bulkGroupId && txn.writeNameOnPhoto ? [
                     txn.photoName ? `✍️ الاسم على الصورة: ${txn.photoName}` : '',
                     txn.nationalId ? `🔢 الرقم القومي: ${txn.nationalId}` : '',
@@ -3033,7 +3035,7 @@
                                             <div key={record.id} className="flex flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-950/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="min-w-0"><p className="truncate font-black text-white">{record.clientName} <span className="mr-1 font-mono text-amber-300">#{record.receiptNo}</span></p><p className="mt-1 text-xs text-slate-400">{record.serviceType} · الإجمالي {formatCurrency(record.total)} · المدفوع {formatCurrency(record.paid)} · المتبقي {formatCurrency(record.remaining)}</p></div>
                                                 <div className="flex shrink-0 gap-2">
-                                                    <button type="button" onClick={() => openWhatsApp(record.phone, generateWA_Message('invoice', record, settings, false, [...(allRecords || []), ...savedRecords]))} className="rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-500"><i className="ph-fill ph-whatsapp-logo ml-1"></i>إرسال الفاتورة</button>
+                                                    <button type="button" onClick={() => openWhatsApp(record.phone, isImmediateServiceRecord(record) ? renderInstantThankYou(record, settings, buildCustomerReceiptUrl(record, false)) : generateWA_Message('invoice', record, settings, false, [...(allRecords || []), ...savedRecords]))} className="rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-500"><i className="ph-fill ph-whatsapp-logo ml-1"></i>إرسال الفاتورة</button>
                                                     <a href={buildCustomerReceiptUrl(record, false)} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-cyan-300/30 bg-cyan-950/50 px-3 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-900/70">فتح الإيصال</a>
                                                 </div>
                                             </div>
@@ -3474,7 +3476,7 @@
                     </div>
                   </h2>
                   <div className="space-y-4">
-                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, generateWA_Message('invoice', txn, settings, false, allRecords))} updateStatus={updateTxnStatus} onViewHistory={(phone) => setHistoryPhone(phone)} db={db} settings={settings} allRecords={allRecords} />)}
+                    {displayTxns.length === 0 ? <p className="text-center p-10 text-slate-500">لا توجد نتائج هنا.</p> : displayTxns.map(txn => <TransactionCard key={txn.id} txn={txn} onDelete={handleDelete} onEdit={handleEdit} onPayRemaining={setPayModal} onViewReceipt={setReceiptImageModal} sendInvoice={() => openWhatsApp(txn.phone, isImmediateServiceRecord(txn) ? renderInstantThankYou(txn, settings, buildCustomerReceiptUrl(txn, false)) : generateWA_Message('invoice', txn, settings, false, allRecords))} updateStatus={updateTxnStatus} onViewHistory={(phone) => setHistoryPhone(phone)} db={db} settings={settings} allRecords={allRecords} />)}
                   </div>
                 </div>
 
